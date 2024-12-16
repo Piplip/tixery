@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: account-service
+  config:
+    import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}
+
+eureka:
+  instance:
+    hostname: localhost
+
+#feign:
+#  hystrix:
+#    enabled: true
