@@ -2,3 +2,5 @@ server:
   servlet:
     context-path: /accounts
   port: 6000
+
+VERIFY_EMAIL_HOST: http://localhost:${server.port}
