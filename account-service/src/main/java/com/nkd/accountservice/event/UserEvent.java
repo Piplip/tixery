@@ -10,9 +10,8 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserEvent<T> {
+public class UserEvent {
 
-    private T payload;
     private EventType eventType;
     private Map<?,?> data;
 }
