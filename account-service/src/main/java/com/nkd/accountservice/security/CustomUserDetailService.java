@@ -1,16 +1,18 @@
 package com.nkd.accountservice.security;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jooq.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import static com.nkd.accountservice.Tables.*;
 
+@RequiredArgsConstructor
+@Slf4j
 public class CustomUserDetailService implements UserDetailsService {
 
-    @Autowired
-    private DSLContext context;
+    private final DSLContext context;
 
     @Override
     public CustomUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -20,8 +22,10 @@ public class CustomUserDetailService implements UserDetailsService {
                 .where(USER_ACCOUNT.ACCOUNT_NAME.eq(username))
                 .fetchOptional();
 
-        if(data.isEmpty())
+        if(data.isEmpty()){
+            log.error("User not found : {}", username);
             return null;
+        }
 
         Record3<String, String, String> record = data.get();
 
