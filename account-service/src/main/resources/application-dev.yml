@@ -1,0 +1,9 @@
+#Database
+MYSQL_USERNAME: root
+MYSQL_PASSWORD: somenewpassword123
+
+#Email_Config
+EMAIL_HOST: smtp.gmail.com
+EMAIL_PORT: 587
+EMAIL_USERNAME: nguyenkhanhdu956@gmail.com
+EMAIL_PASSWORD: egfl kthz udxk awbf

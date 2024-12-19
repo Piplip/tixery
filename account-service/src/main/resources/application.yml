@@ -1,8 +1,38 @@
 spring:
   application:
     name: account-service
+  profiles:
+    active: dev
   config:
     import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}
+  datasource:
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/tixery_account
+  mail:
+    host: ${EMAIL_HOST}
+    port: ${EMAIL_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        mime:
+          charset: UTF
+        smtp:
+          write:
+            timeout: 10000
+          connection:
+            timeout: 10000
+          timeout: 10000
+          auth: true
+          starttls:
+            enable: true
+            required: true
+    verify:
+      host: ${VERIFY_EMAIL_HOST:http://localhost:6000}
+
 
 eureka:
   instance:
