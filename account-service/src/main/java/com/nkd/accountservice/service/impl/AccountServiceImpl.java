@@ -15,6 +15,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.jooq.DSLContext;
 import org.jooq.types.UInteger;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,6 +44,7 @@ public class AccountServiceImpl implements AccountService {
     private final PasswordEncoder encoder;
     private final ApplicationEventPublisher publisher;
     private final AuthenticationManager authenticationManager;
+    private final MessageSource messageSource;
 
     @Override
     @Transactional
@@ -59,6 +61,8 @@ public class AccountServiceImpl implements AccountService {
 //            log.error("Role not found : {}", accountDTO.getRole());
 //            return new Response(HttpStatus.BAD_REQUEST.name(), "Role not found", null);
 //        }
+
+        // TODO: Check if email already exists
 
         UInteger accountID = context.insertInto(USER_ACCOUNT)
                 .set(USER_ACCOUNT.ACCOUNT_NAME, accountDTO.getUsername())
@@ -83,7 +87,7 @@ public class AccountServiceImpl implements AccountService {
                     "expirationTime", confirmation.getRight()));
         publisher.publishEvent(registrationEvent);
 
-        return new Response(HttpStatus.OK.name(), "Account created", null);
+        return new Response(HttpStatus.OK.name(), "Account created! Go to your gmail to complete registration", null);
     }
 
     @Override
