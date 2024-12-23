@@ -13,7 +13,6 @@ import lombok.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AccountDTO {
 
-    private String username;
     private String email;
     private String password;
     private String role;

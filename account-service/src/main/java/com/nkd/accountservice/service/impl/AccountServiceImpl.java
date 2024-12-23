@@ -49,8 +49,6 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public Response handleSignUp(AccountDTO accountDTO) {
-        System.out.println(accountDTO.toString());
-
         UInteger credentialID = context.insertInto(CREDENTIAL)
                 .set(CREDENTIAL.PASSWORD, encoder.encode(accountDTO.getPassword()))
                 .set(CREDENTIAL.LAST_UPDATED_AT, LocalDateTime.now())
@@ -62,10 +60,7 @@ public class AccountServiceImpl implements AccountService {
 //            return new Response(HttpStatus.BAD_REQUEST.name(), "Role not found", null);
 //        }
 
-        // TODO: Check if email already exists
-
         UInteger accountID = context.insertInto(USER_ACCOUNT)
-                .set(USER_ACCOUNT.ACCOUNT_NAME, accountDTO.getUsername())
                 .set(USER_ACCOUNT.ACCOUNT_EMAIL, accountDTO.getEmail())
 //                .set(USER_ACCOUNT.ROLE_ID, context.select(ROLE.ROLE_ID).from(ROLE).where(ROLE.ROLE_NAME.eq(RoleRoleName.valueOf(accountDTO.getRole()))))
                 .set(USER_ACCOUNT.ACCOUNT_STATUS, UserAccountAccountStatus.CREATED)
@@ -79,7 +74,6 @@ public class AccountServiceImpl implements AccountService {
         Triple<Integer, String, LocalDateTime> confirmation = generateConfirmation(accountID);
         registrationEvent.setData(
                 Map.of(
-                    "accountName", accountDTO.getUsername(),
                     "email", accountDTO.getEmail(),
                     "accountID", accountID.intValue(),
                     "confirmationID", confirmation.getLeft(),
@@ -99,7 +93,7 @@ public class AccountServiceImpl implements AccountService {
                             .fetchSingleInto(UserAccountAccountStatus.class);
 
         if(status == UserAccountAccountStatus.VERIFIED){
-            return new Response(HttpStatus.BAD_REQUEST.name(), "Account already verified", null);
+            return new Response(HttpStatus.BAD_REQUEST.name(), "ACCOUNT_VERIFY_ALREADY", null);
         }
 
         Optional<Confirmation> confirmation = context.selectFrom(CONFIRMATION)
@@ -108,11 +102,10 @@ public class AccountServiceImpl implements AccountService {
                 .fetchOptionalInto(Confirmation.class);
 
         if(confirmation.isEmpty())
-            return new Response(HttpStatus.BAD_REQUEST.name(), "Invalid token or token is expired!", null);
-
+            return new Response(HttpStatus.BAD_REQUEST.name(), "ACCOUNT_VERIFY_EXPIRED", null);
 
         if(!confirmation.get().getToken().equals(token))
-            return new Response(HttpStatus.BAD_REQUEST.name(), "Invalid operation", null);
+            return new Response(HttpStatus.BAD_REQUEST.name(), "INVALID_OPERATION", null);
 
         context.deleteFrom(CONFIRMATION)
                 .where(CONFIRMATION.CONFIRMATION_ID.eq(UInteger.valueOf(confirmationID)))
@@ -128,8 +121,9 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Response handleLogin(AccountDTO accountDTO, HttpServletRequest request) {
+        // TODO: Check if account is verified
         try {
-            Authentication authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(accountDTO.getUsername(), accountDTO.getPassword());
+            Authentication authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(accountDTO.getEmail(), accountDTO.getPassword());
             Authentication authenticationResponse = authenticationManager.authenticate(authenticationRequest);
 
             SecurityContext securityContext = SecurityContextHolder.getContext();
@@ -142,6 +136,7 @@ public class AccountServiceImpl implements AccountService {
             return new Response(HttpStatus.BAD_REQUEST.name(), "Username or password is incorrect", null);
         }
 
+        // TODO: Get user details and return back to client
         return new Response(HttpStatus.OK.name(), "Login successful", null);
     }
 
@@ -150,6 +145,14 @@ public class AccountServiceImpl implements AccountService {
         SecurityContextHolder.clearContext();
         request.getSession().invalidate();
         return new Response(HttpStatus.OK.name(), "Logout successful", null);
+    }
+
+    @Override
+    public Response checkEmailExists(String email) {
+        boolean exists = context.fetchExists(context.selectFrom(USER_ACCOUNT).where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email)));
+        if(exists)
+            return new Response(HttpStatus.OK.name(), "Email exists", Map.of("exists", true));
+        return new Response(HttpStatus.OK.name(), null, null);
     }
 
     private Triple<Integer, String, LocalDateTime> generateConfirmation(UInteger accountID){

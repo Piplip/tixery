@@ -5,6 +5,8 @@ import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.service.AccountService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,9 +20,20 @@ public class AccountController {
         return accountService.handleSignUp(accountDTO);
     }
 
-    @PostMapping("/activate")
-    public Response activeAccount(@RequestParam("uid") String accountID, @RequestParam("confirmid") String confirmationID, @RequestParam("token") String token){
-        return accountService.activateAccount(accountID, confirmationID, token);
+    @GetMapping("/activate")
+    public ResponseEntity<?> activeAccount(@RequestParam("uid") String accountID, @RequestParam("confirmid") String confirmationID, @RequestParam("token") String token){
+        Response response = accountService.activateAccount(accountID, confirmationID, token);
+
+        if(response.status().equals(HttpStatus.OK.name())){
+            String redirectURL = "http://localhost:5173/accounts/verify/success" + "?uid=" + accountID;
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(java.net.URI.create(redirectURL))
+                    .build();
+        }
+
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(java.net.URI.create("http://localhost:5173/accounts/verify/failed" + "?uid=" + accountID + "&error=" + response.message()))
+                .build();
     }
 
     @PostMapping("/login")
@@ -33,8 +46,8 @@ public class AccountController {
         return accountService.handleLogout(request);
     }
 
-    @GetMapping("/protected")
-    public Response protectedResource(HttpServletRequest request){
-        return new Response("Protected Resource", "You are authorized to access this resource", null);
+    @GetMapping("/check-email")
+    public Response checkEmailExists(@RequestParam("email") String email){
+        return accountService.checkEmailExists(email);
     }
 }
