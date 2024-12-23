@@ -13,17 +13,19 @@ public class EmailUtils {
         throw new RuntimeException(message);
     }
 
-    public static String getRegistrationMessage(String accountName, Integer accountID, Integer confirmationID, String token, LocalDateTime expirationTime, String verifyHost) {
+    // TODO: Refactor the function Make function more readable
+    // TODO: Adding re-generate verify token function
+    public static String getRegistrationMessage(Integer accountID, Integer confirmationID, String token, LocalDateTime expirationTime, String verifyHost) {
         return """
                 <html>
                     <body>
                         <h2>Account Activation</h2>
-                        <p>Dear %s,</p>
+                        <p>Hello,</p>
                         <p>Thank you for signing up with us. Please click the link below to activate your account.</p>
-                        <a href="%s/verify?uid=%s&confirmid=%s&token=%s">Activate Account</a>
+                        <a href="%s/accounts/activate?uid=%s&confirmid=%s&token=%s">Activate Account</a>
                         <p>This link will expire on %s</p>
                     </body>
                 </html>
-                """.formatted(accountName, verifyHost, accountID, confirmationID, token, expirationTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")));
+                """.formatted(verifyHost, accountID, confirmationID, token, expirationTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")));
     }
 }

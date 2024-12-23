@@ -26,11 +26,11 @@ public class EmailServiceImpl implements EmailService {
     private String verifyHost;
 
     @Override
-    public void sendRegistrationEmail(String accountName, String email, Integer accountID, Integer confirmationID, String token, LocalDateTime expirationTime) {
+    public void sendRegistrationEmail(String email, Integer accountID, Integer confirmationID, String token, LocalDateTime expirationTime) {
         try {
-            sendEmail(email, EmailUtils.getRegistrationMessage(accountName, accountID, confirmationID, token, expirationTime, verifyHost), NEW_ACCOUNT_VERIFICATION);
+            sendEmail(email, EmailUtils.getRegistrationMessage(accountID, confirmationID, token, expirationTime, verifyHost), NEW_ACCOUNT_VERIFICATION);
         } catch(Exception e){
-            EmailUtils.handleEmailException("Error sending registration email to " + email + "at {}" + LocalDateTime.now());
+            EmailUtils.handleEmailException("Error sending registration email to " + email + "at " + LocalDateTime.now());
         }
     }
 
