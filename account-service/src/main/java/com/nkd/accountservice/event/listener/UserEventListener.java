@@ -1,5 +1,6 @@
 package com.nkd.accountservice.event.listener;
 
+import com.nkd.accountservice.enumeration.EventType;
 import com.nkd.accountservice.event.UserEvent;
 import com.nkd.accountservice.service.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +18,7 @@ public class UserEventListener {
     @EventListener
     public void handleAccountEvent(UserEvent userEvent){
         switch (userEvent.getEventType()){
-            case REGISTRATION -> emailService.sendRegistrationEmail(
-                    (String) userEvent.getData().get("accountName"),
+            case EventType.REGISTRATION -> emailService.sendRegistrationEmail(
                     (String) userEvent.getData().get("email"),
                     (Integer) userEvent.getData().get("accountID"),
                     (Integer) userEvent.getData().get("confirmationID"),
