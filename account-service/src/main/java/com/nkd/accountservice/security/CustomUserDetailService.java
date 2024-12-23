@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.*;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import com.nkd.accountservice.security.CustomUserDetails;
 
 import static com.nkd.accountservice.Tables.*;
 
@@ -15,15 +16,17 @@ public class CustomUserDetailService implements UserDetailsService {
     private final DSLContext context;
 
     @Override
-    public CustomUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        var data = context.select(USER_ACCOUNT.ACCOUNT_NAME, CREDENTIAL.PASSWORD, ROLE.ROLE_PRIVILEGES)
+    public CustomUserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        System.out.println("CustomUserDetailService.loadUserByUsername");
+        System.out.println("Email: " + email);
+        var data = context.select(USER_ACCOUNT.ACCOUNT_EMAIL, CREDENTIAL.PASSWORD, ROLE.ROLE_PRIVILEGES)
                 .from(USER_ACCOUNT.join(CREDENTIAL).on(USER_ACCOUNT.CREDENTIAL_ID.eq(CREDENTIAL.CREDENTIAL_ID))
-                        .join(ROLE).on(USER_ACCOUNT.ROLE_ID.eq(ROLE.ROLE_ID)))
-                .where(USER_ACCOUNT.ACCOUNT_NAME.eq(username))
+                        .leftJoin(ROLE).on(USER_ACCOUNT.ROLE_ID.eq(ROLE.ROLE_ID)))
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
                 .fetchOptional();
 
         if(data.isEmpty()){
-            log.error("User not found : {}", username);
+            log.error("User not found with email: {}", email);
             return null;
         }
 

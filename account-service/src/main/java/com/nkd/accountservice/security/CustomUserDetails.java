@@ -1,6 +1,13 @@
 package com.nkd.accountservice.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.util.Collection;
+import java.util.stream.Stream;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -15,7 +22,7 @@ import java.util.stream.Stream;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CustomUserDetails implements UserDetails, CredentialsContainer {
+public class CustomUserDetails implements UserDetails, CredentialsContainer{
 
     private String username;
     private String password;
@@ -30,6 +37,9 @@ public class CustomUserDetails implements UserDetails, CredentialsContainer {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        if(this.rolePrivileges == null){
+            return null;
+        }
         return Stream.of(this.rolePrivileges.split(",")).map(SimpleGrantedAuthority::new).toList();
     }
 
