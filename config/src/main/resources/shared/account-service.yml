@@ -3,4 +3,4 @@ server:
     context-path: /accounts
   port: 6000
 
-VERIFY_EMAIL_HOST: http://localhost:${server.port}
+VERIFY_EMAIL_HOST: http://localhost:4001

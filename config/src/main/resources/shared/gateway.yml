@@ -6,6 +6,8 @@ spring:
     gateway:
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin Access-Control-Allow-Methods Access-Control-Allow-Headers
+        - RemoveResponseHeader=Www-Authenticate
+
       routes:
         - id: accounts_route
           uri: ${ACCOUNT_ROUTE_URI:http://localhost:6000}
