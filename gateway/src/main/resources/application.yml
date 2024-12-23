@@ -7,3 +7,7 @@ spring:
 eureka:
   instance:
     hostname: localhost
+
+logging:
+  level:
+    org.springframework.security: DEBUG
