@@ -10,4 +10,5 @@ public interface AccountService {
     Response handleLogin(AccountDTO accountDTO, HttpServletRequest request);
     Response handleLogout(HttpServletRequest request);
     Response checkEmailExists(String email);
+    Response resendActivation(String accountID);
 }

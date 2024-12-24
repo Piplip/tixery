@@ -36,6 +36,11 @@ public class AccountController {
                 .build();
     }
 
+    @PutMapping("/resend-activation")
+    public Response resendActivation(@RequestParam("uid") String accountID){
+        return accountService.resendActivation(accountID);
+    }
+
     @PostMapping("/login")
     public Response login(@RequestBody AccountDTO accountDTO, HttpServletRequest request){
         return accountService.handleLogin(accountDTO, request);
