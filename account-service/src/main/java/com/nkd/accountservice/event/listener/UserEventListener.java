@@ -25,6 +25,13 @@ public class UserEventListener {
                     (String) userEvent.getData().get("token"),
                     (LocalDateTime) userEvent.getData().get("expirationTime")
             );
+            case EventType.RESEND_ACTIVATION -> emailService.sendActivationEmail(
+                    (String) userEvent.getData().get("email"),
+                    (Integer) userEvent.getData().get("accountID"),
+                    (Integer) userEvent.getData().get("confirmationID"),
+                    (String) userEvent.getData().get("token"),
+                    (LocalDateTime) userEvent.getData().get("expirationTime")
+            );
         }
     }
 }

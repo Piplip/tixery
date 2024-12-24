@@ -1,5 +1,5 @@
 package com.nkd.accountservice.enumeration;
 
 public enum EventType {
-    REGISTRATION, LOGIN, LOGOUT, DELETE
+    REGISTRATION, LOGIN, LOGOUT, RESEND_ACTIVATION, DELETE
 }

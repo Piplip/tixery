@@ -34,6 +34,15 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Override
+    public void sendActivationEmail(String email, Integer accountID, Integer confirmationID, String token, LocalDateTime expirationTime) {
+        try {
+            sendEmail(email, EmailUtils.getReactivateMessage(accountID, confirmationID, token, expirationTime, verifyHost), NEW_ACCOUNT_VERIFICATION);
+        } catch(Exception e){
+            EmailUtils.handleEmailException("Error sending reactivate email to " + email + "at " + LocalDateTime.now());
+        }
+    }
+
     private void sendEmail(String toEmail, String content, String subject) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
