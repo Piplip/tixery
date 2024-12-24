@@ -17,8 +17,6 @@ public class CustomUserDetailService implements UserDetailsService {
 
     @Override
     public CustomUserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        System.out.println("CustomUserDetailService.loadUserByUsername");
-        System.out.println("Email: " + email);
         var data = context.select(USER_ACCOUNT.ACCOUNT_EMAIL, CREDENTIAL.PASSWORD, ROLE.ROLE_PRIVILEGES)
                 .from(USER_ACCOUNT.join(CREDENTIAL).on(USER_ACCOUNT.CREDENTIAL_ID.eq(CREDENTIAL.CREDENTIAL_ID))
                         .leftJoin(ROLE).on(USER_ACCOUNT.ROLE_ID.eq(ROLE.ROLE_ID)))
