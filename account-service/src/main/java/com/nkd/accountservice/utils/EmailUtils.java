@@ -13,7 +13,6 @@ public class EmailUtils {
         throw new RuntimeException(message);
     }
 
-    // TODO: Change email layout to use a template engine
     public static String getRegistrationMessage(Integer accountID, Integer confirmationID, String token, LocalDateTime expirationTime, String verifyHost) {
         return """
                 <html>
