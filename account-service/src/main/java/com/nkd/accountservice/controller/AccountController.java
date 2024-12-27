@@ -1,6 +1,7 @@
 package com.nkd.accountservice.controller;
 
 import com.nkd.accountservice.domain.AccountDTO;
+import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.service.AccountService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,5 +55,21 @@ public class AccountController {
     @GetMapping("/check-email")
     public Response checkEmailExists(@RequestParam("email") String email){
         return accountService.checkEmailExists(email);
+    }
+
+    @PostMapping("/profile/setup")
+    public Response createSetUpProfileRequest(@RequestParam("uid") String accountID){
+        return accountService.createSetUpProfileRequest(accountID);
+    }
+
+    @PostMapping("/profile/create")
+    public Response handleCreateProfile(@RequestParam("rid") String requestID, @RequestBody Profile profile){
+        System.out.println("Profile: " + profile.toString());
+        return accountService.handleCreateProfile(requestID, profile);
+    }
+
+    @GetMapping("/protected")
+    public String protectedEndpoint(){
+        return "This is a protected endpoint";
     }
 }

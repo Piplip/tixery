@@ -1,6 +1,7 @@
 package com.nkd.accountservice.security;
 
 import org.jooq.DSLContext;
+import org.jooq.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,19 +12,23 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final DSLContext context;
+    private final JwtFilter jwtFilter;
 
     @Autowired
-    public SecurityConfig(DSLContext context) {
+    public SecurityConfig(DSLContext context, JwtFilter jwtFilter) {
         this.context = context;
+        this.jwtFilter = jwtFilter;
     }
 
     @Bean
@@ -31,10 +36,14 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request ->
                 request
-                    .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation").permitAll()
+                    .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup"
+                            , "/profile/create").permitAll()
                     .anyRequest().authenticated())
                 .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(Customizer.withDefaults());
+                .httpBasic(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .oauth2Client(Customizer.withDefaults());
         return http.build();
     }
 

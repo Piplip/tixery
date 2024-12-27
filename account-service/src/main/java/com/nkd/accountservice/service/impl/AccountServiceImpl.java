@@ -1,19 +1,22 @@
 package com.nkd.accountservice.service.impl;
 
 import com.nkd.accountservice.domain.AccountDTO;
+import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.enumeration.EventType;
 import com.nkd.accountservice.enums.UserAccountAccountStatus;
 import com.nkd.accountservice.event.UserEvent;
 import com.nkd.accountservice.service.AccountService;
+import com.nkd.accountservice.service.JwtService;
 import com.nkd.accountservice.tables.pojos.Confirmation;
+import com.nkd.accountservice.utils.CommonUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.types.UByte;
 import org.jooq.types.UInteger;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
@@ -22,14 +25,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -49,6 +51,7 @@ public class AccountServiceImpl implements AccountService {
     private final AuthenticationManager authenticationManager;
     private final MessageSource messageSource;
     private final RedisTemplate<String, String> redisTemplate;
+    private final JwtService jwtService;
 
     @Override
     @Transactional
@@ -59,14 +62,8 @@ public class AccountServiceImpl implements AccountService {
                 .returningResult(CREDENTIAL.CREDENTIAL_ID)
                 .fetchSingleInto(UInteger.class);
 
-//        if(Stream.of(RoleRoleName.values()).noneMatch(role -> role.getLiteral().equals(accountDTO.getRole()))){
-//            log.error("Role not found : {}", accountDTO.getRole());
-//            return new Response(HttpStatus.BAD_REQUEST.name(), "Role not found", null);
-//        }
-
         UInteger accountID = context.insertInto(USER_ACCOUNT)
                 .set(USER_ACCOUNT.ACCOUNT_EMAIL, accountDTO.getEmail())
-//                .set(USER_ACCOUNT.ROLE_ID, context.select(ROLE.ROLE_ID).from(ROLE).where(ROLE.ROLE_NAME.eq(RoleRoleName.valueOf(accountDTO.getRole()))))
                 .set(USER_ACCOUNT.ACCOUNT_STATUS, UserAccountAccountStatus.CREATED)
                 .set(USER_ACCOUNT.ACCOUNT_CREATED_AT, LocalDateTime.now())
                 .set(USER_ACCOUNT.CREDENTIAL_ID, credentialID)
@@ -129,23 +126,13 @@ public class AccountServiceImpl implements AccountService {
             log.error("Account not verified : {}", accountDTO.getEmail());
             return new Response(HttpStatus.BAD_REQUEST.name(), "Account not verified", null);
         }
-
-        try {
-            Authentication authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(accountDTO.getEmail(), accountDTO.getPassword());
-            Authentication authenticationResponse = authenticationManager.authenticate(authenticationRequest);
-
-            SecurityContext securityContext = SecurityContextHolder.getContext();
-            securityContext.setAuthentication(authenticationResponse);
-
-            HttpSession session = request.getSession(true);
-            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
-        } catch (AuthenticationException e) {
-            log.error("Authentication failed : {}", e.getMessage());
-            return new Response(HttpStatus.BAD_REQUEST.name(), "Username or password is incorrect", null);
+        Authentication authentication = authenticationManager
+                .authenticate(new UsernamePasswordAuthenticationToken(accountDTO.getEmail(), accountDTO.getPassword()));
+        if(authentication.isAuthenticated()){
+            String token = jwtService.generateLoginToken(accountDTO.getEmail());
+            return new Response(HttpStatus.OK.name(), "Login successful", token);
         }
-
-        // TODO: Get user details and return back to client
-        return new Response(HttpStatus.OK.name(), "Login successful", null);
+        return new Response(HttpStatus.BAD_REQUEST.name(), "Username or password is incorrect", null);
     }
 
     @Override
@@ -195,6 +182,50 @@ public class AccountServiceImpl implements AccountService {
         // Store new token event to redis to prevent spamming
         redisTemplate.opsForValue().set("resend_activation_" + accountID, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")));
         return new Response(HttpStatus.OK.name(), "Resend activation email! Check your email to continue", null);
+    }
+
+    @Override
+    public Response createSetUpProfileRequest(String accountID) {
+        // should we check if account is exist or not?
+        String requestID = CommonUtils.generateRandomString(20);
+        redisTemplate.opsForValue().set("setup_profile_" + requestID, accountID, Duration.ofMinutes(10));
+        return new Response(HttpStatus.OK.name(), "Request created", Map.of("requestID", requestID));
+    }
+
+    @Override
+    @Transactional
+    public Response handleCreateProfile(String requestID, Profile profile) {
+        String accountID = redisTemplate.opsForValue().get("setup_profile_" + requestID);
+        if(accountID == null){
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Request not found", null);
+        }
+
+        UInteger userDataID = context.insertInto(USER_DATA)
+                .set(USER_DATA.FULL_NAME, profile.getFullName())
+                .set(USER_DATA.NICKNAME, profile.getNickname())
+                .set(USER_DATA.DATE_OF_BIRTH, LocalDate.from(DateTimeFormatter.ofPattern("dd/MM/yyyy").parse(profile.getDob())))
+                .set(USER_DATA.GENDER, profile.getGender())
+                .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
+                .set(USER_DATA.NATIONALITY, profile.getNationality())
+                .returningResult(USER_DATA.USER_DATA_ID)
+                .fetchSingleInto(UInteger.class);
+
+        UInteger profileID = context.insertInto(PROFILE)
+                .set(PROFILE.USER_DATA_ID, userDataID)
+                .set(PROFILE.ACCOUNT_ID, UInteger.valueOf(accountID))
+                .set(PROFILE.PROFILE_NAME, profile.getPpName())
+                .set(PROFILE.DESCRIPTION, profile.getPpDescription())
+                .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
+                .returningResult(PROFILE.PROFILE_ID)
+                .fetchSingleInto(UInteger.class);
+
+        context.update(USER_ACCOUNT)
+                .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, profileID)
+                .set(USER_ACCOUNT.ROLE_ID, UByte.valueOf(1))
+                .where(USER_ACCOUNT.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
+                .execute();
+        redisTemplate.delete("setup_profile_" + requestID);
+        return new Response(HttpStatus.OK.name(), "Profile created", null);
     }
 
     private Triple<Integer, String, LocalDateTime> generateConfirmation(UInteger accountID){
