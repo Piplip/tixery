@@ -37,6 +37,16 @@ spring:
             required: true
     verify:
       host: ${VERIFY_EMAIL_HOST:http://localhost:4001}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 753083576806-ec8f2us12a5im0qv8kar8sfb9lg3mr8r.apps.googleusercontent.com
+            client-secret: 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
+          facebook:
+            client-id:
+            client-secret:
 
 
 eureka:
@@ -46,3 +56,4 @@ eureka:
 #feign:
 #  hystrix:
 #    enabled: true
+
