@@ -1,8 +1,12 @@
 package com.nkd.accountservice.security;
 
+import com.nkd.accountservice.security.oauth2.CustomOAuth2SuccessHandler;
+import com.nkd.accountservice.service.JwtService;
+import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.ParameterResolutionDelegate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,16 +24,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final DSLContext context;
     private final JwtFilter jwtFilter;
-
-    @Autowired
-    public SecurityConfig(DSLContext context, JwtFilter jwtFilter) {
-        this.context = context;
-        this.jwtFilter = jwtFilter;
-    }
+    private final JwtService jwtService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -43,7 +43,11 @@ public class SecurityConfig {
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .oauth2Client(Customizer.withDefaults());
+                .oauth2Client(Customizer.withDefaults())
+                .oauth2Login(oauth2Login -> {
+                    oauth2Login.successHandler(new CustomOAuth2SuccessHandler(context, jwtService));
+                    // TODO: add failure handler
+                });
         return http.build();
     }
 
