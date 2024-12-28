@@ -27,7 +27,6 @@ public class EmailUtils {
                 """.formatted(verifyHost, accountID, confirmationID, token, expirationTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
     }
 
-    // TODO: Change email layout to use a template engine
     public static String getReactivateMessage(Integer accountID, Integer confirmationID, String token, LocalDateTime expirationTime, String verifyHost) {
         return """
             <html>
