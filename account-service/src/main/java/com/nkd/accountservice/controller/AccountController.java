@@ -5,6 +5,7 @@ import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.service.AccountService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,12 @@ public class AccountController {
     @PostMapping("/login")
     public Response login(@RequestBody AccountDTO accountDTO, HttpServletRequest request){
         return accountService.handleLogin(accountDTO, request);
+    }
+
+    @GetMapping("/auth")
+    public Response loginWithToken(HttpServletRequest request){
+        System.out.println("Login with token");
+        return accountService.handleLoginWithToken(request);
     }
 
     @GetMapping("/logout")

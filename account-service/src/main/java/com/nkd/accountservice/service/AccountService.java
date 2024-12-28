@@ -14,4 +14,5 @@ public interface AccountService {
     Response resendActivation(String accountID);
     Response createSetUpProfileRequest(String accountID);
     Response handleCreateProfile(String requestID, Profile profile);
+    Response handleLoginWithToken(HttpServletRequest request);
 }
