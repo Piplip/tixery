@@ -228,6 +228,19 @@ public class AccountServiceImpl implements AccountService {
         return new Response(HttpStatus.OK.name(), "Profile created", null);
     }
 
+    @Override
+    public Response handleLoginWithToken(HttpServletRequest request) {
+        if(request.getAttribute("error") != null){
+            System.out.println("Error: " + request.getAttribute("error"));
+            return new Response(HttpStatus.BAD_REQUEST.name(), request.getAttribute("error").toString(), null);
+        }
+        String token = request.getHeader("Authorization").substring(7);
+        String extendedToken = jwtService.extendSession(token);
+
+        System.out.println("Extended token successfully");
+        return new Response(HttpStatus.OK.name(), "", extendedToken);
+    }
+
     private Triple<Integer, String, LocalDateTime> generateConfirmation(UInteger accountID){
         String token = UUID.randomUUID().toString();
 
