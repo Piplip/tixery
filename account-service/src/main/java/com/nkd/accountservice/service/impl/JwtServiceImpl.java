@@ -5,8 +5,10 @@ import com.nkd.accountservice.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -14,16 +16,22 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static com.nkd.accountservice.Tables.*;
 
 @Service
-@RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
 
-    private final DSLContext context;
-    private final String secretKey = Jwts.SIG.HS512.key().toString();
+    @Autowired
+    private DSLContext context;
+    private final String secretKey;
+    private final long EXPIRE_DURATION = TimeUnit.MINUTES.toMillis(1); // development purpose
+
+    public JwtServiceImpl(){
+        secretKey = Jwts.SIG.HS512.key().toString();
+    }
 
     @Override
     public String generateLoginToken(String email) {
@@ -53,15 +61,24 @@ public class JwtServiceImpl implements JwtService {
         claims.put("privileges", record.get(ROLE.ROLE_PRIVILEGES));
         claims.put("role", record.get(ROLE.ROLE_NAME));
 
+        return buildToken(claims, email, new Date(), new Date(System.currentTimeMillis() + EXPIRE_DURATION));
+    }
+
+    public String generateOauth2LoginToken(String email, String name, String picture) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("fullName", name);
+        claims.put("profileImageUrl", picture);
+        return buildToken(claims, email, new Date(), new Date(System.currentTimeMillis() + 60 * 1000));
+    }
+
+    private String buildToken(Map<String, Object> claims, String subject, Date issuedAt, Date expiration) {
         return Jwts.builder()
                 .claims()
                 .add(claims)
-                .subject(email)
-                .issuedAt(new java.util.Date(System.currentTimeMillis()))
-                .expiration(new java.util.Date(System.currentTimeMillis() + 1000 * 60 * 60 * 30))
-                .and()
-                .signWith(getKey())
-                .compact();
+                .subject(subject)
+                .issuedAt(issuedAt)
+                .expiration(expiration)
+                .and().signWith(getKey()).compact();
     }
 
     @Override
@@ -70,8 +87,15 @@ public class JwtServiceImpl implements JwtService {
         return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
+        System.out.println("Expired time: " + extractExpiration(token));
         return extractExpiration(token).before(new java.util.Date());
+    }
+
+    @Override
+    public String extendSession(String token) {
+        final Claims claims = extractAllClaims(token);
+        return buildToken(claims, claims.getSubject(), new Date(), new Date(System.currentTimeMillis() + EXPIRE_DURATION));
     }
 
     private Date extractExpiration(String token) {
