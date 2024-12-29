@@ -44,6 +44,8 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         }
 
+        // TODO: extends session if user is still active
+
         if(email != null && SecurityContextHolder.getContext().getAuthentication() == null){
             CustomUserDetails userDetails = applicationContext.getBean(CustomUserDetailService.class).loadUserByUsername(email);
             if(jwtService.validateToken(token, userDetails)){
