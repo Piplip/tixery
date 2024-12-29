@@ -13,6 +13,5 @@ public interface AccountService {
     Response checkEmailExists(String email);
     Response resendActivation(String accountID);
     Response createSetUpProfileRequest(String accountID);
-    Response handleCreateProfile(String requestID, Profile profile);
-    Response handleLoginWithToken(HttpServletRequest request);
+    Response handleCreateProfile(String requestID, Profile profile, String type);
 }

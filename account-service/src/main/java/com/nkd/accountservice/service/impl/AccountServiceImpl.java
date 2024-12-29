@@ -4,6 +4,7 @@ import com.nkd.accountservice.domain.AccountDTO;
 import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.enumeration.EventType;
+import com.nkd.accountservice.enums.RoleRoleName;
 import com.nkd.accountservice.enums.UserAccountAccountStatus;
 import com.nkd.accountservice.event.UserEvent;
 import com.nkd.accountservice.service.AccountService;
@@ -122,9 +123,19 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Response handleLogin(AccountDTO accountDTO, HttpServletRequest request) {
+        if(!isEmailExist(accountDTO.getEmail())){
+            log.error("Email not found : {}", accountDTO.getEmail());
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Account not found", null);
+        }
         if(checkVerifiedAccount(accountDTO.getEmail())){
             log.error("Account not verified : {}", accountDTO.getEmail());
             return new Response(HttpStatus.BAD_REQUEST.name(), "Account not verified", null);
+        }
+        else if(context.fetchExists(context.selectFrom(USER_ACCOUNT).where(USER_ACCOUNT.CREDENTIAL_ID.isNull()
+                .and(USER_ACCOUNT.ACCOUNT_EMAIL.eq(accountDTO.getEmail()))))) {
+            log.error("Mismatch login method : {}", accountDTO.getEmail());
+            return new Response(HttpStatus.BAD_REQUEST.name()
+                    , "The email you use to login is associated to google login! Please use it to log into your account", null);
         }
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(accountDTO.getEmail(), accountDTO.getPassword()));
@@ -144,8 +155,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Response checkEmailExists(String email) {
-        boolean exists = context.fetchExists(context.selectFrom(USER_ACCOUNT).where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email)));
-        if(exists)
+        if(isEmailExist(email))
             return new Response(HttpStatus.OK.name(), "Email exists", Map.of("exists", true));
         return new Response(HttpStatus.OK.name(), null, null);
     }
@@ -194,12 +204,52 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public Response handleCreateProfile(String requestID, Profile profile) {
+    public Response handleCreateProfile(String requestID, Profile profile, String type) {
         String accountID = redisTemplate.opsForValue().get("setup_profile_" + requestID);
         if(accountID == null){
             return new Response(HttpStatus.BAD_REQUEST.name(), "Request not found", null);
         }
 
+        if(type.equals("attendee")){
+            saveAttendeeProfile(accountID, profile);
+        }
+        else if(type.equals("organizer")){
+            saveOrganizerProfile(accountID, profile);
+        }
+
+        redisTemplate.delete("setup_profile_" + requestID);
+        return new Response(HttpStatus.OK.name(), "Profile created", null);
+    }
+
+    private void saveOrganizerProfile(String accountID, Profile profile){
+        UInteger userDataID = context.insertInto(USER_DATA)
+                .set(USER_DATA.NATIONALITY, profile.getNationality())
+                .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
+                .set(USER_DATA.ORGANIZATION, profile.getOrganization())
+                .returningResult(USER_DATA.USER_DATA_ID)
+                .fetchSingleInto(UInteger.class);
+
+        UInteger profileID = context.insertInto(PROFILE)
+                .set(PROFILE.PROFILE_NAME, profile.getFullName() + "'s Profile")
+                .set(PROFILE.USER_DATA_ID, userDataID)
+                .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
+                .set(PROFILE.ACCOUNT_ID, UInteger.valueOf(accountID))
+                .returningResult(PROFILE.PROFILE_ID)
+                .fetchSingleInto(UInteger.class);
+
+        UByte roleID = context.select(ROLE.ROLE_ID)
+                .from(ROLE)
+                .where(ROLE.ROLE_NAME.eq(RoleRoleName.HOST))
+                .fetchSingleInto(UByte.class);
+
+        context.update(USER_ACCOUNT)
+                .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, profileID)
+                .set(USER_ACCOUNT.ROLE_ID, roleID)
+                .where(USER_ACCOUNT.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
+                .execute();
+    }
+
+    private void saveAttendeeProfile(String accountID, Profile profile) {
         UInteger userDataID = context.insertInto(USER_DATA)
                 .set(USER_DATA.FULL_NAME, profile.getFullName())
                 .set(USER_DATA.NICKNAME, profile.getNickname())
@@ -219,26 +269,20 @@ public class AccountServiceImpl implements AccountService {
                 .returningResult(PROFILE.PROFILE_ID)
                 .fetchSingleInto(UInteger.class);
 
+        UByte roleID = context.select(ROLE.ROLE_ID)
+                .from(ROLE)
+                .where(ROLE.ROLE_NAME.eq(RoleRoleName.ATTENDEE))
+                .fetchSingleInto(UByte.class);
+
         context.update(USER_ACCOUNT)
-                .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, profileID)
-                .set(USER_ACCOUNT.ROLE_ID, UByte.valueOf(1))
-                .where(USER_ACCOUNT.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
-                .execute();
-        redisTemplate.delete("setup_profile_" + requestID);
-        return new Response(HttpStatus.OK.name(), "Profile created", null);
+            .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, profileID)
+            .set(USER_ACCOUNT.ROLE_ID, roleID)
+            .where(USER_ACCOUNT.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
+            .execute();
     }
 
-    @Override
-    public Response handleLoginWithToken(HttpServletRequest request) {
-        if(request.getAttribute("error") != null){
-            System.out.println("Error: " + request.getAttribute("error"));
-            return new Response(HttpStatus.BAD_REQUEST.name(), request.getAttribute("error").toString(), null);
-        }
-        String token = request.getHeader("Authorization").substring(7);
-        String extendedToken = jwtService.extendSession(token);
-
-        System.out.println("Extended token successfully");
-        return new Response(HttpStatus.OK.name(), "", extendedToken);
+    private boolean isEmailExist(String email) {
+        return context.fetchExists(context.selectFrom(USER_ACCOUNT).where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email)));
     }
 
     private Triple<Integer, String, LocalDateTime> generateConfirmation(UInteger accountID){
