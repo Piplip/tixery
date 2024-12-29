@@ -18,4 +18,5 @@ public class Profile {
     String ppName;
     String ppImageURL;
     String ppDescription;
+    String organization;
 }
