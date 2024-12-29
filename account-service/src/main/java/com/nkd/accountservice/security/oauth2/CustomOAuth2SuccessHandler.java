@@ -31,38 +31,55 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
         Map<String, Object> attributes = authToken.getPrincipal().getAttributes();
 
+        attributes.forEach((k, v) -> System.out.println(k + " : " + v));
+
         String email = (String) attributes.get("email");
         String name = (String) attributes.get("name");
         String picture = (String) attributes.get("picture");
 
+        String token, redirectURL;
         if(checkEmailUseInNormalLogin(email)){
             response.setStatus(HttpServletResponse.SC_FOUND);
             response.sendRedirect("http://localhost:5173/login?ref=already-used");
             return;
         }
-
-        if(!userExists(email)){
-            // TODO: handle Facebook login
-            saveUserToDatabase(email, name, picture);
+        else{
+            if(!checkUserExist(email)){
+                saveOauth2User(email, name, picture);
+                redirectURL = "http://localhost:5173/u/interests?method=external";
+                token = jwtService.generateOauth2LoginToken(email, name, picture == null ? "" : picture);
+            }
+            else{
+                if(hasSelectedRole(email)){
+                    redirectURL = "http://localhost:5173";
+                }
+                else{
+                    redirectURL = "http://localhost:5173/u/interests?method=external";
+                }
+                token = jwtService.generateLoginToken(email);
+            }
         }
-        String token = jwtService.generateOauth2LoginToken(email, name, picture);
 
         Cookie cookie = new Cookie("tk", token);
         cookie.setPath("/");
         cookie.setMaxAge(60 * 20);
         response.addCookie(cookie);
-        response.sendRedirect("http://localhost:5173");
+        response.sendRedirect(redirectURL);
+    }
+
+    private boolean hasSelectedRole(String email) {
+        return context.fetchExists(USER_ACCOUNT, USER_ACCOUNT.ACCOUNT_EMAIL.eq(email).and(USER_ACCOUNT.ROLE_ID.isNotNull()));
     }
 
     private boolean checkEmailUseInNormalLogin(String email) {
         return context.fetchExists(USER_ACCOUNT, USER_ACCOUNT.ACCOUNT_EMAIL.eq(email).and(USER_ACCOUNT.CREDENTIAL_ID.isNotNull()));
     }
 
-    private boolean userExists(String email) {
+    private boolean checkUserExist(String email) {
         return context.fetchExists(USER_ACCOUNT, USER_ACCOUNT.ACCOUNT_EMAIL.eq(email));
     }
 
-    private void saveUserToDatabase(String email, String name, String picture) {
+    private void saveOauth2User(String email, String name, String picture) {
         UInteger userDataID = context.insertInto(USER_DATA).set(USER_DATA.FULL_NAME, name).returningResult(USER_DATA.USER_DATA_ID).fetchSingleInto(UInteger.class);
         UInteger accountID = context.insertInto(USER_ACCOUNT)
                 .set(USER_ACCOUNT.ACCOUNT_EMAIL, email)
