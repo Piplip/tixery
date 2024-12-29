@@ -48,12 +48,6 @@ public class AccountController {
         return accountService.handleLogin(accountDTO, request);
     }
 
-    @GetMapping("/auth")
-    public Response loginWithToken(HttpServletRequest request){
-        System.out.println("Login with token");
-        return accountService.handleLoginWithToken(request);
-    }
-
     @GetMapping("/logout")
     public Response logout(HttpServletRequest request){
         return accountService.handleLogout(request);
@@ -70,9 +64,8 @@ public class AccountController {
     }
 
     @PostMapping("/profile/create")
-    public Response handleCreateProfile(@RequestParam("rid") String requestID, @RequestBody Profile profile){
-        System.out.println("Profile: " + profile.toString());
-        return accountService.handleCreateProfile(requestID, profile);
+    public Response handleCreateProfile(@RequestParam("rid") String requestID, @RequestBody Profile profile, @RequestParam("type") String type){
+        return accountService.handleCreateProfile(requestID, profile, type);
     }
 
     @GetMapping("/protected")
