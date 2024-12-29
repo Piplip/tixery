@@ -37,7 +37,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request ->
                 request
                     .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup"
-                            , "/profile/create").permitAll()
+                            , "/profile/create", "/oauth2/authorization/**").permitAll()
                     .anyRequest().authenticated())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(Customizer.withDefaults())
@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .oauth2Client(Customizer.withDefaults())
                 .oauth2Login(oauth2Login -> {
                     oauth2Login.successHandler(new CustomOAuth2SuccessHandler(context, jwtService));
-                    // TODO: add failure handler
+                    oauth2Login.failureUrl("http://localhost:5173/login?ref=user_cancel");
                 });
         return http.build();
     }
