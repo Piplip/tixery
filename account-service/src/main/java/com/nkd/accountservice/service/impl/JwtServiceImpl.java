@@ -5,8 +5,6 @@ import com.nkd.accountservice.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
-import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,7 +25,7 @@ public class JwtServiceImpl implements JwtService {
     @Autowired
     private DSLContext context;
     private final String secretKey;
-    private final long EXPIRE_DURATION = TimeUnit.MINUTES.toMillis(1); // development purpose
+    private final long EXPIRE_DURATION = TimeUnit.DAYS.toMillis(1);
 
     public JwtServiceImpl(){
         secretKey = Jwts.SIG.HS512.key().toString();
@@ -41,7 +39,7 @@ public class JwtServiceImpl implements JwtService {
                 PROFILE.PROFILE_NAME, PROFILE.DESCRIPTION, PROFILE.PROFILE_IMAGE_URL, ROLE.ROLE_PRIVILEGES, ROLE.ROLE_NAME)
                 .from(USER_ACCOUNT.join(PROFILE).on(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(PROFILE.PROFILE_ID))
                         .join(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID))
-                        .join(ROLE).on(ROLE.ROLE_ID.eq(USER_ACCOUNT.ROLE_ID)))
+                        .leftJoin(ROLE).on(ROLE.ROLE_ID.eq(USER_ACCOUNT.ROLE_ID)))
                 .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
                 .fetchOptional();
 
@@ -50,16 +48,16 @@ public class JwtServiceImpl implements JwtService {
         }
 
         var record = userData.get();
-        claims.put("fullName", record.get(USER_DATA.FULL_NAME));
-        claims.put("gender", record.get(USER_DATA.GENDER));
-        claims.put("nationality", record.get(USER_DATA.NATIONALITY));
-        claims.put("dateOfBirth", record.get(USER_DATA.DATE_OF_BIRTH).format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
-        claims.put("phoneNumber", record.get(USER_DATA.PHONE_NUMBER));
-        claims.put("profileName", record.get(PROFILE.PROFILE_NAME));
-        claims.put("description", record.get(PROFILE.DESCRIPTION));
-        claims.put("profileImageUrl", record.get(PROFILE.PROFILE_IMAGE_URL));
-        claims.put("privileges", record.get(ROLE.ROLE_PRIVILEGES));
-        claims.put("role", record.get(ROLE.ROLE_NAME));
+        claims.put("fullName", record.get(USER_DATA.FULL_NAME) == null ? "" : record.get(USER_DATA.FULL_NAME));
+        claims.put("gender", record.get(USER_DATA.GENDER) == null ? "" : record.get(USER_DATA.GENDER));
+        claims.put("nationality", record.get(USER_DATA.NATIONALITY) == null ? "" : record.get(USER_DATA.NATIONALITY));
+        claims.put("dateOfBirth", record.get(USER_DATA.DATE_OF_BIRTH) == null ? "" : record.get(USER_DATA.DATE_OF_BIRTH).format(DateTimeFormatter.ISO_DATE));
+        claims.put("phoneNumber", record.get(USER_DATA.PHONE_NUMBER) == null ? "" : record.get(USER_DATA.PHONE_NUMBER));
+        claims.put("profileName", record.get(PROFILE.PROFILE_NAME) == null ? "" : record.get(PROFILE.PROFILE_NAME));
+        claims.put("description", record.get(PROFILE.DESCRIPTION) == null ? "" : record.get(PROFILE.DESCRIPTION));
+        claims.put("profileImageUrl", record.get(PROFILE.PROFILE_IMAGE_URL) == null ? "" : record.get(PROFILE.PROFILE_IMAGE_URL));
+        claims.put("privileges", record.get(ROLE.ROLE_PRIVILEGES) == null ? "" : record.get(ROLE.ROLE_PRIVILEGES));
+        claims.put("role", record.get(ROLE.ROLE_NAME) == null ? "" : record.get(ROLE.ROLE_NAME));
 
         return buildToken(claims, email, new Date(), new Date(System.currentTimeMillis() + EXPIRE_DURATION));
     }
@@ -68,7 +66,7 @@ public class JwtServiceImpl implements JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("fullName", name);
         claims.put("profileImageUrl", picture);
-        return buildToken(claims, email, new Date(), new Date(System.currentTimeMillis() + 60 * 1000));
+        return buildToken(claims, email, new Date(), new Date(System.currentTimeMillis() + EXPIRE_DURATION));
     }
 
     private String buildToken(Map<String, Object> claims, String subject, Date issuedAt, Date expiration) {
