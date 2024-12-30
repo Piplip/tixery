@@ -1,5 +1,6 @@
 package com.nkd.accountservice.service.impl;
 
+import com.nkd.accountservice.enums.RoleRoleName;
 import com.nkd.accountservice.security.CustomUserDetails;
 import com.nkd.accountservice.service.JwtService;
 import io.jsonwebtoken.Claims;
@@ -36,7 +37,8 @@ public class JwtServiceImpl implements JwtService {
         Map<String, Object> claims = new HashMap<>();
 
         var userData = context.select(USER_DATA.FULL_NAME, USER_DATA.GENDER, USER_DATA.NATIONALITY, USER_DATA.DATE_OF_BIRTH, USER_DATA.PHONE_NUMBER,
-                PROFILE.PROFILE_NAME, PROFILE.DESCRIPTION, PROFILE.PROFILE_IMAGE_URL, ROLE.ROLE_PRIVILEGES, ROLE.ROLE_NAME)
+                USER_DATA.INTERESTS, USER_DATA.ORGANIZATION, PROFILE.PROFILE_NAME, PROFILE.DESCRIPTION, PROFILE.PROFILE_IMAGE_URL
+                        , ROLE.ROLE_PRIVILEGES, ROLE.ROLE_NAME)
                 .from(USER_ACCOUNT.join(PROFILE).on(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(PROFILE.PROFILE_ID))
                         .join(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID))
                         .leftJoin(ROLE).on(ROLE.ROLE_ID.eq(USER_ACCOUNT.ROLE_ID)))
@@ -58,6 +60,12 @@ public class JwtServiceImpl implements JwtService {
         claims.put("profileImageUrl", record.get(PROFILE.PROFILE_IMAGE_URL) == null ? "" : record.get(PROFILE.PROFILE_IMAGE_URL));
         claims.put("privileges", record.get(ROLE.ROLE_PRIVILEGES) == null ? "" : record.get(ROLE.ROLE_PRIVILEGES));
         claims.put("role", record.get(ROLE.ROLE_NAME) == null ? "" : record.get(ROLE.ROLE_NAME));
+        if(record.get(ROLE.ROLE_NAME) == RoleRoleName.ATTENDEE){
+            claims.put("interests", record.get(USER_DATA.INTERESTS) == null ? "" : record.get(USER_DATA.INTERESTS));
+        }
+        else if(record.get(ROLE.ROLE_NAME) == RoleRoleName.HOST){
+            claims.put("organization", record.get(USER_DATA.ORGANIZATION) == null ? "" : record.get(USER_DATA.ORGANIZATION));
+        }
 
         return buildToken(claims, email, new Date(), new Date(System.currentTimeMillis() + EXPIRE_DURATION));
     }

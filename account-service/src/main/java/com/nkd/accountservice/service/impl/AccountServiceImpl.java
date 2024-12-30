@@ -204,16 +204,16 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public Response handleCreateProfile(String requestID, Profile profile, String type) {
+    public Response handleCreateProfile(String requestID, Profile profile, String role) {
         String accountID = redisTemplate.opsForValue().get("setup_profile_" + requestID);
         if(accountID == null){
             return new Response(HttpStatus.BAD_REQUEST.name(), "Request not found", null);
         }
 
-        if(type.equals("attendee")){
-            saveAttendeeProfile(accountID, profile);
+        if(role.equals("attendee")){
+            saveAttendeeProfile(accountID, profile, null);
         }
-        else if(type.equals("organizer")){
+        else if(role.equals("organizer")){
             saveOrganizerProfile(accountID, profile);
         }
 
@@ -221,21 +221,69 @@ public class AccountServiceImpl implements AccountService {
         return new Response(HttpStatus.OK.name(), "Profile created", null);
     }
 
-    private void saveOrganizerProfile(String accountID, Profile profile){
-        UInteger userDataID = context.insertInto(USER_DATA)
-                .set(USER_DATA.NATIONALITY, profile.getNationality())
-                .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
-                .set(USER_DATA.ORGANIZATION, profile.getOrganization())
-                .returningResult(USER_DATA.USER_DATA_ID)
-                .fetchSingleInto(UInteger.class);
+    @Override
+    public Response handleCreateOAuth2Profile(String email, Profile profile, String role) {
+        var res = context.select(USER_ACCOUNT.ACCOUNT_ID, USER_ACCOUNT.DEFAULT_PROFILE_ID)
+                .from(USER_ACCOUNT)
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
+                .fetchSingle();
 
-        UInteger profileID = context.insertInto(PROFILE)
-                .set(PROFILE.PROFILE_NAME, profile.getFullName() + "'s Profile")
-                .set(PROFILE.USER_DATA_ID, userDataID)
-                .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
-                .set(PROFILE.ACCOUNT_ID, UInteger.valueOf(accountID))
-                .returningResult(PROFILE.PROFILE_ID)
-                .fetchSingleInto(UInteger.class);
+        if(role.equals("organizer")){
+            System.out.println("Goes here ????");
+            saveOrganizerProfile(res.value1().toString(), profile);
+        }
+        else saveAttendeeProfile(res.value1().toString(), profile, res.value2());
+
+        return new Response(HttpStatus.OK.name(), "Profile created", null);
+    }
+
+    @Override
+    public Response getUpdatedToken(String email) {
+        return new Response(HttpStatus.OK.name(), "Token updated", jwtService.generateLoginToken(email));
+    }
+
+    private void saveOrganizerProfile(String accountID, Profile profile){
+        UInteger updateProfileID;
+        Optional<UInteger> profileID = context.select(PROFILE.PROFILE_ID).from(PROFILE)
+                .where(PROFILE.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
+                .fetchOptionalInto(UInteger.class);
+        if(profileID.isPresent()){
+            UInteger userDataID = context.select(PROFILE.USER_DATA_ID).from(PROFILE)
+                    .where(PROFILE.PROFILE_ID.eq(profileID.get()))
+                    .fetchSingleInto(UInteger.class);
+            var userDataUpdate = context.update(USER_DATA)
+                    .set(USER_DATA.NATIONALITY, profile.getNationality())
+                    .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
+                    .set(USER_DATA.ORGANIZATION, profile.getOrganization());
+
+            if(profile.getFullName() != null){
+                userDataUpdate = userDataUpdate.set(USER_DATA.FULL_NAME, profile.getFullName());
+            }
+            userDataUpdate.where(USER_DATA.USER_DATA_ID.eq(userDataID)).execute();
+            var updateProfile = context.update(PROFILE).set(PROFILE.PROFILE_NAME, profile.getFullName() + "'s Profile");
+            if(profile.getPpImageURL() != null){
+               updateProfile = updateProfile.set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL());
+            }
+            updateProfile.where(PROFILE.PROFILE_ID.eq(profileID.get())).execute();
+            updateProfileID = profileID.get();
+        }
+        else{
+            UInteger userDataID = context.insertInto(USER_DATA)
+                    .set(USER_DATA.FULL_NAME, profile.getFullName())
+                    .set(USER_DATA.NATIONALITY, profile.getNationality())
+                    .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
+                    .set(USER_DATA.ORGANIZATION, profile.getOrganization())
+                    .returningResult(USER_DATA.USER_DATA_ID)
+                    .fetchSingleInto(UInteger.class);
+
+            updateProfileID = context.insertInto(PROFILE)
+                    .set(PROFILE.PROFILE_NAME, profile.getFullName() + "'s Profile")
+                    .set(PROFILE.USER_DATA_ID, userDataID)
+                    .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
+                    .set(PROFILE.ACCOUNT_ID, UInteger.valueOf(accountID))
+                    .returningResult(PROFILE.PROFILE_ID)
+                    .fetchSingleInto(UInteger.class);
+        }
 
         UByte roleID = context.select(ROLE.ROLE_ID)
                 .from(ROLE)
@@ -243,31 +291,61 @@ public class AccountServiceImpl implements AccountService {
                 .fetchSingleInto(UByte.class);
 
         context.update(USER_ACCOUNT)
-                .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, profileID)
+                .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, updateProfileID)
                 .set(USER_ACCOUNT.ROLE_ID, roleID)
                 .where(USER_ACCOUNT.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
                 .execute();
     }
 
-    private void saveAttendeeProfile(String accountID, Profile profile) {
-        UInteger userDataID = context.insertInto(USER_DATA)
-                .set(USER_DATA.FULL_NAME, profile.getFullName())
-                .set(USER_DATA.NICKNAME, profile.getNickname())
-                .set(USER_DATA.DATE_OF_BIRTH, LocalDate.from(DateTimeFormatter.ofPattern("dd/MM/yyyy").parse(profile.getDob())))
-                .set(USER_DATA.GENDER, profile.getGender())
-                .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
-                .set(USER_DATA.NATIONALITY, profile.getNationality())
-                .returningResult(USER_DATA.USER_DATA_ID)
-                .fetchSingleInto(UInteger.class);
+    private void saveAttendeeProfile(String accountID, Profile profile, UInteger pid) {
+        UInteger profileID = null;
+        if(pid == null){
+            UInteger userDataID = context.insertInto(USER_DATA)
+                    .set(USER_DATA.FULL_NAME, profile.getFullName())
+                    .set(USER_DATA.NICKNAME, profile.getNickname())
+                    .set(USER_DATA.DATE_OF_BIRTH, LocalDate.from(DateTimeFormatter.ofPattern("dd/MM/yyyy").parse(profile.getDob())))
+                    .set(USER_DATA.GENDER, profile.getGender())
+                    .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
+                    .set(USER_DATA.NATIONALITY, profile.getNationality())
+                    .returningResult(USER_DATA.USER_DATA_ID)
+                    .fetchSingleInto(UInteger.class);
+            profileID = context.insertInto(PROFILE)
+                    .set(PROFILE.USER_DATA_ID, userDataID)
+                    .set(PROFILE.ACCOUNT_ID, UInteger.valueOf(accountID))
+                    .set(PROFILE.PROFILE_NAME, profile.getPpName())
+                    .set(PROFILE.DESCRIPTION, profile.getPpDescription())
+                    .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
+                    .returningResult(PROFILE.PROFILE_ID)
+                    .fetchSingleInto(UInteger.class);
+        }
+        else{
+            UInteger userDataID = context.select(PROFILE.USER_DATA_ID).from(PROFILE)
+                    .where(PROFILE.PROFILE_ID.eq(pid))
+                    .fetchSingleInto(UInteger.class);
+            context.update(USER_DATA)
+                    .set(USER_DATA.FULL_NAME, profile.getFullName())
+                    .set(USER_DATA.NICKNAME, profile.getNickname())
+                    .set(USER_DATA.DATE_OF_BIRTH, LocalDate.from(DateTimeFormatter.ofPattern("dd/MM/yyyy").parse(profile.getDob())))
+                    .set(USER_DATA.GENDER, profile.getGender())
+                    .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
+                    .set(USER_DATA.NATIONALITY, profile.getNationality())
+                    .where(USER_DATA.USER_DATA_ID.eq(userDataID))
+                    .execute();
 
-        UInteger profileID = context.insertInto(PROFILE)
-                .set(PROFILE.USER_DATA_ID, userDataID)
-                .set(PROFILE.ACCOUNT_ID, UInteger.valueOf(accountID))
-                .set(PROFILE.PROFILE_NAME, profile.getPpName())
-                .set(PROFILE.DESCRIPTION, profile.getPpDescription())
-                .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
-                .returningResult(PROFILE.PROFILE_ID)
-                .fetchSingleInto(UInteger.class);
+            var updateQuery = context.update(PROFILE).set(PROFILE.USER_DATA_ID, userDataID);
+
+            if (profile.getPpName() != null) {
+                updateQuery = updateQuery.set(PROFILE.PROFILE_NAME, profile.getPpName());
+            }
+            if (profile.getPpDescription() != null) {
+                updateQuery = updateQuery.set(PROFILE.DESCRIPTION, profile.getPpDescription());
+            }
+            if (profile.getPpImageURL() != null) {
+                updateQuery = updateQuery.set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL());
+            }
+
+            updateQuery.where(PROFILE.PROFILE_ID.eq(pid)).execute();
+        }
 
         UByte roleID = context.select(ROLE.ROLE_ID)
                 .from(ROLE)
@@ -275,7 +353,7 @@ public class AccountServiceImpl implements AccountService {
                 .fetchSingleInto(UByte.class);
 
         context.update(USER_ACCOUNT)
-            .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, profileID)
+            .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, pid == null ? profileID : pid)
             .set(USER_ACCOUNT.ROLE_ID, roleID)
             .where(USER_ACCOUNT.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
             .execute();

@@ -13,5 +13,7 @@ public interface AccountService {
     Response checkEmailExists(String email);
     Response resendActivation(String accountID);
     Response createSetUpProfileRequest(String accountID);
-    Response handleCreateProfile(String requestID, Profile profile, String type);
+    Response handleCreateProfile(String requestID, Profile profile, String role);
+    Response handleCreateOAuth2Profile(String email, Profile profile, String role);
+    Response getUpdatedToken(String email);
 }

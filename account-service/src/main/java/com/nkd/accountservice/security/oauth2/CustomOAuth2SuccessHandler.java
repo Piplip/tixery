@@ -31,8 +31,6 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
         Map<String, Object> attributes = authToken.getPrincipal().getAttributes();
 
-        attributes.forEach((k, v) -> System.out.println(k + " : " + v));
-
         String email = (String) attributes.get("email");
         String name = (String) attributes.get("name");
         String picture = (String) attributes.get("picture");

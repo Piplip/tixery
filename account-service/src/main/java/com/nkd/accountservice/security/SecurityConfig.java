@@ -41,13 +41,17 @@ public class SecurityConfig {
                     .anyRequest().authenticated())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> {
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                    session.disable();
+                })
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Client(Customizer.withDefaults())
                 .oauth2Login(oauth2Login -> {
                     oauth2Login.successHandler(new CustomOAuth2SuccessHandler(context, jwtService));
                     oauth2Login.failureUrl("http://localhost:5173/login?ref=user_cancel");
-                });
+                })
+                .cors(Customizer.withDefaults());
         return http.build();
     }
 

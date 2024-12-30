@@ -64,8 +64,19 @@ public class AccountController {
     }
 
     @PostMapping("/profile/create")
-    public Response handleCreateProfile(@RequestParam("rid") String requestID, @RequestBody Profile profile, @RequestParam("type") String type){
-        return accountService.handleCreateProfile(requestID, profile, type);
+    public Response handleCreateProfile(@RequestParam("rid") String requestID, @RequestBody Profile profile, @RequestParam("type") String role){
+        System.out.println("Profile: " + profile.toString());
+        return accountService.handleCreateProfile(requestID, profile, role);
+    }
+
+    @PostMapping("/profile/oauth/create")
+    public Response handleCreateOauth2Profile(@RequestParam("email") String email, @RequestBody Profile profile, @RequestParam("type") String role){
+        return accountService.handleCreateOAuth2Profile(email, profile, role);
+    }
+
+    @GetMapping("/profile/oauth/update")
+    public Response getNewDataToken(@RequestParam("for") String email){
+        return accountService.getUpdatedToken(email);
     }
 
     @GetMapping("/protected")

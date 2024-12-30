@@ -1,5 +1,7 @@
 package com.nkd.accountservice.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 @NoArgsConstructor
@@ -7,6 +9,8 @@ import lombok.*;
 @Getter
 @Setter
 @ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Profile {
 
     String fullName;
