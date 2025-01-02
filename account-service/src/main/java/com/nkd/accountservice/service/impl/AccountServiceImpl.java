@@ -7,6 +7,8 @@ import com.nkd.accountservice.enumeration.EventType;
 import com.nkd.accountservice.enums.RoleRoleName;
 import com.nkd.accountservice.enums.UserAccountAccountStatus;
 import com.nkd.accountservice.event.UserEvent;
+import com.nkd.accountservice.security.CustomUserDetailService;
+import com.nkd.accountservice.security.CustomUserDetails;
 import com.nkd.accountservice.service.AccountService;
 import com.nkd.accountservice.service.JwtService;
 import com.nkd.accountservice.tables.pojos.Confirmation;
@@ -53,6 +55,7 @@ public class AccountServiceImpl implements AccountService {
     private final MessageSource messageSource;
     private final RedisTemplate<String, String> redisTemplate;
     private final JwtService jwtService;
+    private final CustomUserDetailService userDetailService;
 
     @Override
     @Transactional
@@ -137,9 +140,13 @@ public class AccountServiceImpl implements AccountService {
             return new Response(HttpStatus.BAD_REQUEST.name()
                     , "The email you use to login is associated to google login! Please use it to log into your account", null);
         }
-        Authentication authentication = authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(accountDTO.getEmail(), accountDTO.getPassword()));
-        if(authentication.isAuthenticated()){
+
+        CustomUserDetails userDetails = userDetailService.loadUserByUsername(accountDTO.getEmail());
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(userDetails, accountDTO.getPassword(), userDetails.getAuthorities());
+        Authentication authentication = authenticationManager.authenticate(authenticationToken);
+        if (authentication.isAuthenticated()) {
+            SecurityContextHolder.getContext().setAuthentication(authentication);
             String token = jwtService.generateLoginToken(accountDTO.getEmail());
             return new Response(HttpStatus.OK.name(), "Login successful", token);
         }
@@ -229,7 +236,6 @@ public class AccountServiceImpl implements AccountService {
                 .fetchSingle();
 
         if(role.equals("organizer")){
-            System.out.println("Goes here ????");
             saveOrganizerProfile(res.value1().toString(), profile);
         }
         else saveAttendeeProfile(res.value1().toString(), profile, res.value2());
@@ -253,14 +259,16 @@ public class AccountServiceImpl implements AccountService {
                     .fetchSingleInto(UInteger.class);
             var userDataUpdate = context.update(USER_DATA)
                     .set(USER_DATA.NATIONALITY, profile.getNationality())
-                    .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
-                    .set(USER_DATA.ORGANIZATION, profile.getOrganization());
+                    .set(USER_DATA.PHONE_NUMBER, profile.getPhone());
 
             if(profile.getFullName() != null){
                 userDataUpdate = userDataUpdate.set(USER_DATA.FULL_NAME, profile.getFullName());
             }
             userDataUpdate.where(USER_DATA.USER_DATA_ID.eq(userDataID)).execute();
-            var updateProfile = context.update(PROFILE).set(PROFILE.PROFILE_NAME, profile.getFullName() + "'s Profile");
+            var updateProfile = context.update(PROFILE).set(PROFILE.PROFILE_NAME, profile.getPpName());
+            if(profile.getPpImageURL() != null){
+                updateProfile = updateProfile.set(PROFILE.PROFILE_NAME, profile.getFullName() + "'s Profile");
+            }
             if(profile.getPpImageURL() != null){
                updateProfile = updateProfile.set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL());
             }
@@ -272,12 +280,11 @@ public class AccountServiceImpl implements AccountService {
                     .set(USER_DATA.FULL_NAME, profile.getFullName())
                     .set(USER_DATA.NATIONALITY, profile.getNationality())
                     .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
-                    .set(USER_DATA.ORGANIZATION, profile.getOrganization())
                     .returningResult(USER_DATA.USER_DATA_ID)
                     .fetchSingleInto(UInteger.class);
 
             updateProfileID = context.insertInto(PROFILE)
-                    .set(PROFILE.PROFILE_NAME, profile.getFullName() + "'s Profile")
+                    .set(PROFILE.PROFILE_NAME, profile.getPpName())
                     .set(PROFILE.USER_DATA_ID, userDataID)
                     .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
                     .set(PROFILE.ACCOUNT_ID, UInteger.valueOf(accountID))
