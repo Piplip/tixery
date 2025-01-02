@@ -33,29 +33,29 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if(authHeader != null && authHeader.startsWith("Bearer ")){
             token = authHeader.substring(7);
-            System.out.println("Token: " + token);
             try{
                 email = jwtService.extractEmail(token);
             } catch (ExpiredJwtException | SignatureException e){
-                log.error("Error: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"message\": \"Token expired\", \"redirect\": \"http://localhost:5173/login?ref=exp\"}");
                 response.getWriter().flush();
                 return;
             }
         }
-
         // TODO: extends session if user is still active
 
         if(email != null && SecurityContextHolder.getContext().getAuthentication() == null){
             CustomUserDetails userDetails = applicationContext.getBean(CustomUserDetailService.class).loadUserByUsername(email);
+            System.out.println("UserDetails: " + userDetails.toString());
             if(jwtService.validateToken(token, userDetails)){
+                System.out.println("Token is valid");
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
         }
+
         filterChain.doFilter(request, response);
     }
 }
