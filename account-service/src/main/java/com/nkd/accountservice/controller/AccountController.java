@@ -65,7 +65,6 @@ public class AccountController {
 
     @PostMapping("/profile/create")
     public Response handleCreateProfile(@RequestParam("rid") String requestID, @RequestBody Profile profile, @RequestParam("type") String role){
-        System.out.println("Profile: " + profile.toString());
         return accountService.handleCreateProfile(requestID, profile, role);
     }
 
