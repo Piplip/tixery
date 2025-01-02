@@ -1,5 +1,6 @@
 package com.nkd.accountservice.security.oauth2;
 
+import com.nkd.accountservice.enums.RoleRoleName;
 import com.nkd.accountservice.enums.UserAccountAccountStatus;
 import com.nkd.accountservice.service.JwtService;
 import jakarta.servlet.http.Cookie;
@@ -50,6 +51,11 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
             else{
                 if(hasSelectedRole(email)){
                     redirectURL = "http://localhost:5173";
+                    RoleRoleName role = context.select(ROLE.ROLE_NAME).from(ROLE.join(USER_ACCOUNT).on(ROLE.ROLE_ID.eq(USER_ACCOUNT.ROLE_ID)))
+                            .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email)).fetchSingleInto(RoleRoleName.class);
+                    if(role.equals(RoleRoleName.HOST)){
+                        redirectURL += "/organizer";
+                    }
                 }
                 else{
                     redirectURL = "http://localhost:5173/u/interests?method=external";
