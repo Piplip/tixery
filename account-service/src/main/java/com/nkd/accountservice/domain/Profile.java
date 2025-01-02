@@ -22,5 +22,7 @@ public class Profile {
     String ppName;
     String ppImageURL;
     String ppDescription;
-    String organization;
+    String emailOptIn;
+    String customURL;
+    String socialMediaLinks;
 }
