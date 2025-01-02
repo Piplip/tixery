@@ -37,10 +37,10 @@ public class JwtServiceImpl implements JwtService {
         Map<String, Object> claims = new HashMap<>();
 
         var userData = context.select(USER_DATA.FULL_NAME, USER_DATA.GENDER, USER_DATA.NATIONALITY, USER_DATA.DATE_OF_BIRTH, USER_DATA.PHONE_NUMBER,
-                USER_DATA.INTERESTS, USER_DATA.ORGANIZATION, PROFILE.PROFILE_NAME, PROFILE.DESCRIPTION, PROFILE.PROFILE_IMAGE_URL
+                USER_DATA.INTERESTS, PROFILE.PROFILE_NAME, PROFILE.DESCRIPTION, PROFILE.PROFILE_IMAGE_URL
                         , ROLE.ROLE_PRIVILEGES, ROLE.ROLE_NAME)
                 .from(USER_ACCOUNT.join(PROFILE).on(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(PROFILE.PROFILE_ID))
-                        .join(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID))
+                        .leftJoin(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID))
                         .leftJoin(ROLE).on(ROLE.ROLE_ID.eq(USER_ACCOUNT.ROLE_ID)))
                 .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
                 .fetchOptional();
@@ -64,7 +64,7 @@ public class JwtServiceImpl implements JwtService {
             claims.put("interests", record.get(USER_DATA.INTERESTS) == null ? "" : record.get(USER_DATA.INTERESTS));
         }
         else if(record.get(ROLE.ROLE_NAME) == RoleRoleName.HOST){
-            claims.put("organization", record.get(USER_DATA.ORGANIZATION) == null ? "" : record.get(USER_DATA.ORGANIZATION));
+            claims.put("organization", record.get(PROFILE.PROFILE_NAME) == null ? "" : record.get(PROFILE.PROFILE_NAME));
         }
 
         return buildToken(claims, email, new Date(), new Date(System.currentTimeMillis() + EXPIRE_DURATION));
@@ -94,7 +94,6 @@ public class JwtServiceImpl implements JwtService {
     }
 
     public boolean isTokenExpired(String token) {
-        System.out.println("Expired time: " + extractExpiration(token));
         return extractExpiration(token).before(new java.util.Date());
     }
 
