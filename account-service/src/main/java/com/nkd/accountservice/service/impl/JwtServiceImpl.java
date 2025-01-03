@@ -37,7 +37,7 @@ public class JwtServiceImpl implements JwtService {
         Map<String, Object> claims = new HashMap<>();
 
         var userData = context.select(USER_DATA.FULL_NAME, USER_DATA.GENDER, USER_DATA.NATIONALITY, USER_DATA.DATE_OF_BIRTH, USER_DATA.PHONE_NUMBER,
-                USER_DATA.INTERESTS, PROFILE.PROFILE_NAME, PROFILE.DESCRIPTION, PROFILE.PROFILE_IMAGE_URL
+                USER_DATA.INTERESTS, PROFILE.PROFILE_NAME, PROFILE.DESCRIPTION, PROFILE.PROFILE_IMAGE_URL, PROFILE.PROFILE_ID
                         , ROLE.ROLE_PRIVILEGES, ROLE.ROLE_NAME)
                 .from(USER_ACCOUNT.join(PROFILE).on(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(PROFILE.PROFILE_ID))
                         .leftJoin(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID))
@@ -60,6 +60,7 @@ public class JwtServiceImpl implements JwtService {
         claims.put("profileImageUrl", record.get(PROFILE.PROFILE_IMAGE_URL) == null ? "" : record.get(PROFILE.PROFILE_IMAGE_URL));
         claims.put("privileges", record.get(ROLE.ROLE_PRIVILEGES) == null ? "" : record.get(ROLE.ROLE_PRIVILEGES));
         claims.put("role", record.get(ROLE.ROLE_NAME) == null ? "" : record.get(ROLE.ROLE_NAME));
+        claims.put("profileID", record.get(PROFILE.PROFILE_ID) == null ? "" : record.get(PROFILE.PROFILE_ID));
         if(record.get(ROLE.ROLE_NAME) == RoleRoleName.ATTENDEE){
             claims.put("interests", record.get(USER_DATA.INTERESTS) == null ? "" : record.get(USER_DATA.INTERESTS));
         }
