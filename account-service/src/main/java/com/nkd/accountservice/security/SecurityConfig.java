@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request ->
                     request
                         .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup"
-                                , "/profile/create", "/oauth2/authorization/**").permitAll()
+                                , "/profile/create", "/oauth2/authorization/**", "/forgot-password/**").permitAll()
                         .requestMatchers("/organizer/profile", "/organizer/profile/create", "/organizer/profile/get").hasRole("HOST")
                         .anyRequest().authenticated()
                 )
