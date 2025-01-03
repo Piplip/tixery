@@ -2,6 +2,7 @@ package com.nkd.accountservice.service.impl;
 
 import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
+import com.nkd.accountservice.service.JwtService;
 import com.nkd.accountservice.service.UserDataService;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
@@ -21,6 +22,7 @@ import static com.nkd.accountservice.Tables.*;
 public class UserDataServiceImpl implements UserDataService {
 
     private final DSLContext context;
+    private final JwtService jwtService;
 
     @Override
     public String getOrganizerProfiles(String email) {
@@ -68,16 +70,31 @@ public class UserDataServiceImpl implements UserDataService {
     }
 
     @Override
-    public Response updateProfile(String profileId, Profile profile) {
-        context.update(PROFILE)
+    public Response updateProfile(String profileId, String email, Profile profile) {
+        var update = context.update(PROFILE)
                 .set(PROFILE.PROFILE_NAME, profile.getPpName())
-                .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
                 .set(PROFILE.DESCRIPTION, profile.getPpDescription())
                 .set(PROFILE.EMAIL_OPT_IN, Byte.valueOf(profile.getEmailOptIn()))
                 .set(PROFILE.CUSTOM_URL, profile.getCustomURL())
-                .set(PROFILE.SOCIAL_MEDIA_LINKS, profile.getSocialMediaLinks())
-                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileId)))
+                .set(PROFILE.SOCIAL_MEDIA_LINKS, profile.getSocialMediaLinks());
+
+        if(profile.getPpImageURL() != null){
+            update = update.set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL());
+        }
+
+        update.where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileId)))
                 .execute();
+
+        boolean isDefaultProfile = context.fetchExists(USER_ACCOUNT.join(PROFILE).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID))
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email)
+                        .and(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileId))
+                                .and(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(UInteger.valueOf(profileId))))));
+
+        if(isDefaultProfile){
+            String newToken = jwtService.generateLoginToken(email);
+            return new Response(HttpStatus.OK.name(), "Profile updated", newToken);
+        }
+
         return new Response(HttpStatus.OK.name(), "Profile updated", null);
     }
 
@@ -93,17 +110,19 @@ public class UserDataServiceImpl implements UserDataService {
         if(defaultProfileID.equals(UInteger.valueOf(profileID))){
             Optional<UInteger> nextProfileID = context.select(PROFILE.PROFILE_ID)
                     .from(USER_ACCOUNT.join(PROFILE).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID)))
-                    .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
+                    .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email).and(PROFILE.PROFILE_ID.ne(UInteger.valueOf(profileID))))
                     .orderBy(PROFILE.PROFILE_ID.asc())
                     .limit(1)
                     .fetchOptionalInto(UInteger.class);
 
             if(nextProfileID.isPresent()){
-                UInteger userDataID = context.deleteFrom(PROFILE)
+                UInteger userDataID = context.select(PROFILE.USER_DATA_ID)
+                        .from(PROFILE)
                         .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
-                        .returningResult(PROFILE.USER_DATA_ID)
                         .fetchOneInto(UInteger.class);
-
+                context.deleteFrom(PROFILE)
+                        .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                        .execute();
                 context.update(PROFILE)
                         .set(PROFILE.USER_DATA_ID, userDataID)
                         .where(PROFILE.PROFILE_ID.eq(nextProfileID.get()))
@@ -129,6 +148,17 @@ public class UserDataServiceImpl implements UserDataService {
                     .execute();
         }
 
-        return new Response(HttpStatus.OK.name(), "Profile deleted", null);
+        String newToken = jwtService.generateLoginToken(email);
+
+        return new Response(HttpStatus.OK.name(), "Profile deleted", newToken);
+    }
+
+    @Override
+    public Response checkUniqueCustomURL(String customURL) {
+        boolean isUnique = context.fetchExists(PROFILE, PROFILE.CUSTOM_URL.eq(customURL));
+        if(!isUnique){
+            return new Response(HttpStatus.OK.name(), "Unique", null);
+        }
+        return new Response(HttpStatus.BAD_REQUEST.name(), "Not Unique", null);
     }
 }

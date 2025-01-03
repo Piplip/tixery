@@ -32,6 +32,11 @@ public class UserEventListener {
                     (String) userEvent.getData().get("token"),
                     (LocalDateTime) userEvent.getData().get("expirationTime")
             );
+            case EventType.FORGOT_PASSWORD -> emailService.sendPasswordResetEmail(
+                    (String) userEvent.getData().get("email"),
+                    (String) userEvent.getData().get("code"),
+                    (LocalDateTime) userEvent.getData().get("expirationTime")
+            );
         }
     }
 }
