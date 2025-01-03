@@ -30,12 +30,17 @@ public class OrganizerDataController {
     }
 
     @PostMapping("/organizer/profile/update")
-    public Response updateProfile(@RequestParam("pid") String profileId, @RequestBody Profile profile){
-        return userDataService.updateProfile(profileId, profile);
+    public Response updateProfile(@RequestParam("pid") String profileId, @RequestParam("u") String email, @RequestBody Profile profile){
+        return userDataService.updateProfile(profileId, email, profile);
     }
 
     @DeleteMapping("/organizer/profile/delete")
     public Response deleteProfile(@RequestParam("pid") String profileId, @RequestParam("u") String email){
         return userDataService.deleteProfile(profileId, email);
+    }
+
+    @GetMapping("/organizer/profile/custom-url/check")
+    public Response checkUniqueCustomURL(@RequestParam("url") String customURL){
+        return userDataService.checkUniqueCustomURL(customURL);
     }
 }
