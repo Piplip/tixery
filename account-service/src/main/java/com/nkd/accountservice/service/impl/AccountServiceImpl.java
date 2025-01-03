@@ -248,6 +248,55 @@ public class AccountServiceImpl implements AccountService {
         return new Response(HttpStatus.OK.name(), "Token updated", jwtService.generateLoginToken(email));
     }
 
+    @Override
+    public Response handleForgotPassword(String email) {
+        String code = CommonUtils.generateRandomNumber(6);
+        redisTemplate.opsForValue().set("forgot_password_" + email, code, Duration.ofMinutes(10));
+
+        UserEvent forgotPasswordEvt = new UserEvent();
+        forgotPasswordEvt.setEventType(EventType.FORGOT_PASSWORD);
+        forgotPasswordEvt.setData(Map.of("email", email, "code", code, "expirationTime", LocalDateTime.now().plusMinutes(10)));
+        publisher.publishEvent(forgotPasswordEvt);
+
+        return new Response(HttpStatus.OK.name(), "Code sent to your email", null);
+    }
+
+    @Override
+    public Response handleForgotPasswordVerification(String email, String code) {
+        String storedCode = redisTemplate.opsForValue().get("forgot_password_" + email);
+        if(storedCode == null){
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Code expired", null);
+        }
+
+        if(!storedCode.equals(code)){
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Invalid code", null);
+        }
+
+        return new Response(HttpStatus.OK.name(), "Code verified", null);
+    }
+
+    @Override
+    public Response handleForgotPasswordReset(String email, String newPassword) {
+        String storedCode = redisTemplate.opsForValue().get("forgot_password_" + email);
+        if(storedCode == null){
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Invalid Operation", null);
+        }
+
+        UInteger credentialID = context.select(USER_ACCOUNT.CREDENTIAL_ID)
+                .from(USER_ACCOUNT)
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
+                .fetchSingleInto(UInteger.class);
+
+        context.update(CREDENTIAL)
+                .set(CREDENTIAL.PASSWORD, encoder.encode(newPassword))
+                .set(CREDENTIAL.LAST_UPDATED_AT, LocalDateTime.now())
+                .where(CREDENTIAL.CREDENTIAL_ID.eq(credentialID))
+                .execute();
+
+        redisTemplate.delete("forgot_password_" + email);
+        return new Response(HttpStatus.OK.name(), "Password reset successfully", null);
+    }
+
     private void saveOrganizerProfile(String accountID, Profile profile){
         UInteger updateProfileID;
         Optional<UInteger> profileID = context.select(PROFILE.PROFILE_ID).from(PROFILE)

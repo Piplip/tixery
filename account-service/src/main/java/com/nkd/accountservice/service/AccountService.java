@@ -16,4 +16,7 @@ public interface AccountService {
     Response handleCreateProfile(String requestID, Profile profile, String role);
     Response handleCreateOAuth2Profile(String email, Profile profile, String role);
     Response getUpdatedToken(String email);
+    Response handleForgotPassword(String email);
+    Response handleForgotPasswordVerification(String email, String code);
+    Response handleForgotPasswordReset(String email, String newPassword);
 }

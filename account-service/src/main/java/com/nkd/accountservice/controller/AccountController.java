@@ -78,8 +78,18 @@ public class AccountController {
         return accountService.getUpdatedToken(email);
     }
 
-    @GetMapping("/protected")
-    public String protectedEndpoint(){
-        return "This is a protected endpoint";
+    @PostMapping("/forgot-password")
+    public Response handleForgotPassword(@RequestParam("u") String email){
+        return accountService.handleForgotPassword(email);
+    }
+
+    @PostMapping("/forgot-password/verify")
+    public Response handleForgotPasswordVerification(@RequestParam("u") String email, @RequestParam("code") String code){
+        return accountService.handleForgotPasswordVerification(email, code);
+    }
+
+    @PostMapping("/forgot-password/reset")
+    public Response handleForgotPasswordReset(@RequestParam("u") String email, @RequestParam("password") String newPassword){
+        return accountService.handleForgotPasswordReset(email, newPassword);
     }
 }
