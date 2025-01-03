@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class EmailServiceImpl implements EmailService {
 
     private static final String NEW_ACCOUNT_VERIFICATION = "NEW ACCOUNT ACTIVATION";
+    private static final String PASSWORD_RESET = "RESET PASSWORD";
 
     private final JavaMailSender mailSender;
 
@@ -40,6 +41,15 @@ public class EmailServiceImpl implements EmailService {
             sendEmail(email, EmailUtils.getReactivateMessage(accountID, confirmationID, token, expirationTime, verifyHost), NEW_ACCOUNT_VERIFICATION);
         } catch(Exception e){
             EmailUtils.handleEmailException("Error sending reactivate email to " + email + "at " + LocalDateTime.now());
+        }
+    }
+
+    @Override
+    public void sendPasswordResetEmail(String email, String code, LocalDateTime expirationTime) {
+        try {
+            sendEmail(email, EmailUtils.getResetPasswordMessage(code, expirationTime), PASSWORD_RESET);
+        } catch(Exception e){
+            EmailUtils.handleEmailException("Error sending password reset email to " + email + "at " + LocalDateTime.now());
         }
     }
 
