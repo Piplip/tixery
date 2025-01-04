@@ -30,10 +30,16 @@ public class CustomUserDetailService implements UserDetailsService {
 
         Record4<String, String, String, RoleRoleName> record = data.get();
 
+        StringBuilder rolePrivileges = new StringBuilder();
+        rolePrivileges.append(record.component3());
+        RoleRoleName roleName = record.component4();
+        if(roleName != null){
+            rolePrivileges.append(",ROLE_").append(roleName);
+        }
         return CustomUserDetails.builder()
                 .username(record.component1())
                 .password(record.component2())
-                .rolePrivileges(record.component3() + ",ROLE_" + record.component4().name())
+                .rolePrivileges(rolePrivileges.toString())
                 .build();
     }
 
