@@ -54,13 +54,13 @@ public class UserDataServiceImpl implements UserDataService {
     }
 
     @Override
-    public Map<String, Object> getProfile(String profileId) {
+    public Map<String, Object> getProfile(String profileID) {
         Condition condition;
-        Optional<String> customURL = context.select(PROFILE.CUSTOM_URL)
-                .from(PROFILE)
-                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileId)))
-                .fetchOptionalInto(String.class);
-        condition = customURL.map(PROFILE.CUSTOM_URL::eq).orElseGet(() -> PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileId)));
+        if (profileID.matches("[0-9]+")) {
+            condition = PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID));
+        } else {
+            condition = PROFILE.CUSTOM_URL.eq(profileID);
+        }
 
         return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL, PROFILE.DESCRIPTION,
                 PROFILE.EMAIL_OPT_IN, PROFILE.CUSTOM_URL, PROFILE.SOCIAL_MEDIA_LINKS)
