@@ -6,10 +6,10 @@ spring:
   config:
     import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   datasource:
-    driver-class-name: org.postgresql.Driver
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
     url: ${POSTGRES_URL}
+    driver-class-name: org.postgresql.Driver
 
 eureka:
   instance:
