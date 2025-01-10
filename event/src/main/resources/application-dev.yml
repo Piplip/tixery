@@ -1,0 +1,4 @@
+#POSTGRES
+POSTGRES_USERNAME: postgres
+POSTGRES_PASSWORD: postgresdefaultpassword
+POSTGRES_URL: jdbc:postgresql://localhost:5432/events

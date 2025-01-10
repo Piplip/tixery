@@ -7,14 +7,14 @@ spring:
     import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   data:
     redis:
-      host: redis-18796.c294.ap-northeast-1-2.ec2.redns.redis-cloud.com
-      port: 18796
-      password: oN7pR7PlYVYmp12LHGirQrqbMAQMenGY
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
   datasource:
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/tixery_account
+    url: ${MYSQL_URL}
   mail:
     host: ${EMAIL_HOST}
     port: ${EMAIL_PORT}
@@ -42,11 +42,11 @@ spring:
       client:
         registration:
           google:
-            client-id: 753083576806-ec8f2us12a5im0qv8kar8sfb9lg3mr8r.apps.googleusercontent.com
-            client-secret: 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
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
           facebook:
-            client-id: 848995503880292
-            client-secret: e0114f99c2536fa71d91f5adc08455b3
+            client-id: ${FACEBOOK_CLIENT_ID}
+            client-secret: ${FACEBOOK_CLIENT_SECRET}
 
 
 eureka:

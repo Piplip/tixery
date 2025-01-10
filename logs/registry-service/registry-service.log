@@ -1,50 +1,77 @@
-2024-12-30 19:52:00.120 [main] INFO  o.s.c.c.c.ConfigServicePropertySourceLocator - Fetching config from server at : http://localhost:8888
-2024-12-30 19:52:00.149 [main] INFO  o.s.c.c.c.ConfigServicePropertySourceLocator - Located environment: name=registry-server, profiles=[default], label=null, version=null, state=null
-2024-12-30 19:52:00.150 [main] INFO  o.s.c.b.c.PropertySourceBootstrapConfiguration - Located property source: [BootstrapPropertySource {name='bootstrapProperties-configClient'}]
-2024-12-30 19:52:00.154 [main] INFO  c.nkd.registry.RegistryApplication - No active profile set, falling back to 1 default profile: "default"
-2024-12-30 19:52:00.167 [main] INFO  o.s.c.c.c.ConfigServerConfigDataLoader - Fetching config from server at : http://localhost:8888
-2024-12-30 19:52:00.167 [main] INFO  o.s.c.c.c.ConfigServerConfigDataLoader - Located environment: name=registry-server, profiles=[default], label=null, version=null, state=null
-2024-12-30 19:52:00.941 [main] INFO  o.s.cloud.context.scope.GenericScope - BeanFactory id=758baaea-e3b6-3f4f-b86d-147ae038faa0
-2024-12-30 19:52:01.158 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8761 (http)
-2024-12-30 19:52:01.178 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8761"]
-2024-12-30 19:52:01.181 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
-2024-12-30 19:52:01.182 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
-2024-12-30 19:52:01.246 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2024-12-30 19:52:01.246 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1079 ms
-2024-12-30 19:52:01.987 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using JSON encoding codec LegacyJacksonJson
-2024-12-30 19:52:01.988 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using JSON decoding codec LegacyJacksonJson
-2024-12-30 19:52:02.140 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using XML encoding codec XStreamXml
-2024-12-30 19:52:02.140 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using XML decoding codec XStreamXml
-2024-12-30 19:52:02.914 [main] WARN  o.s.c.l.c.LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
-2024-12-30 19:52:02.929 [main] INFO  o.s.c.n.eureka.InstanceInfoFactory - Setting initial instance status as: STARTING
-2024-12-30 19:52:02.946 [main] INFO  c.netflix.discovery.DiscoveryClient - Initializing Eureka in region us-east-1
-2024-12-30 19:52:02.946 [main] INFO  c.netflix.discovery.DiscoveryClient - Client configured to neither register nor query for data.
-2024-12-30 19:52:02.948 [main] INFO  c.netflix.discovery.DiscoveryClient - Discovery Client initialized at timestamp 1735563122947 with initial instances count: 0
-2024-12-30 19:52:02.980 [main] INFO  c.n.e.DefaultEurekaServerContext - Initializing ...
-2024-12-30 19:52:02.982 [main] INFO  c.n.eureka.cluster.PeerEurekaNodes - Adding new peer nodes [http://localhost:8761/eureka/]
-2024-12-30 19:52:03.094 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using JSON encoding codec LegacyJacksonJson
-2024-12-30 19:52:03.095 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using JSON decoding codec LegacyJacksonJson
-2024-12-30 19:52:03.095 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using XML encoding codec XStreamXml
-2024-12-30 19:52:03.095 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using XML decoding codec XStreamXml
-2024-12-30 19:52:03.125 [main] INFO  c.n.eureka.cluster.PeerEurekaNodes - Replica node URL:  http://localhost:8761/eureka/
-2024-12-30 19:52:03.136 [main] INFO  c.n.e.r.AbstractInstanceRegistry - Finished initializing remote region registries. All known remote regions: []
-2024-12-30 19:52:03.137 [main] INFO  c.n.e.DefaultEurekaServerContext - Initialized
-2024-12-30 19:52:03.147 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
-2024-12-30 19:52:03.236 [main] INFO  o.s.c.n.e.s.EurekaServiceRegistry - Registering application REGISTRY-SERVER with eureka with status UP
-2024-12-30 19:52:03.239 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8761"]
-2024-12-30 19:52:03.249 [Thread-10] INFO  o.s.c.n.e.s.EurekaServerBootstrap - isAws returned false
-2024-12-30 19:52:03.250 [Thread-10] INFO  o.s.c.n.e.s.EurekaServerBootstrap - Initialized server context
-2024-12-30 19:52:03.250 [Thread-10] INFO  c.n.e.r.PeerAwareInstanceRegistryImpl - Got 1 instances from neighboring DS node
-2024-12-30 19:52:03.250 [Thread-10] INFO  c.n.e.r.PeerAwareInstanceRegistryImpl - Renew threshold is: 1
-2024-12-30 19:52:03.250 [Thread-10] INFO  c.n.e.r.PeerAwareInstanceRegistryImpl - Changing status to UP
-2024-12-30 19:52:03.253 [Thread-10] INFO  o.s.c.n.e.s.EurekaServerInitializerConfiguration - Started Eureka Server
-2024-12-30 19:52:03.261 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8761 (http) with context path '/'
-2024-12-30 19:52:03.262 [main] INFO  o.s.c.n.e.s.EurekaAutoServiceRegistration - Updating port to 8761
-2024-12-30 19:52:03.283 [main] INFO  c.nkd.registry.RegistryApplication - Started RegistryApplication in 4.473 seconds (process running for 5.611)
-2024-12-30 19:52:03.986 [RMI TCP Connection(1)-10.2.66.42] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2024-12-30 19:52:03.986 [RMI TCP Connection(1)-10.2.66.42] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
-2024-12-30 19:52:03.989 [RMI TCP Connection(1)-10.2.66.42] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
-2024-12-30 19:52:12.063 [http-nio-8761-exec-2] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance GATEWAY/acer:gateway:4001 with status UP (replication=false)
-2024-12-30 19:52:12.998 [http-nio-8761-exec-3] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance GATEWAY/acer:gateway:4001 with status UP (replication=true)
-2024-12-30 19:52:25.342 [http-nio-8761-exec-5] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance ACCOUNT-SERVICE/acer:account-service:10000 with status UP (replication=false)
-2024-12-30 19:52:25.918 [http-nio-8761-exec-6] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance ACCOUNT-SERVICE/acer:account-service:10000 with status UP (replication=true)
+2025-01-11 00:10:42.057 [main] INFO  o.s.c.c.c.ConfigServicePropertySourceLocator - Fetching config from server at : http://localhost:8888
+2025-01-11 00:10:42.077 [main] INFO  o.s.c.c.c.ConfigServicePropertySourceLocator - Located environment: name=registry-server, profiles=[default], label=null, version=null, state=null
+2025-01-11 00:10:42.078 [main] INFO  o.s.c.b.c.PropertySourceBootstrapConfiguration - Located property source: [BootstrapPropertySource {name='bootstrapProperties-configClient'}]
+2025-01-11 00:10:42.082 [main] INFO  c.nkd.registry.RegistryApplication - No active profile set, falling back to 1 default profile: "default"
+2025-01-11 00:10:42.092 [main] INFO  o.s.c.c.c.ConfigServerConfigDataLoader - Fetching config from server at : http://localhost:8888
+2025-01-11 00:10:42.093 [main] INFO  o.s.c.c.c.ConfigServerConfigDataLoader - Located environment: name=registry-server, profiles=[default], label=null, version=null, state=null
+2025-01-11 00:10:42.759 [main] INFO  o.s.cloud.context.scope.GenericScope - BeanFactory id=758baaea-e3b6-3f4f-b86d-147ae038faa0
+2025-01-11 00:10:42.945 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8761 (http)
+2025-01-11 00:10:42.961 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8761"]
+2025-01-11 00:10:42.964 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-01-11 00:10:42.965 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2025-01-11 00:10:43.019 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-01-11 00:10:43.019 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 926 ms
+2025-01-11 00:10:43.760 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using JSON encoding codec LegacyJacksonJson
+2025-01-11 00:10:43.761 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using JSON decoding codec LegacyJacksonJson
+2025-01-11 00:10:43.913 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using XML encoding codec XStreamXml
+2025-01-11 00:10:43.914 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using XML decoding codec XStreamXml
+2025-01-11 00:10:44.706 [main] WARN  o.s.c.l.c.LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2025-01-11 00:10:44.724 [main] INFO  o.s.c.n.eureka.InstanceInfoFactory - Setting initial instance status as: STARTING
+2025-01-11 00:10:44.748 [main] INFO  c.netflix.discovery.DiscoveryClient - Initializing Eureka in region us-east-1
+2025-01-11 00:10:44.748 [main] INFO  c.netflix.discovery.DiscoveryClient - Client configured to neither register nor query for data.
+2025-01-11 00:10:44.750 [main] INFO  c.netflix.discovery.DiscoveryClient - Discovery Client initialized at timestamp 1736529044749 with initial instances count: 0
+2025-01-11 00:10:44.795 [main] INFO  c.n.e.DefaultEurekaServerContext - Initializing ...
+2025-01-11 00:10:44.797 [main] INFO  c.n.eureka.cluster.PeerEurekaNodes - Adding new peer nodes [http://localhost:8761/eureka/]
+2025-01-11 00:10:44.937 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using JSON encoding codec LegacyJacksonJson
+2025-01-11 00:10:44.937 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using JSON decoding codec LegacyJacksonJson
+2025-01-11 00:10:44.938 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using XML encoding codec XStreamXml
+2025-01-11 00:10:44.938 [main] INFO  c.n.d.p.DiscoveryJerseyProvider - Using XML decoding codec XStreamXml
+2025-01-11 00:10:44.971 [main] INFO  c.n.eureka.cluster.PeerEurekaNodes - Replica node URL:  http://localhost:8761/eureka/
+2025-01-11 00:10:44.982 [main] INFO  c.n.e.r.AbstractInstanceRegistry - Finished initializing remote region registries. All known remote regions: []
+2025-01-11 00:10:44.982 [main] INFO  c.n.e.DefaultEurekaServerContext - Initialized
+2025-01-11 00:10:44.993 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
+2025-01-11 00:10:45.063 [main] INFO  o.s.c.n.e.s.EurekaServiceRegistry - Registering application REGISTRY-SERVER with eureka with status UP
+2025-01-11 00:10:45.064 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8761"]
+2025-01-11 00:10:45.073 [Thread-10] INFO  o.s.c.n.e.s.EurekaServerBootstrap - isAws returned false
+2025-01-11 00:10:45.073 [Thread-10] INFO  o.s.c.n.e.s.EurekaServerBootstrap - Initialized server context
+2025-01-11 00:10:45.073 [Thread-10] INFO  c.n.e.r.PeerAwareInstanceRegistryImpl - Got 1 instances from neighboring DS node
+2025-01-11 00:10:45.074 [Thread-10] INFO  c.n.e.r.PeerAwareInstanceRegistryImpl - Renew threshold is: 1
+2025-01-11 00:10:45.074 [Thread-10] INFO  c.n.e.r.PeerAwareInstanceRegistryImpl - Changing status to UP
+2025-01-11 00:10:45.076 [Thread-10] INFO  o.s.c.n.e.s.EurekaServerInitializerConfiguration - Started Eureka Server
+2025-01-11 00:10:45.083 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8761 (http) with context path '/'
+2025-01-11 00:10:45.083 [main] INFO  o.s.c.n.e.s.EurekaAutoServiceRegistration - Updating port to 8761
+2025-01-11 00:10:45.106 [main] INFO  c.nkd.registry.RegistryApplication - Started RegistryApplication in 4.376 seconds (process running for 5.54)
+2025-01-11 00:10:45.281 [RMI TCP Connection(2)-10.2.66.123] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-01-11 00:10:45.282 [RMI TCP Connection(2)-10.2.66.123] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-01-11 00:10:45.285 [RMI TCP Connection(2)-10.2.66.123] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 3 ms
+2025-01-11 00:10:59.825 [http-nio-8761-exec-2] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance GATEWAY/acer:gateway:4001 with status UP (replication=false)
+2025-01-11 00:11:00.474 [http-nio-8761-exec-3] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance GATEWAY/acer:gateway:4001 with status UP (replication=true)
+2025-01-11 00:11:45.074 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms
+2025-01-11 00:12:45.075 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms
+2025-01-11 00:13:31.721 [http-nio-8761-exec-10] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance EVENT-SERVICE/acer:event-service:9999 with status UP (replication=false)
+2025-01-11 00:13:32.226 [http-nio-8761-exec-1] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance EVENT-SERVICE/acer:event-service:9999 with status UP (replication=true)
+2025-01-11 00:13:45.088 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 12ms
+2025-01-11 00:14:45.088 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms
+2025-01-11 00:15:45.097 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 8ms
+2025-01-11 00:16:45.101 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 4ms
+2025-01-11 00:17:45.110 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 8ms
+2025-01-11 00:18:45.113 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 3ms
+2025-01-11 00:19:45.119 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 5ms
+2025-01-11 00:20:45.130 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 11ms
+2025-01-11 00:21:45.130 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms
+2025-01-11 00:21:54.071 [http-nio-8761-exec-10] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance EVENT-SERVICE/acer:event-service:9999 with status DOWN (replication=false)
+2025-01-11 00:21:54.594 [http-nio-8761-exec-1] INFO  c.n.e.r.AbstractInstanceRegistry - Registered instance EVENT-SERVICE/acer:event-service:9999 with status DOWN (replication=true)
+2025-01-11 00:21:57.108 [http-nio-8761-exec-9] INFO  c.n.e.r.AbstractInstanceRegistry - Cancelled instance EVENT-SERVICE/acer:event-service:9999 (replication=false)
+2025-01-11 00:21:57.643 [http-nio-8761-exec-5] WARN  c.n.e.r.AbstractInstanceRegistry - DS: Registry: cancel failed because Lease is not registered for: EVENT-SERVICE/acer:event-service:9999
+2025-01-11 00:21:57.645 [http-nio-8761-exec-5] INFO  c.n.e.resources.InstanceResource - Not Found (Cancel): EVENT-SERVICE - acer:event-service:9999
+2025-01-11 00:21:57.646 [TaskBatchingWorker-target_localhost-14] WARN  c.n.eureka.cluster.ReplicationTask - The replication of task EVENT-SERVICE/acer:event-service:9999:Cancel@localhost failed with response code 404
+2025-01-11 00:21:57.646 [TaskBatchingWorker-target_localhost-14] WARN  c.n.eureka.cluster.PeerEurekaNode - EVENT-SERVICE/acer:event-service:9999:Cancel@localhost: missing entry.
+2025-01-11 00:22:45.131 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms
+2025-01-11 00:23:45.134 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 3ms
+2025-01-11 00:24:45.136 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 1ms
+2025-01-11 00:25:44.988 [ReplicaAwareInstanceRegistry - RenewalThresholdUpdater] INFO  c.n.e.r.PeerAwareInstanceRegistryImpl - Current renewal threshold is : 3
+2025-01-11 00:25:45.148 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 12ms
+2025-01-11 00:26:45.149 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms
+2025-01-11 00:27:45.149 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms
+2025-01-11 00:28:45.150 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms
+2025-01-11 00:29:45.150 [Eureka-EvictionTimer] INFO  c.n.e.r.AbstractInstanceRegistry - Running the evict task with compensationTime 0ms

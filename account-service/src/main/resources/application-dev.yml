@@ -1,9 +1,23 @@
 #Database
 MYSQL_USERNAME: root
 MYSQL_PASSWORD: somenewpassword123
+MYSQL_URL: jdbc:mysql://localhost:3306/tixery_account
 
 #Email_Config
 EMAIL_HOST: smtp.gmail.com
 EMAIL_PORT: 587
 EMAIL_USERNAME: nguyenkhanhdu956@gmail.com
 EMAIL_PASSWORD: qxtl akwe ogrs icnb
+
+#Redis
+REDIS_HOST: redis-18796.c294.ap-northeast-1-2.ec2.redns.redis-cloud.com
+REDIS_PORT: 18796
+REDIS_PASSWORD: oN7pR7PlYVYmp12LHGirQrqbMAQMenGY
+
+#GOOGLE OAUTH2
+GOOGLE_CLIENT_ID: 753083576806-ec8f2us12a5im0qv8kar8sfb9lg3mr8r.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET: 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
+
+#FACEBOOK OAUTH2
+FACEBOOK_CLIENT_ID: 848995503880292
+FACEBOOK_CLIENT_SECRET: e0114f99c2536fa71d91f5adc08455b3
