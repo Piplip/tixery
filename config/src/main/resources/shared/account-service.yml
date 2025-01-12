@@ -4,3 +4,6 @@ server:
   port: 10000
 
 VERIFY_EMAIL_HOST: http://localhost:4001
+
+jwt:
+  secret: aW8uanNvbndlYnRva2VuLmltcGwuc2VjdXJpdHkuRGVmYXVsdFNlY3JldEtleUJ1aWxkZXJANjI1ZGIwZTA=
