@@ -10,9 +10,14 @@ spring:
 
       routes:
         - id: accounts_route
-          uri: ${ACCOUNT_ROUTE_URI:http://localhost:10000}
+          uri: lb://account-service
           predicates:
             - Path=/accounts/**
+        - id: events_route
+          uri: lb://event-service
+          predicates:
+            - Path=/events/**
+
       globalcors:
         cors-configurations:
           '[/**]':
