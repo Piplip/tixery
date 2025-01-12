@@ -5,7 +5,6 @@ import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.service.AccountService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -91,5 +90,15 @@ public class AccountController {
     @PostMapping("/forgot-password/reset")
     public Response handleForgotPasswordReset(@RequestParam("u") String email, @RequestParam("password") String newPassword){
         return accountService.handleForgotPasswordReset(email, newPassword);
+    }
+
+    @GetMapping("internal/user/id")
+    public Integer getUserID(@RequestParam("email") String email){
+        return accountService.getUserID(email);
+    }
+
+    @GetMapping("/get/jwt")
+    public String getJWT(@RequestParam String email){
+        return accountService.generateInternalJWT(email);
     }
 }

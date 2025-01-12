@@ -297,6 +297,18 @@ public class AccountServiceImpl implements AccountService {
         return new Response(HttpStatus.OK.name(), "Password reset successfully", null);
     }
 
+    @Override
+    public Integer getUserID(String email) {
+        return context.select(USER_ACCOUNT.ACCOUNT_ID).from(USER_ACCOUNT)
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
+                .fetchSingleInto(Integer.class);
+    }
+
+    @Override
+    public String generateInternalJWT(String email) {
+        return jwtService.generateInternalToken(email);
+    }
+
     private void saveOrganizerProfile(String accountID, Profile profile){
         UInteger updateProfileID;
         Optional<UInteger> profileID = context.select(PROFILE.PROFILE_ID).from(PROFILE)

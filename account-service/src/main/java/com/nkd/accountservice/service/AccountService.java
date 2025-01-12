@@ -19,4 +19,6 @@ public interface AccountService {
     Response handleForgotPassword(String email);
     Response handleForgotPasswordVerification(String email, String code);
     Response handleForgotPasswordReset(String email, String newPassword);
+    Integer getUserID(String email);
+    String generateInternalJWT(String email);
 }
