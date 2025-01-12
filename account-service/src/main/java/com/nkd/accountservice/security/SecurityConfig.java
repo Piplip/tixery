@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup"
                                 , "/profile/create", "/oauth2/authorization/**", "/forgot-password/**").permitAll()
                         .requestMatchers("/organizer/profile", "/organizer/profile/create", "/organizer/profile/get").hasRole("HOST")
+                        .requestMatchers("/internal//**").hasRole("INTERNAL")
                         .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)

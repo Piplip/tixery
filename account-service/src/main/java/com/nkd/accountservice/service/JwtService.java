@@ -9,4 +9,5 @@ public interface JwtService {
     String extractEmail(String token);
     boolean isTokenExpired(String token);
     String extendSession(String token);
+    String generateInternalToken(String email);
 }

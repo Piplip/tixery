@@ -15,7 +15,7 @@ public class SecurityConfig {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/accounts/**").permitAll()
+                        .pathMatchers("/accounts/**", "/events/**").permitAll()
                         .anyExchange().denyAll()
                 )
                 .logout(ServerHttpSecurity.LogoutSpec::disable)
