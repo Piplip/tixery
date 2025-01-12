@@ -1,0 +1,9 @@
+#POSTGRES
+POSTGRES_USERNAME: postgres
+POSTGRES_PASSWORD: postgresdefaultpassword
+POSTGRES_URL: jdbc:postgresql://localhost:5432/events
+
+#Redis
+REDIS_HOST: redis-18796.c294.ap-northeast-1-2.ec2.redns.redis-cloud.com
+REDIS_PORT: 18796
+REDIS_PASSWORD: oN7pR7PlYVYmp12LHGirQrqbMAQMenGY
