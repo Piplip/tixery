@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: event-service
+  profiles:
+    active: dev
+  config:
+    import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+  datasource:
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    url: ${POSTGRES_URL}
+    driver-class-name: org.postgresql.Driver
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 5000
+            read-timeout: 10000
+            logger-level: full
+
+eureka:
+  instance:
+    hostname: localhost
+logging:
+  level:
+    org.springframework.security: DEBUG
