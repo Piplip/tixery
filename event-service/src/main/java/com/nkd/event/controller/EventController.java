@@ -7,6 +7,9 @@ import com.nkd.event.service.EventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 public class EventController {
 
@@ -26,6 +29,11 @@ public class EventController {
     public Response createEvent(@RequestParam("step") String step, @RequestParam(value = "eid") String eventID, @RequestBody EventDTO eventDTO) {
         return eventService.createEvent(eventDTO, eventID, step);
     }
+
+    @GetMapping("/get")
+    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID) {
+        return eventService.getAllEvents(userID);
+    }
     
     @PostMapping("/tickets/add")
     public Response addTicket(@RequestParam(name = "eid") String eventID, @RequestBody TicketDTO ticketDTO, @RequestParam("timezone") Integer timezone) {
@@ -37,7 +45,6 @@ public class EventController {
         return eventService.updateTicket(ticketID, ticketDTO, timezone);
     }
 
-    // TODO: Figure out why can't call to this endpoint
     @PostMapping("/tickets/remove")
     public Response deleteTicket(@RequestParam(name = "tid") Integer ticketID) {
         return eventService.deleteTicket(ticketID);
