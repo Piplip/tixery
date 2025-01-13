@@ -22,10 +22,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.nkd.event.Tables.EVENTS;
 import static com.nkd.event.Tables.TICKETTYPES;
+import static org.jooq.impl.DSL.sum;
 
 @Service
 @RequiredArgsConstructor
@@ -204,6 +206,7 @@ public class EventService {
                 .set(TICKETTYPES.ABSORB_FEE, ticketDTO.getTicketType().equalsIgnoreCase("donation") ? ticketDTO.getAbsorbFee() : null)
                 .set(TICKETTYPES.MIN_PER_ORDER, ticketDTO.getMinPerOrder())
                 .set(TICKETTYPES.MAX_PER_ORDER, ticketDTO.getMaxPerOrder())
+                .set(TICKETTYPES.UPDATED_AT, OffsetDateTime.now())
                 .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticketID))
                 .execute();
 
@@ -214,6 +217,7 @@ public class EventService {
         }
     }
 
+    @Transactional
     public Response deleteTicket(Integer ticketID) {
         int rowsDeleted = context.deleteFrom(TICKETTYPES)
                 .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticketID))
@@ -224,5 +228,25 @@ public class EventService {
         } else {
             return new Response(HttpStatus.NOT_FOUND.name(), "Ticket not found", null);
         }
+    }
+
+    // TODO: Gross, sold tickets will be implement later
+    public List<Map<String, Object>> getAllEvents(Integer userID) {
+        var eventData = context.select(EVENTS.EVENT_ID, EVENTS.PROFILE_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.LOCATION, EVENTS.START_TIME, EVENTS.STATUS)
+                .from(EVENTS)
+                .where(EVENTS.ORGANIZER_ID.eq(userID))
+                .orderBy(EVENTS.START_TIME.desc())
+                .fetchMaps();
+    
+        eventData.forEach(event -> {
+            Integer ticketCount = context.select(sum(TICKETTYPES.QUANTITY))
+                    .from(TICKETTYPES)
+                    .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")))
+                    .fetchOneInto(Integer.class);
+            event.replace("images", List.of(event.get("images")).getFirst());
+            event.put("ticketCount", ticketCount);
+        });
+    
+        return eventData;
     }
 }
