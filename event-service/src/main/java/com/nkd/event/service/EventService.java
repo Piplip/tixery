@@ -23,6 +23,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.nkd.event.Tables.EVENTS;
@@ -94,6 +95,7 @@ public class EventService {
                         .set(EVENTS.LOCATION, locationJsonb)
                         .set(EVENTS.FAQ, faqJsonbField)
                         .set(EVENTS.UPDATED_AT, OffsetDateTime.now().withOffsetSameLocal(offset))
+                        .set(EVENTS.TIMEZONE, eventDTO.getTimezone())
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
             }
@@ -237,16 +239,42 @@ public class EventService {
                 .where(EVENTS.ORGANIZER_ID.eq(userID))
                 .orderBy(EVENTS.START_TIME.desc())
                 .fetchMaps();
-    
+
         eventData.forEach(event -> {
-            Integer ticketCount = context.select(sum(TICKETTYPES.QUANTITY))
+            Optional<Integer> ticketCount = context.select(sum(TICKETTYPES.QUANTITY))
                     .from(TICKETTYPES)
                     .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")))
-                    .fetchOneInto(Integer.class);
-            event.replace("images", List.of(event.get("images")).getFirst());
-            event.put("ticketCount", ticketCount);
+                    .fetchOptionalInto(Integer.class);
+            Object images = event.get("images");
+            event.replace("images", images);
+            event.put("ticketCount", ticketCount.orElse(0));
         });
-    
+
         return eventData;
+    }
+
+    public Map<String, Object> getEvent(String eventID) {
+        var eventRecord = context.select(
+                        EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.DESCRIPTION,
+                        EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION,
+                        EVENTS.CATEGORY, EVENTS.SUB_CATEGORY, EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY, EVENTS.FAQ,
+                        EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.TAGS
+                )
+                .from(EVENTS)
+                .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchOne();
+
+        if (eventRecord == null) {
+            return null;
+        }
+        var tickets = context.selectFrom(TICKETTYPES)
+                .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchMaps();
+        
+        Map<String, Object> eventData = eventRecord.intoMap();
+        eventData.put("tickets", tickets);
+        
+        return eventData;
+        
     }
 }

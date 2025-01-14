@@ -1,307 +1,43 @@
-2025-01-13 00:00:28.370 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:00:28.511 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:00:28.511 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:00:28.511 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:00:28.511 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:00:28.512 [parallel-8] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:00:28.514 [parallel-8] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:00:28.534 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:00:28.534 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:00:28.534 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:00:28.534 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:00:28.534 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:00:28.534 [parallel-1] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:00:28.534 [parallel-1] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:00:38.967 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:00:38.968 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/delete&tid=2' doesn't match 'null /accounts/**'
-2025-01-13 00:00:38.969 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:00:38.969 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=2'; against '/events/**'
-2025-01-13 00:00:38.971 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:00:38.971 [parallel-3] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=2' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:00:38.975 [parallel-3] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:00:38.998 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:00:38.998 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'DELETE /events/tickets/delete&tid=2' doesn't match 'null /accounts/**'
-2025-01-13 00:00:38.998 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:00:38.998 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=2'; against '/events/**'
-2025-01-13 00:00:38.998 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:00:38.998 [parallel-4] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=2' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:00:38.998 [parallel-4] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:04:40.482 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
-2025-01-13 00:09:40.502 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
-2025-01-13 00:11:20.311 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:11:20.312 [parallel-5] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:11:20.312 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:11:20.312 [parallel-5] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:11:20.312 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:11:20.313 [parallel-5] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:11:20.315 [parallel-5] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:11:20.331 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:11:20.331 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:11:20.331 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:11:20.331 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:11:20.331 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:11:20.331 [parallel-6] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:11:20.331 [parallel-6] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:11:37.085 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:11:37.085 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/delete&tid=3' doesn't match 'null /accounts/**'
-2025-01-13 00:11:37.085 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:11:37.085 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=3'; against '/events/**'
-2025-01-13 00:11:37.085 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:11:37.085 [parallel-8] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=3' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:11:37.087 [parallel-8] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:11:37.095 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:11:37.095 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'DELETE /events/tickets/delete&tid=3' doesn't match 'null /accounts/**'
-2025-01-13 00:11:37.095 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:11:37.096 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=3'; against '/events/**'
-2025-01-13 00:11:37.096 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:11:37.096 [parallel-1] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=3' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:11:37.096 [parallel-1] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:14:40.524 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
-2025-01-13 00:19:40.537 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
-2025-01-13 00:23:35.953 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:23:35.954 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/accounts/organizer/profile'; against '/accounts/**'
-2025-01-13 00:23:35.954 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:23:35.955 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /accounts/organizer/profile' doesn't match 'null /events/**'
-2025-01-13 00:23:35.955 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:23:35.955 [parallel-2] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/accounts/organizer/profile' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:23:35.956 [parallel-2] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:23:35.977 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:23:35.977 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/accounts/organizer/profile'; against '/accounts/**'
-2025-01-13 00:23:35.977 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:23:35.977 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'GET /accounts/organizer/profile' doesn't match 'null /events/**'
-2025-01-13 00:23:35.977 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:23:35.977 [parallel-3] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/accounts/organizer/profile' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:23:35.977 [parallel-3] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:23:39.688 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:23:39.688 [parallel-5] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/create/request' doesn't match 'null /accounts/**'
-2025-01-13 00:23:39.688 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:23:39.688 [parallel-5] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/create/request'; against '/events/**'
-2025-01-13 00:23:39.688 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:23:39.688 [parallel-5] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/create/request' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:23:39.688 [parallel-5] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:23:39.700 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:23:39.700 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/create/request' doesn't match 'null /accounts/**'
-2025-01-13 00:23:39.700 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:23:39.700 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/create/request'; against '/events/**'
-2025-01-13 00:23:39.700 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:23:39.700 [parallel-6] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/create/request' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:23:39.701 [parallel-6] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:23:42.200 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:23:42.200 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/accounts/internal/user/id'; against '/accounts/**'
-2025-01-13 00:23:42.200 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:23:42.201 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'GET /accounts/internal/user/id' doesn't match 'null /events/**'
-2025-01-13 00:23:42.201 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:23:42.201 [parallel-8] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/accounts/internal/user/id' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:23:42.201 [parallel-8] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:24:17.933 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:24:17.934 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/create' doesn't match 'null /accounts/**'
-2025-01-13 00:24:17.934 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:24:17.934 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/create'; against '/events/**'
-2025-01-13 00:24:17.934 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:24:17.934 [parallel-1] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/create' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:24:17.934 [parallel-1] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:24:17.943 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:24:17.943 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/create' doesn't match 'null /accounts/**'
-2025-01-13 00:24:17.943 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:24:17.943 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/create'; against '/events/**'
-2025-01-13 00:24:17.944 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:24:17.944 [parallel-2] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/create' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:24:17.944 [parallel-2] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:24:41.176 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
-2025-01-13 00:24:44.170 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:24:44.171 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:24:44.171 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:24:44.171 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:24:44.171 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:24:44.171 [parallel-4] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:24:44.171 [parallel-4] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:24:44.181 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:24:44.181 [parallel-5] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:24:44.181 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:24:44.181 [parallel-5] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:24:44.181 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:24:44.181 [parallel-5] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:24:44.181 [parallel-5] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:24:58.538 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:24:58.538 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/delete&tid=4' doesn't match 'null /accounts/**'
-2025-01-13 00:24:58.538 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:24:58.538 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=4'; against '/events/**'
-2025-01-13 00:24:58.539 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:24:58.539 [parallel-6] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=4' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:24:58.539 [parallel-6] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:24:58.549 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:24:58.549 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'DELETE /events/tickets/delete&tid=4' doesn't match 'null /accounts/**'
-2025-01-13 00:24:58.549 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:24:58.549 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=4'; against '/events/**'
-2025-01-13 00:24:58.549 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:24:58.549 [parallel-7] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=4' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:24:58.549 [parallel-7] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:27:38.164 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:27:38.170 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:27:38.170 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:27:38.170 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:27:38.170 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:27:38.171 [parallel-1] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:27:38.172 [parallel-1] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:27:38.189 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:27:38.189 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:27:38.189 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:27:38.189 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:27:38.189 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:27:38.189 [parallel-2] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:27:38.189 [parallel-2] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:27:44.483 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:27:44.484 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/delete&tid=5' doesn't match 'null /accounts/**'
-2025-01-13 00:27:44.484 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:27:44.484 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=5'; against '/events/**'
-2025-01-13 00:27:44.484 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:27:44.484 [parallel-4] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=5' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:27:44.484 [parallel-4] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:27:44.498 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:27:44.498 [parallel-5] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'DELETE /events/tickets/delete&tid=5' doesn't match 'null /accounts/**'
-2025-01-13 00:27:44.498 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:27:44.498 [parallel-5] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=5'; against '/events/**'
-2025-01-13 00:27:44.498 [parallel-5] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:27:44.498 [parallel-5] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=5' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:27:44.498 [parallel-5] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:29:05.958 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:29:05.959 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:29:05.959 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:29:05.959 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:29:05.959 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:29:05.959 [parallel-6] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:29:05.959 [parallel-6] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:29:05.968 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:29:05.968 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:29:05.968 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:29:05.968 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:29:05.968 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:29:05.968 [parallel-7] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:29:05.968 [parallel-7] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:29:17.660 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:29:17.661 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/delete&tid=6' doesn't match 'null /accounts/**'
-2025-01-13 00:29:17.661 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:29:17.661 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=6'; against '/events/**'
-2025-01-13 00:29:17.661 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:29:17.661 [parallel-1] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=6' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:29:17.661 [parallel-1] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:29:17.670 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:29:17.670 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/delete&tid=6' doesn't match 'null /accounts/**'
-2025-01-13 00:29:17.670 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:29:17.670 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=6'; against '/events/**'
-2025-01-13 00:29:17.670 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:29:17.670 [parallel-2] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=6' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:29:17.671 [parallel-2] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:29:44.174 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
-2025-01-13 00:31:02.840 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:31:02.840 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:31:02.840 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:31:02.840 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:31:02.840 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:31:02.840 [parallel-3] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:31:02.840 [parallel-3] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:31:02.848 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:31:02.849 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:31:02.849 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:31:02.849 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:31:02.849 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:31:02.849 [parallel-4] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:31:02.849 [parallel-4] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:31:02.852 [parallel-4] WARN  o.s.c.l.core.RoundRobinLoadBalancer - No servers available for service: event-service
-2025-01-13 00:31:38.966 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:31:38.966 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:31:38.966 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:31:38.966 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:31:38.966 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:31:38.966 [parallel-6] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:31:38.967 [parallel-6] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:31:38.983 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:31:38.983 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:31:38.983 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:31:38.983 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:31:38.983 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:31:38.983 [parallel-7] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:31:38.984 [parallel-7] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:31:49.581 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:31:49.582 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/delete&tid=7' doesn't match 'null /accounts/**'
-2025-01-13 00:31:49.582 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:31:49.582 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=7'; against '/events/**'
-2025-01-13 00:31:49.582 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:31:49.582 [parallel-1] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=7' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:31:49.582 [parallel-1] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:31:49.591 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:31:49.591 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/delete&tid=7' doesn't match 'null /accounts/**'
-2025-01-13 00:31:49.591 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:31:49.592 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/delete&tid=7'; against '/events/**'
-2025-01-13 00:31:49.592 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:31:49.592 [parallel-2] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/delete&tid=7' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:31:49.592 [parallel-2] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:33:08.359 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:33:08.361 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:33:08.361 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:33:08.361 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:33:08.361 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:33:08.361 [parallel-3] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:33:08.361 [parallel-3] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:33:08.375 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:33:08.375 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:33:08.375 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:33:08.375 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:33:08.375 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:33:08.375 [parallel-4] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:33:08.375 [parallel-4] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:33:29.302 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:33:29.302 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/remove&tid=8' doesn't match 'null /accounts/**'
-2025-01-13 00:33:29.302 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:33:29.302 [parallel-6] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/remove&tid=8'; against '/events/**'
-2025-01-13 00:33:29.302 [parallel-6] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:33:29.302 [parallel-6] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/remove&tid=8' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:33:29.303 [parallel-6] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:33:29.310 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:33:29.310 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/remove&tid=8' doesn't match 'null /accounts/**'
-2025-01-13 00:33:29.310 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:33:29.310 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/remove&tid=8'; against '/events/**'
-2025-01-13 00:33:29.310 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:33:29.311 [parallel-7] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/remove&tid=8' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:33:29.311 [parallel-7] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:34:44.201 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
-2025-01-13 00:34:51.185 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:34:51.185 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:34:51.185 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:34:51.185 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:34:51.185 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:34:51.186 [parallel-8] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:34:51.186 [parallel-8] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:34:51.194 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:34:51.194 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
-2025-01-13 00:34:51.194 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:34:51.194 [parallel-1] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
-2025-01-13 00:34:51.194 [parallel-1] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:34:51.194 [parallel-1] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:34:51.194 [parallel-1] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:34:59.513 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:34:59.513 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/remove&tid=9' doesn't match 'null /accounts/**'
-2025-01-13 00:34:59.513 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:34:59.513 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/remove&tid=9'; against '/events/**'
-2025-01-13 00:34:59.513 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:34:59.514 [parallel-3] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/remove&tid=9' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:34:59.514 [parallel-3] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:34:59.522 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
-2025-01-13 00:34:59.522 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/remove&tid=9' doesn't match 'null /accounts/**'
-2025-01-13 00:34:59.522 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
-2025-01-13 00:34:59.522 [parallel-4] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/remove&tid=9'; against '/events/**'
-2025-01-13 00:34:59.522 [parallel-4] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
-2025-01-13 00:34:59.522 [parallel-4] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/remove&tid=9' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x0000027cb05ded68@1808c02
-2025-01-13 00:34:59.522 [parallel-4] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
-2025-01-13 00:36:41.130 [SpringApplicationShutdownHook] INFO  o.s.c.n.e.s.EurekaServiceRegistry - Unregistering application GATEWAY-SERVICE with eureka with status DOWN
-2025-01-13 00:36:41.134 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Saw local status change event StatusChangeEvent [timestamp=1736703401134, current=DOWN, previous=UP]
-2025-01-13 00:36:41.138 [DiscoveryClient-InstanceInfoReplicator-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_GATEWAY-SERVICE/acer:gateway-service:4001: registering service...
-2025-01-13 00:36:41.356 [DiscoveryClient-InstanceInfoReplicator-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_GATEWAY-SERVICE/acer:gateway-service:4001 - registration status: 204
-2025-01-13 00:36:41.358 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
-2025-01-13 00:36:41.436 [netty-shutdown] INFO  o.s.b.w.e.netty.GracefulShutdown - Graceful shutdown complete
-2025-01-13 00:36:44.260 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Shutting down DiscoveryClient ...
-2025-01-13 00:36:47.271 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Unregistering ...
-2025-01-13 00:36:47.432 [SpringApplicationShutdownHook] INFO  c.n.d.s.t.d.RedirectingEurekaHttpClient - Request execution error. endpoint=DefaultEndpoint{ serviceUrl='http://localhost:8761/eureka/} exception=I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information stacktrace=org.springframework.web.client.ResourceAccessException: I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information
+2025-01-15 00:00:00.107 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
+2025-01-15 00:00:00.343 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/create' doesn't match 'null /accounts/**'
+2025-01-15 00:00:00.343 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
+2025-01-15 00:00:00.343 [parallel-7] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/create'; against '/events/**'
+2025-01-15 00:00:00.343 [parallel-7] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
+2025-01-15 00:00:00.344 [parallel-7] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/create' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x000001ec975e0640@c476884
+2025-01-15 00:00:00.345 [parallel-7] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
+2025-01-15 00:00:00.369 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
+2025-01-15 00:00:00.369 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/create' doesn't match 'null /accounts/**'
+2025-01-15 00:00:00.369 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
+2025-01-15 00:00:00.369 [parallel-8] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/create'; against '/events/**'
+2025-01-15 00:00:00.369 [parallel-8] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
+2025-01-15 00:00:00.369 [parallel-8] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/create' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x000001ec975e0640@c476884
+2025-01-15 00:00:00.369 [parallel-8] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
+2025-01-15 00:00:53.165 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2025-01-15 00:04:04.728 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
+2025-01-15 00:04:04.735 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'OPTIONS /events/tickets/add' doesn't match 'null /accounts/**'
+2025-01-15 00:04:04.735 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
+2025-01-15 00:04:04.735 [parallel-2] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
+2025-01-15 00:04:04.735 [parallel-2] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
+2025-01-15 00:04:04.735 [parallel-2] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x000001ec975e0640@c476884
+2025-01-15 00:04:04.736 [parallel-2] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
+2025-01-15 00:04:04.758 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/accounts/**', method=null}
+2025-01-15 00:04:04.758 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Request 'POST /events/tickets/add' doesn't match 'null /accounts/**'
+2025-01-15 00:04:04.758 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - Trying to match using PathMatcherServerWebExchangeMatcher{pattern='/events/**', method=null}
+2025-01-15 00:04:04.758 [parallel-3] DEBUG o.s.s.w.s.u.m.PathPatternParserServerWebExchangeMatcher - Checking match of request : '/events/tickets/add'; against '/events/**'
+2025-01-15 00:04:04.758 [parallel-3] DEBUG o.s.s.w.s.u.m.OrServerWebExchangeMatcher - matched
+2025-01-15 00:04:04.758 [parallel-3] DEBUG o.s.s.w.s.a.DelegatingReactiveAuthorizationManager - Checking authorization on '/events/tickets/add' using org.springframework.security.config.web.server.ServerHttpSecurity$AuthorizeExchangeSpec$Access$$Lambda/0x000001ec975e0640@c476884
+2025-01-15 00:04:04.759 [parallel-3] DEBUG o.s.s.w.s.a.AuthorizationWebFilter - Authorization successful
+2025-01-15 00:05:53.184 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2025-01-15 00:10:53.200 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2025-01-15 00:13:59.010 [SpringApplicationShutdownHook] INFO  o.s.c.n.e.s.EurekaServiceRegistry - Unregistering application GATEWAY-SERVICE with eureka with status DOWN
+2025-01-15 00:13:59.017 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Saw local status change event StatusChangeEvent [timestamp=1736874839017, current=DOWN, previous=UP]
+2025-01-15 00:13:59.022 [DiscoveryClient-InstanceInfoReplicator-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_GATEWAY-SERVICE/acer:gateway-service:4001: registering service...
+2025-01-15 00:13:59.176 [DiscoveryClient-InstanceInfoReplicator-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_GATEWAY-SERVICE/acer:gateway-service:4001 - registration status: 204
+2025-01-15 00:13:59.216 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-01-15 00:13:59.274 [netty-shutdown] INFO  o.s.b.w.e.netty.GracefulShutdown - Graceful shutdown complete
+2025-01-15 00:14:01.538 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Shutting down DiscoveryClient ...
+2025-01-15 00:14:04.548 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Unregistering ...
+2025-01-15 00:14:04.747 [SpringApplicationShutdownHook] INFO  c.n.d.s.t.d.RedirectingEurekaHttpClient - Request execution error. endpoint=DefaultEndpoint{ serviceUrl='http://localhost:8761/eureka/} exception=I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information stacktrace=org.springframework.web.client.ResourceAccessException: I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information
 	at org.springframework.web.client.RestTemplate.createResourceAccessException(RestTemplate.java:926)
 	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:906)
 	at org.springframework.web.client.RestTemplate.execute(RestTemplate.java:841)
@@ -378,8 +114,8 @@ Caused by: org.apache.hc.client5.http.HttpHostConnectException: Connect to http:
 	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:900)
 	... 37 more
 
-2025-01-13 00:36:47.433 [SpringApplicationShutdownHook] WARN  c.n.d.s.t.d.RetryableEurekaHttpClient - Request execution failed with message: I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information
-2025-01-13 00:36:47.454 [SpringApplicationShutdownHook] INFO  c.n.d.s.t.d.RedirectingEurekaHttpClient - Request execution error. endpoint=DefaultEndpoint{ serviceUrl='http://localhost:8761/eureka/}, exception=I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information stacktrace=org.springframework.web.client.ResourceAccessException: I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information
+2025-01-15 00:14:04.749 [SpringApplicationShutdownHook] WARN  c.n.d.s.t.d.RetryableEurekaHttpClient - Request execution failed with message: I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information
+2025-01-15 00:14:04.783 [SpringApplicationShutdownHook] INFO  c.n.d.s.t.d.RedirectingEurekaHttpClient - Request execution error. endpoint=DefaultEndpoint{ serviceUrl='http://localhost:8761/eureka/}, exception=I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information stacktrace=org.springframework.web.client.ResourceAccessException: I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information
 	at org.springframework.web.client.RestTemplate.createResourceAccessException(RestTemplate.java:926)
 	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:906)
 	at org.springframework.web.client.RestTemplate.execute(RestTemplate.java:841)
@@ -457,8 +193,8 @@ Caused by: org.apache.hc.client5.http.HttpHostConnectException: Connect to http:
 	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:900)
 	... 38 more
 
-2025-01-13 00:36:47.455 [SpringApplicationShutdownHook] WARN  c.n.d.s.t.d.RetryableEurekaHttpClient - Request execution failed with message: I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information
-2025-01-13 00:36:47.456 [SpringApplicationShutdownHook] ERROR c.netflix.discovery.DiscoveryClient - DiscoveryClient_GATEWAY-SERVICE/acer:gateway-service:4001 - de-registration failedCannot execute request on any known server
+2025-01-15 00:14:04.784 [SpringApplicationShutdownHook] WARN  c.n.d.s.t.d.RetryableEurekaHttpClient - Request execution failed with message: I/O error on DELETE request for "http://localhost:8761/eureka/apps/GATEWAY-SERVICE/acer:gateway-service:4001": Connect to http://localhost:8761 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused: no further information
+2025-01-15 00:14:04.785 [SpringApplicationShutdownHook] ERROR c.netflix.discovery.DiscoveryClient - DiscoveryClient_GATEWAY-SERVICE/acer:gateway-service:4001 - de-registration failedCannot execute request on any known server
 com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
 	at com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient.execute(RetryableEurekaHttpClient.java:112)
 	at com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.cancel(EurekaHttpClientDecorator.java:71)
@@ -490,4 +226,4 @@ com.netflix.discovery.shared.transport.TransportException: Cannot execute reques
 	at java.base/java.lang.Iterable.forEach(Iterable.java:75)
 	at org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:114)
 	at java.base/java.lang.Thread.run(Thread.java:1583)
-2025-01-13 00:36:47.474 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Completed shut down of DiscoveryClient
+2025-01-15 00:14:04.823 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Completed shut down of DiscoveryClient

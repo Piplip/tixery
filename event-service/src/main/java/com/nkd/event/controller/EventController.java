@@ -30,6 +30,12 @@ public class EventController {
         return eventService.createEvent(eventDTO, eventID, step);
     }
 
+    @GetMapping("/get/specific")
+    public Map<String, Object> getEventById(@RequestParam("eid") String eventID) {
+        System.out.println("event ID: " + eventID);
+        return eventService.getEvent(eventID);
+    }
+    
     @GetMapping("/get")
     public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID) {
         return eventService.getAllEvents(userID);

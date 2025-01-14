@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -16,6 +18,7 @@ import java.util.List;
 @ToString
 public class EventDTO {
 
+    private UUID eventID;
     private String[] images;
     private String[] videos;
     private String title;
@@ -24,6 +27,8 @@ public class EventDTO {
     private String eventDate;
     private String eventStartTime;
     private String eventEndTime;
+    private OffsetDateTime eventStart;
+    private OffsetDateTime eventEnd;
     private Boolean displayEndTime;
     private String timezone;
     private String language;
@@ -48,5 +53,6 @@ public class EventDTO {
     private String publishDate;
     private String publishTime;
     private Integer capacity;
+    public String status;
 }
 
