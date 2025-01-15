@@ -246,7 +246,9 @@ public class EventService {
                     .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")))
                     .fetchOptionalInto(Integer.class);
             Object images = event.get("images");
-            event.replace("images", images);
+            if(images != null){
+                event.put("images", images);
+            }
             event.put("ticketCount", ticketCount.orElse(0));
         });
 
@@ -258,7 +260,7 @@ public class EventService {
                         EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.DESCRIPTION,
                         EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION,
                         EVENTS.CATEGORY, EVENTS.SUB_CATEGORY, EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY, EVENTS.FAQ,
-                        EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.TAGS
+                        EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE
                 )
                 .from(EVENTS)
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
@@ -276,5 +278,18 @@ public class EventService {
         
         return eventData;
         
+    }
+
+    @Transactional
+    public Response deleteEvent(String eventID) {
+        int rowsDeleted = context.deleteFrom(EVENTS)
+                .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .execute();
+
+        if (rowsDeleted > 0) {
+            return new Response(HttpStatus.OK.name(), "Event deleted successfully", null);
+        } else {
+            return new Response(HttpStatus.NOT_FOUND.name(), "Event not found", null);
+        }
     }
 }

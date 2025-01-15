@@ -30,6 +30,11 @@ public class EventController {
         return eventService.createEvent(eventDTO, eventID, step);
     }
 
+    @PostMapping("delete")
+    public Response deleteEvent(@RequestParam("eid") String eventID) {
+        return eventService.deleteEvent(eventID);
+    }
+
     @GetMapping("/get/specific")
     public Map<String, Object> getEventById(@RequestParam("eid") String eventID) {
         System.out.println("event ID: " + eventID);
