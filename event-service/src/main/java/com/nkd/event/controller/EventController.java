@@ -45,6 +45,11 @@ public class EventController {
     public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID) {
         return eventService.getAllEvents(userID);
     }
+
+    @GetMapping("/get/related")
+    public List<Map<String, Object>> getRelatedEvents(@RequestParam("eid") String eventID) {
+        return eventService.getRelatedEvents(eventID);
+    }
     
     @PostMapping("/tickets/add")
     public Response addTicket(@RequestParam(name = "eid") String eventID, @RequestBody TicketDTO ticketDTO, @RequestParam("timezone") Integer timezone) {

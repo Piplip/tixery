@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.nkd.event.Tables.EVENTS;
 import static com.nkd.event.Tables.TICKETTYPES;
@@ -260,7 +261,7 @@ public class EventService {
                         EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.DESCRIPTION,
                         EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION,
                         EVENTS.CATEGORY, EVENTS.SUB_CATEGORY, EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY, EVENTS.FAQ,
-                        EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE
+                        EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.PROFILE_ID
                 )
                 .from(EVENTS)
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
@@ -291,5 +292,36 @@ public class EventService {
         } else {
             return new Response(HttpStatus.NOT_FOUND.name(), "Event not found", null);
         }
+    }
+
+    public List<Map<String, Object>> getRelatedEvents(String eventID) {
+        Integer organizerID = context.select(EVENTS.ORGANIZER_ID)
+                .from(EVENTS)
+                .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchOneInto(Integer.class);
+
+        var eventRecord = context.select(
+                        EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.LOCATION,
+                        EVENTS.REFUND_POLICY, EVENTS.FAQ
+                )
+                .from(EVENTS)
+                .where(EVENTS.ORGANIZER_ID.eq(organizerID).and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
+                        .and(EVENTS.EVENT_ID.ne(UUID.fromString(eventID.trim()))))
+                .fetchMaps();
+        
+        eventRecord.forEach(event -> {
+            var tickets = context.select(TICKETTYPES.PRICE, TICKETTYPES.TICKET_TYPE)
+                    .from(TICKETTYPES)
+                    .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")))
+                    .fetch();
+            String leastPrice = tickets.stream()
+                    .filter(ticket -> ticket.get(TICKETTYPES.TICKET_TYPE).equals("paid"))
+                    .map(ticket -> ticket.get(TICKETTYPES.PRICE).toString())
+                    .min(String::compareTo)
+                    .orElse("Free");
+            event.put("price", leastPrice);
+        });
+
+        return eventRecord;
     }
 }
