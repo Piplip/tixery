@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static com.nkd.event.Tables.EVENTS;
 import static com.nkd.event.Tables.TICKETTYPES;
@@ -87,7 +86,8 @@ public class EventService {
                         .set(EVENTS.IMAGES, eventDTO.getImages())
                         .set(EVENTS.VIDEOS, eventDTO.getVideos())
                         .set(EVENTS.NAME, eventDTO.getTitle())
-                        .set(EVENTS.DESCRIPTION, eventDTO.getSummary())
+                        .set(EVENTS.SHORT_DESCRIPTION, eventDTO.getSummary())
+                        .set(EVENTS.FULL_DESCRIPTION, eventDTO.getAdditionalInfo())
                         .set(EVENTS.IS_RECURRING, eventDTO.getEventType().equalsIgnoreCase("recurring"))
                         .set(EVENTS.START_TIME, eventStartTime)
                         .set(EVENTS.END_TIME, eventEndTime)
@@ -258,9 +258,9 @@ public class EventService {
 
     public Map<String, Object> getEvent(String eventID) {
         var eventRecord = context.select(
-                        EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.DESCRIPTION,
+                        EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
                         EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION,
-                        EVENTS.CATEGORY, EVENTS.SUB_CATEGORY, EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY, EVENTS.FAQ,
+                        EVENTS.CATEGORY, EVENTS.SUB_CATEGORY, EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY, EVENTS.FAQ, EVENTS.FULL_DESCRIPTION,
                         EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.PROFILE_ID
                 )
                 .from(EVENTS)

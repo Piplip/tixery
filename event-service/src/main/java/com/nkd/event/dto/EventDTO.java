@@ -54,5 +54,6 @@ public class EventDTO {
     private String publishTime;
     private Integer capacity;
     public String status;
+    public String additionalInfo;
 }
 
