@@ -8,6 +8,7 @@ import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.JSON;
 import org.jooq.JSONB;
 import org.jooq.impl.DSL;
 import org.springframework.data.util.Pair;
@@ -161,6 +162,16 @@ public class EventService {
                     ticket.getVisibleStartTime(), ticket.getVisibleEndTime(), timezone);
         }
 
+        JSONB currencyData = JSONB.jsonb(
+                """
+                {
+                    "currency": "%s",
+                    "symbol": "%s",
+                    "fullForm": "%s"
+                }
+                """.formatted(ticket.getCurrency(), ticket.getCurrencySymbol(), ticket.getCurrencyFullForm())
+        );
+
         var ticketID = context.insertInto(TICKETTYPES)
                 .set(TICKETTYPES.EVENT_ID, UUID.fromString(eventID))
                 .set(TICKETTYPES.TICKET_TYPE, ticket.getTicketType())
@@ -177,6 +188,7 @@ public class EventService {
                 .set(TICKETTYPES.ABSORB_FEE, ticket.getTicketType().equalsIgnoreCase("donation") ? ticket.getAbsorbFee() : null)
                 .set(TICKETTYPES.MIN_PER_ORDER, ticket.getMinPerOrder())
                 .set(TICKETTYPES.MAX_PER_ORDER, ticket.getMaxPerOrder())
+                .set(TICKETTYPES.CURRENCY, currencyData)
                 .returningResult(TICKETTYPES.TICKET_TYPE_ID)
                 .fetchOneInto(Integer.class);
                 
@@ -194,6 +206,16 @@ public class EventService {
                     ticketDTO.getVisibleStartTime(), ticketDTO.getVisibleEndTime(), timezone);
         }
 
+        JSONB currencyData = JSONB.jsonb(
+                """
+                {
+                    "currency": "%s",
+                    "symbol": "%s",
+                    "fullForm": "%s"
+                }
+                """.formatted(ticketDTO.getCurrency(), ticketDTO.getCurrencySymbol(), ticketDTO.getCurrencyFullForm())
+        );
+
         int rowsUpdated = context.update(TICKETTYPES)
                 .set(TICKETTYPES.TICKET_TYPE, ticketDTO.getTicketType())
                 .set(TICKETTYPES.NAME, ticketDTO.getTicketName())
@@ -210,6 +232,7 @@ public class EventService {
                 .set(TICKETTYPES.MIN_PER_ORDER, ticketDTO.getMinPerOrder())
                 .set(TICKETTYPES.MAX_PER_ORDER, ticketDTO.getMaxPerOrder())
                 .set(TICKETTYPES.UPDATED_AT, OffsetDateTime.now())
+                .set(TICKETTYPES.CURRENCY, currencyData)
                 .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticketID))
                 .execute();
 

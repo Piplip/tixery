@@ -31,4 +31,7 @@ public class TicketDTO {
     private Integer minPerOrder;
     private Integer maxPerOrder;
     private Boolean absorbFee;
+    private String currency;
+    private String currencySymbol;
+    private String currencyFullForm;
 }
