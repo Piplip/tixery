@@ -26,7 +26,9 @@ public class UserDataServiceImpl implements UserDataService {
 
     @Override
     public String getOrganizerProfiles(String email) {
-        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL, PROFILE.CUSTOM_URL)
+        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL, PROFILE.CUSTOM_URL
+                    , PROFILE.TOTAL_EVENT_HOSTED, PROFILE.TOTAL_FOLLOWERS
+                )
                 .from(USER_ACCOUNT.join(PROFILE).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID)))
                 .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
                 .fetch().formatJSON();
@@ -63,6 +65,7 @@ public class UserDataServiceImpl implements UserDataService {
         }
 
         return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL, PROFILE.DESCRIPTION,
+                PROFILE.TOTAL_FOLLOWERS, PROFILE.TOTAL_ATTENDEE_HOSTED, PROFILE.TOTAL_EVENT_HOSTED,
                 PROFILE.EMAIL_OPT_IN, PROFILE.CUSTOM_URL, PROFILE.SOCIAL_MEDIA_LINKS)
                 .from(USER_ACCOUNT.join(PROFILE).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID)))
                 .where(condition)
@@ -161,4 +164,6 @@ public class UserDataServiceImpl implements UserDataService {
         }
         return new Response(HttpStatus.BAD_REQUEST.name(), "Not Unique", null);
     }
+
+    // TODO: Implement switching default profile
 }
