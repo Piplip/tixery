@@ -60,28 +60,27 @@ public class EventService {
                 final OffsetDateTime eventEndTime = eventDate.atTime(endTime).atOffset(offset);
 
                 final JSONB locationJsonb = JSONB.jsonb("""
-                    {
-                        "location": "%s",
-                        "locationType": "%s",
-                        "reserveSeating": %s
-                    }
-                    """.formatted(
-                        eventDTO.getLocation(),
-                        eventDTO.getLocationType(),
+                {
+                    "location": "%s",
+                    "locationType": "%s",
+                    "reserveSeating": %s
+                }
+                """.formatted(
+                        eventDTO.getLocation().replace("\r", "\\r").replace("\n", "\\n"),
+                        eventDTO.getLocationType().replace("\r", "\\r").replace("\n", "\\n"),
                         eventDTO.getReserveSeating()
                 ));
 
                 final List<String> faqJsonList = eventDTO.getFaqs().stream()
                         .map(faq -> """
-                            {
-                              "question": "%s",
-                              "answer": "%s"
-                            }
-                        """.formatted(faq.getQuestion(), faq.getAnswer()))
+                        {
+                          "question": "%s",
+                          "answer": "%s"
+                        }
+                    """.formatted(faq.getQuestion().replace("\r", "\\r").replace("\n", "\\n"), faq.getAnswer().replace("\r", "\\r").replace("\n", "\\n")))
                         .toList();
 
-                final String faqJsonArray = "[" + String.join(",", faqJsonList) + "]";
-                final Field<JSONB> faqJsonbField = DSL.field("cast({0} as jsonb)", JSONB.class, faqJsonArray);
+                final JSONB faqJsonArray = JSONB.jsonb("[" + String.join(",", faqJsonList) + "]");
 
                 context.update(EVENTS)
                         .set(EVENTS.IMAGES, eventDTO.getImages())
@@ -95,7 +94,7 @@ public class EventService {
                         .set(EVENTS.SHOW_END_TIME, eventDTO.getDisplayEndTime())
                         .set(EVENTS.LANGUAGE, eventDTO.getLanguage())
                         .set(EVENTS.LOCATION, locationJsonb)
-                        .set(EVENTS.FAQ, faqJsonbField)
+                        .set(EVENTS.FAQ, faqJsonArray)
                         .set(EVENTS.UPDATED_AT, OffsetDateTime.now().withOffsetSameLocal(offset))
                         .set(EVENTS.TIMEZONE, eventDTO.getTimezone())
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
@@ -295,6 +294,7 @@ public class EventService {
         }
         var tickets = context.selectFrom(TICKETTYPES)
                 .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)))
+                .orderBy(TICKETTYPES.SALE_START_TIME)
                 .fetchMaps();
         
         Map<String, Object> eventData = eventRecord.intoMap();
@@ -321,6 +321,7 @@ public class EventService {
         Integer organizerID = context.select(EVENTS.ORGANIZER_ID)
                 .from(EVENTS)
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .orderBy(EVENTS.START_TIME.asc())
                 .fetchOneInto(Integer.class);
 
         var eventRecord = context.select(
