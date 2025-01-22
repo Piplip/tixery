@@ -165,5 +165,40 @@ public class UserDataServiceImpl implements UserDataService {
         return new Response(HttpStatus.BAD_REQUEST.name(), "Not Unique", null);
     }
 
+    @Override
+    public Response updateProfileStatistic(String profileID, String field, String type) {
+        switch (field){
+            case "events" -> {
+                if(type.equals("add")){
+                    context.update(PROFILE)
+                            .set(PROFILE.TOTAL_EVENT_HOSTED, PROFILE.TOTAL_EVENT_HOSTED.add(1))
+                            .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                            .execute();
+                }
+                else{
+                    context.update(PROFILE)
+                            .set(PROFILE.TOTAL_EVENT_HOSTED, PROFILE.TOTAL_EVENT_HOSTED.sub(1))
+                            .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                            .execute();
+                }
+            }
+            case "attendee" -> {
+                if(type.equals("add")){
+                    context.update(PROFILE)
+                            .set(PROFILE.TOTAL_ATTENDEE_HOSTED, PROFILE.TOTAL_ATTENDEE_HOSTED.add(1))
+                            .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                            .execute();
+                }
+                else{
+                    context.update(PROFILE)
+                            .set(PROFILE.TOTAL_ATTENDEE_HOSTED, PROFILE.TOTAL_ATTENDEE_HOSTED.sub(1))
+                            .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                            .execute();
+                }
+            }
+        }
+        return new Response(HttpStatus.OK.name(), "Profile statistic updated", null);
+    }
+
     // TODO: Implement switching default profile
 }

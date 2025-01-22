@@ -12,4 +12,5 @@ public interface UserDataService {
     Response updateProfile(String profileId, String email, Profile profile);
     Response deleteProfile(String profileId, String email);
     Response checkUniqueCustomURL(String customURL);
+    Response updateProfileStatistic(String profileID, String field, String type);
 }
