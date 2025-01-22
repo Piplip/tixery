@@ -37,7 +37,6 @@ public class EventController {
 
     @GetMapping("/get/specific")
     public Map<String, Object> getEventById(@RequestParam("eid") String eventID) {
-        System.out.println("event ID: " + eventID);
         return eventService.getEvent(eventID);
     }
     
@@ -47,8 +46,18 @@ public class EventController {
     }
 
     @GetMapping("/get/related")
-    public List<Map<String, Object>> getRelatedEvents(@RequestParam("eid") String eventID) {
-        return eventService.getRelatedEvents(eventID);
+    public List<Map<String, Object>> getProfileRelatedEvents(@RequestParam("eid") String eventID) {
+        return eventService.getProfileRelatedEvent(eventID);
+    }
+
+    @GetMapping("/get/profile")
+    public List<Map<String, Object>> getAllProfileEvent(@RequestParam("pid") Integer profileID) {
+        return eventService.getAllProfileEvent(profileID);
+    }
+
+    @GetMapping("/get/suggested")
+    public List<Map<String, Object>> getSuggestedEvents(@RequestParam("limit") Integer limit, @RequestParam("oid") Integer organizerID) {
+        return eventService.getSuggestedEvents(limit, organizerID);
     }
     
     @PostMapping("/tickets/add")

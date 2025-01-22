@@ -7,10 +7,7 @@ import com.nkd.event.dto.TicketDTO;
 import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
-import org.jooq.Field;
-import org.jooq.JSON;
 import org.jooq.JSONB;
-import org.jooq.impl.DSL;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,6 +26,7 @@ import java.util.UUID;
 
 import static com.nkd.event.Tables.EVENTS;
 import static com.nkd.event.Tables.TICKETTYPES;
+import static org.jooq.impl.DSL.or;
 import static org.jooq.impl.DSL.sum;
 
 @Service
@@ -317,22 +315,35 @@ public class EventService {
         }
     }
 
-    public List<Map<String, Object>> getRelatedEvents(String eventID) {
+    public List<Map<String, Object>> getProfileRelatedEvent(String eventID) {
         Integer organizerID = context.select(EVENTS.ORGANIZER_ID)
                 .from(EVENTS)
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
                 .orderBy(EVENTS.START_TIME.asc())
                 .fetchOneInto(Integer.class);
 
-        var eventRecord = context.select(
-                        EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.LOCATION,
-                        EVENTS.REFUND_POLICY, EVENTS.FAQ
-                )
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME,
+                        EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .from(EVENTS)
                 .where(EVENTS.ORGANIZER_ID.eq(organizerID).and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
                         .and(EVENTS.EVENT_ID.ne(UUID.fromString(eventID.trim()))))
+                .limit(6)
                 .fetchMaps();
-        
+
+        return getEventTickets(eventRecord);
+    }
+
+    public List<Map<String, Object>> getAllProfileEvent(Integer profileID) {
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME,
+                        EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
+                .from(EVENTS)
+                .where(EVENTS.PROFILE_ID.eq(profileID))
+                .fetchMaps();
+
+        return getEventTickets(eventRecord);
+    }
+
+    private List<Map<String, Object>> getEventTickets(List<Map<String, Object>> eventRecord) {
         eventRecord.forEach(event -> {
             var tickets = context.select(TICKETTYPES.PRICE, TICKETTYPES.TICKET_TYPE)
                     .from(TICKETTYPES)
@@ -347,5 +358,18 @@ public class EventService {
         });
 
         return eventRecord;
+    }
+
+    // TODO: Adding test data for testing this method
+    public List<Map<String, Object>> getSuggestedEvents(Integer limit, Integer organizerID) {
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME,
+                        EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
+                .distinctOn(EVENTS.ORGANIZER_ID)
+                .from(EVENTS)
+                .where(EVENTS.START_TIME.gt(OffsetDateTime.now()).and(EVENTS.ORGANIZER_ID.ne(organizerID)))
+                .limit(limit)
+                .fetchMaps();
+
+        return getEventTickets(eventRecord);
     }
 }
