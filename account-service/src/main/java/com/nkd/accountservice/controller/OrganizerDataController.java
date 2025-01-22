@@ -43,4 +43,10 @@ public class OrganizerDataController {
     public Response checkUniqueCustomURL(@RequestParam("url") String customURL){
         return userDataService.checkUniqueCustomURL(customURL);
     }
+
+    @PostMapping("/organizer/profile/update/total-followers")
+    public Response updateProfileStatistic(@RequestParam("pid") String profileID, @RequestParam("field") String field,
+                                           @RequestParam("type") String type){
+        return userDataService.updateProfileStatistic(profileID, field, type);
+    }
 }
