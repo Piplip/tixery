@@ -6,6 +6,7 @@ import com.nkd.accountservice.service.UserDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -48,5 +49,10 @@ public class OrganizerDataController {
     public Response updateProfileStatistic(@RequestParam("pid") String profileID, @RequestParam("field") String field,
                                            @RequestParam("type") String type){
         return userDataService.updateProfileStatistic(profileID, field, type);
+    }
+
+    @GetMapping("/internal/profile/name")
+    public Map<Integer, String> getListProfileName(@RequestParam("id_list") String profileIdList){
+        return userDataService.getListProfileName(profileIdList);
     }
 }

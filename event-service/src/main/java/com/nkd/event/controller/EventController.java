@@ -56,8 +56,8 @@ public class EventController {
     }
 
     @GetMapping("/get/suggested")
-    public List<Map<String, Object>> getSuggestedEvents(@RequestParam("limit") Integer limit, @RequestParam("oid") Integer organizerID) {
-        return eventService.getSuggestedEvents(limit, organizerID);
+    public List<Map<String, Object>> getSuggestedEvents(@RequestParam("limit") Integer limit) {
+        return eventService.getSuggestedEvents(limit);
     }
     
     @PostMapping("/tickets/add")

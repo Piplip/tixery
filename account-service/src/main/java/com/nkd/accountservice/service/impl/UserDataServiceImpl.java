@@ -12,8 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static com.nkd.accountservice.Tables.*;
 
@@ -198,6 +201,22 @@ public class UserDataServiceImpl implements UserDataService {
             }
         }
         return new Response(HttpStatus.OK.name(), "Profile statistic updated", null);
+    }
+
+    @Override
+    public Map<Integer, String> getListProfileName(String profileIdList) {
+        List<Integer> profileID = Stream.of(profileIdList.split(",")).map(Integer::parseInt).toList();
+
+        var nameList = context.select(PROFILE.PROFILE_NAME)
+                .from(PROFILE)
+                .where(PROFILE.PROFILE_ID.in(profileID))
+                .fetch(PROFILE.PROFILE_NAME);
+
+        Map<Integer, String> returnVal = new HashMap<>();
+        for(int i = 0; i < profileID.size(); i++){
+            returnVal.put(profileID.get(i), nameList.get(i));
+        }
+        return returnVal;
     }
 
     // TODO: Implement switching default profile

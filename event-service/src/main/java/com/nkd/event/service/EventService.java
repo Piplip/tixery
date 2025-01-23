@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.nkd.event.Tables.EVENTS;
 import static com.nkd.event.Tables.TICKETTYPES;
-import static org.jooq.impl.DSL.or;
-import static org.jooq.impl.DSL.sum;
+import static org.jooq.impl.DSL.*;
 
 @Service
 @RequiredArgsConstructor
@@ -258,7 +258,7 @@ public class EventService {
         var eventData = context.select(EVENTS.EVENT_ID, EVENTS.PROFILE_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.LOCATION, EVENTS.START_TIME, EVENTS.STATUS)
                 .from(EVENTS)
                 .where(EVENTS.ORGANIZER_ID.eq(userID))
-                .orderBy(EVENTS.START_TIME.desc())
+                .orderBy(EVENTS.START_TIME.asc())
                 .fetchMaps();
 
         eventData.forEach(event -> {
@@ -360,15 +360,24 @@ public class EventService {
         return eventRecord;
     }
 
-    // TODO: Adding test data for testing this method
-    public List<Map<String, Object>> getSuggestedEvents(Integer limit, Integer organizerID) {
-        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME,
+    public List<Map<String, Object>> getSuggestedEvents(Integer limit) {
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .distinctOn(EVENTS.ORGANIZER_ID)
                 .from(EVENTS)
-                .where(EVENTS.START_TIME.gt(OffsetDateTime.now()).and(EVENTS.ORGANIZER_ID.ne(organizerID)))
+                .where(EVENTS.START_TIME.gt(OffsetDateTime.now()))
                 .limit(limit)
                 .fetchMaps();
+
+        String profileIdList = eventRecord.stream()
+                .map(event -> event.get("profile_id").toString())
+                .collect(Collectors.joining(","));
+        var listProfileName = accountClient.getListProfileName(profileIdList);
+
+        eventRecord.forEach(event -> {
+            Optional<Integer> profileId = Optional.ofNullable(((Integer) event.get("profile_id")));
+            profileId.ifPresent(integer -> event.put("profileName", listProfileName.get(integer)));
+        });
 
         return getEventTickets(eventRecord);
     }

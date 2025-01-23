@@ -3,6 +3,7 @@ package com.nkd.accountservice.service;
 import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
 
+import java.util.List;
 import java.util.Map;
 
 public interface UserDataService {
@@ -13,4 +14,5 @@ public interface UserDataService {
     Response deleteProfile(String profileId, String email);
     Response checkUniqueCustomURL(String customURL);
     Response updateProfileStatistic(String profileID, String field, String type);
+    Map<Integer, String> getListProfileName(String profileIdList);
 }
