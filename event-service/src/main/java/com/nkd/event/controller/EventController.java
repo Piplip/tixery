@@ -74,4 +74,9 @@ public class EventController {
     public Response deleteTicket(@RequestParam(name = "tid") Integer ticketID) {
         return eventService.deleteTicket(ticketID);
     }
+
+    @GetMapping("/search/suggestions")
+    public List<Map<String, Object>> getEventSearchSuggestions(@RequestParam("q") String query) {
+        return eventService.getEventSearchSuggestions(query);
+    }
 }

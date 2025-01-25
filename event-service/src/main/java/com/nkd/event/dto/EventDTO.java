@@ -34,6 +34,9 @@ public class EventDTO {
     private String language;
     private String locationType;
     private String location;
+    private String longitude;
+    private String latitude;
+    private String locationName;
     private Boolean reserveSeating;
     private List<Faq> faqs;
     private List<TicketDTO> tickets;

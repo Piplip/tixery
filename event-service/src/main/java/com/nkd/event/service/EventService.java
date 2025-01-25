@@ -6,8 +6,11 @@ import com.nkd.event.dto.Response;
 import com.nkd.event.dto.TicketDTO;
 import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -61,12 +64,15 @@ public class EventService {
                 {
                     "location": "%s",
                     "locationType": "%s",
-                    "reserveSeating": %s
+                    "reserveSeating": %s,
+                    "lat": %s,
+                    "lon": %s,
+                    "name": "%s"
                 }
                 """.formatted(
                         eventDTO.getLocation().replace("\r", "\\r").replace("\n", "\\n"),
                         eventDTO.getLocationType().replace("\r", "\\r").replace("\n", "\\n"),
-                        eventDTO.getReserveSeating()
+                        eventDTO.getReserveSeating(), eventDTO.getLatitude(), eventDTO.getLongitude(), eventDTO.getLocationName()
                 ));
 
                 final List<String> faqJsonList = eventDTO.getFaqs().stream()
@@ -380,5 +386,17 @@ public class EventService {
         });
 
         return getEventTickets(eventRecord);
+    }
+
+    public List<Map<String, Object>> getEventSearchSuggestions(String query) {
+        Condition condition = DSL.condition("search_vector @@ to_tsquery(?)", query)
+                .and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
+                .or(jsonbGetAttribute(EVENTS.LOCATION, "location").like(query));
+
+        return context.select(EVENTS.NAME, EVENTS.SHORT_DESCRIPTION, EVENTS.TAGS, EVENTS.LOCATION, EVENTS.CATEGORY)
+                .from(EVENTS)
+                .where(condition)
+                .limit(10)
+                .fetchMaps();
     }
 }
