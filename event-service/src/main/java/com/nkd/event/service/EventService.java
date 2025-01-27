@@ -10,7 +10,6 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.impl.DSL;
-import org.jooq.impl.SQLDataType;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,9 +26,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static com.nkd.event.Tables.EVENTS;
-import static com.nkd.event.Tables.TICKETTYPES;
+import static com.nkd.event.Tables.*;
 import static org.jooq.impl.DSL.*;
 
 @Service
@@ -101,6 +100,7 @@ public class EventService {
                         .set(EVENTS.FAQ, faqJsonArray)
                         .set(EVENTS.UPDATED_AT, OffsetDateTime.now().withOffsetSameLocal(offset))
                         .set(EVENTS.TIMEZONE, eventDTO.getTimezone())
+                        .set(EVENTS.COORDINATES, Optional.of(field("ST_GeographyFromText('POINT(%s %s)')", eventDTO.getLongitude(), eventDTO.getLatitude())))
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
             }
@@ -282,7 +282,12 @@ public class EventService {
         return eventData;
     }
 
-    public Map<String, Object> getEvent(String eventID) {
+    public Map<String, Object> getEvent(String eventID, Integer profileID) {
+        context.insertInto(EVENTVIEWS).set(EVENTVIEWS.EVENT_ID, UUID.fromString(eventID))
+                .set(EVENTVIEWS.VIEW_DATE, OffsetDateTime.now())
+                .set(EVENTVIEWS.PROFILE_ID, profileID)
+                .execute();
+
         var eventRecord = context.select(
                         EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
                         EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION, EVENTS.CREATED_AT,
@@ -388,15 +393,78 @@ public class EventService {
         return getEventTickets(eventRecord);
     }
 
-    public List<Map<String, Object>> getEventSearchSuggestions(String query) {
+    public List<Map<String, Object>> getEventSearchSuggestions(String query, Integer type, String lat, String lon, Integer userID) {
+        String userLocationPoint = "POINT(" + lon + " " + lat + ")";
+
+        context.insertInto(SEARCHHISTORY).set(SEARCHHISTORY.SEARCH_TERM, query)
+                .set(SEARCHHISTORY.SEARCH_LOCATION, DSL.field("ST_GeographyFromText(?)", String.class, userLocationPoint))
+                .set(SEARCHHISTORY.SEARCH_TIMESTAMP, OffsetDateTime.now())
+                .set(SEARCHHISTORY.USER_ID, userID)
+                .execute();
+
         Condition condition = DSL.condition("search_vector @@ to_tsquery(?)", query)
                 .and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
                 .or(jsonbGetAttribute(EVENTS.LOCATION, "location").like(query));
 
-        return context.select(EVENTS.NAME, EVENTS.SHORT_DESCRIPTION, EVENTS.TAGS, EVENTS.LOCATION, EVENTS.CATEGORY)
+        if(type == 1){
+            condition = condition.and(EVENTS.EVENT_TYPE.eq("online"));
+        } else if (type == 2) {
+            condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 1000);
+        }
+
+        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.SHORT_DESCRIPTION, EVENTS.TAGS, EVENTS.LOCATION, EVENTS.CATEGORY)
                 .from(EVENTS)
                 .where(condition)
                 .limit(10)
                 .fetchMaps();
+    }
+
+    public List<Map<String, Object>> getEventSearch(String eventIDs) {
+        List<UUID> eventIDList = Stream.of(eventIDs.split(","))
+                .map(UUID::fromString)
+                .collect(Collectors.toList());
+
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.LANGUAGE,
+                        EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
+                .from(EVENTS)
+                .where(EVENTS.EVENT_ID.in(eventIDList))
+                .fetchMaps();
+
+        return getEventTickets(eventRecord);
+    }
+
+    public List<Map<String, Object>> getLocalizeSearchTrends(String lat, String lon) {
+        String userLocationPoint = "POINT(" + lon + " " + lat + ")";
+        return context.select(SEARCHHISTORY.SEARCH_TERM, DSL.count())
+                .from(SEARCHHISTORY)
+                .where("st_dwithin(search_location, st_geographyfromtext(?), ?)",userLocationPoint, 5000)
+                .and(SEARCHHISTORY.SEARCH_TIMESTAMP.gt(OffsetDateTime.now().minusMonths(1)))
+                .groupBy(SEARCHHISTORY.SEARCH_TERM)
+                .orderBy(DSL.count().desc())
+                .limit(10)
+                .fetchMaps();
+    }
+
+    public List<Map<String, Object>> getLocalizePopularEvents(String lat, String lon) {
+        String userLocationPoint = "POINT(" + lon + " " + lat + ")";
+        var popularEventIDs = context.select(POPULAREVENTS.EVENT_ID)
+                .from(POPULAREVENTS)
+                .where("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000)
+                .orderBy(POPULAREVENTS.VIEW_COUNT)
+                .limit(10)
+                .fetchInto(UUID.class);
+
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
+                        EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
+                .distinctOn(EVENTS.ORGANIZER_ID)
+                .from(EVENTS)
+                .where(EVENTS.START_TIME.gt(OffsetDateTime.now())
+                        .and(EVENTS.EVENT_ID.in(popularEventIDs))
+                        .and(EVENTS.VISIBILITY.eq("public"))
+                        .and(EVENTS.STATUS.eq("published"))
+                )
+                .fetchMaps();
+
+        return getEventTickets(eventRecord);
     }
 }

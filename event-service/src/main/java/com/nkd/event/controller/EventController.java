@@ -36,8 +36,8 @@ public class EventController {
     }
 
     @GetMapping("/get/specific")
-    public Map<String, Object> getEventById(@RequestParam("eid") String eventID) {
-        return eventService.getEvent(eventID);
+    public Map<String, Object> getEventById(@RequestParam("eid") String eventID, @RequestParam(value = "pid", required = false) Integer profileID) {
+        return eventService.getEvent(eventID, profileID);
     }
     
     @GetMapping("/get")
@@ -76,7 +76,24 @@ public class EventController {
     }
 
     @GetMapping("/search/suggestions")
-    public List<Map<String, Object>> getEventSearchSuggestions(@RequestParam("q") String query) {
-        return eventService.getEventSearchSuggestions(query);
+    public List<Map<String, Object>> getEventSearchSuggestions(@RequestParam("q") String query, @RequestParam(name = "type", required = false) Integer type
+            , @RequestParam(name = "lat", required = false) String lat, @RequestParam(name = "lon", required = false) String lon
+            , @RequestParam(value = "uid", required = false) Integer userID) {
+        return eventService.getEventSearchSuggestions(query, type, lat, lon, userID);
+    }
+
+    @GetMapping("/search")
+    public List<Map<String, Object>> getEventsSearch(@RequestParam("eids") String eventIDs) {
+        return eventService.getEventSearch(eventIDs);
+    }
+
+    @GetMapping("/search/trends")
+    public List<Map<String, Object>> getLocalizeSearchTrends(@RequestParam("lat") String lat, @RequestParam("lon") String lon) {
+        return eventService.getLocalizeSearchTrends(lat, lon);
+    }
+
+    @GetMapping("/event/trends")
+    public List<Map<String, Object>> getLocalizePopularEvents(@RequestParam("lat") String lat, @RequestParam("lon") String lon) {
+        return eventService.getLocalizePopularEvents(lat, lon);
     }
 }
