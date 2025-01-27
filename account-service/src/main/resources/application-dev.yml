@@ -7,7 +7,7 @@ MYSQL_URL: jdbc:mysql://localhost:3306/tixery_account
 EMAIL_HOST: smtp.gmail.com
 EMAIL_PORT: 587
 EMAIL_USERNAME: nguyenkhanhdu956@gmail.com
-EMAIL_PASSWORD: qxtl akwe ogrs icnb
+EMAIL_PASSWORD: hizz khim zsgv xpqd
 
 #Redis
 REDIS_HOST: redis-18796.c294.ap-northeast-1-2.ec2.redns.redis-cloud.com
