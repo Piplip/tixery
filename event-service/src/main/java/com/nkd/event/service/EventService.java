@@ -100,7 +100,7 @@ public class EventService {
                         .set(EVENTS.FAQ, faqJsonArray)
                         .set(EVENTS.UPDATED_AT, OffsetDateTime.now().withOffsetSameLocal(offset))
                         .set(EVENTS.TIMEZONE, eventDTO.getTimezone())
-                        .set(EVENTS.COORDINATES, Optional.of(field("ST_GeographyFromText('POINT(%s %s)')", eventDTO.getLongitude(), eventDTO.getLatitude())))
+                        .set(EVENTS.COORDINATES, DSL.field("ST_GeographyFromText('POINT(" + eventDTO.getLongitude() + " " + eventDTO.getLatitude() + ")')", String.class))
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
             }
@@ -447,22 +447,16 @@ public class EventService {
 
     public List<Map<String, Object>> getLocalizePopularEvents(String lat, String lon) {
         String userLocationPoint = "POINT(" + lon + " " + lat + ")";
-        var popularEventIDs = context.select(POPULAREVENTS.EVENT_ID)
-                .from(POPULAREVENTS)
-                .where("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000)
-                .orderBy(POPULAREVENTS.VIEW_COUNT)
-                .limit(10)
-                .fetchInto(UUID.class);
 
         var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
-                .distinctOn(EVENTS.ORGANIZER_ID)
-                .from(EVENTS)
-                .where(EVENTS.START_TIME.gt(OffsetDateTime.now())
-                        .and(EVENTS.EVENT_ID.in(popularEventIDs))
-                        .and(EVENTS.VISIBILITY.eq("public"))
-                        .and(EVENTS.STATUS.eq("published"))
-                )
+                .from(POPULAREVENTS).join(EVENTS).on(POPULAREVENTS.EVENT_ID.eq(EVENTS.EVENT_ID))
+                .where("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000)
+                .and(EVENTS.VISIBILITY.eq("public"))
+                .and(EVENTS.STATUS.eq("published"))
+                .and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
+                .orderBy(POPULAREVENTS.VIEW_COUNT)
+                .limit(10)
                 .fetchMaps();
 
         return getEventTickets(eventRecord);

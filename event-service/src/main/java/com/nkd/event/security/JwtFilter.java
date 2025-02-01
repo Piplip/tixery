@@ -1,14 +1,17 @@
 package com.nkd.event.security;
 
+import com.nkd.event.client.AccountClient;
 import com.nkd.event.service.JwtService;
+import com.nkd.event.utils.CommonUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,15 +22,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private AccountClient accountClient;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
         String email = null, token = null;
 
@@ -37,6 +41,18 @@ public class JwtFilter extends OncePerRequestFilter {
                 email = jwtService.extractEmail(token);
             } catch (ExpiredJwtException e){
                 log.error(e.getMessage());
+                String authenticatedCookie = CommonUtils.getCookieValue(request, "AUTHENTICATED");
+
+                if(authenticatedCookie != null && authenticatedCookie.equals("true")){
+                    String newToken = accountClient.getAccountJWTToken(email);
+                    Cookie tokenCookie = CommonUtils.generateCookie("AUTH_TOKEN", newToken, 600);
+                    response.addCookie(tokenCookie);
+                    Cookie authenticated = CommonUtils.generateCookie("AUTHENTICATED", "true", 86400);
+                    response.addCookie(authenticated);
+                    response.setStatus(HttpServletResponse.SC_CONTINUE);
+                    return;
+                }
+
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"message\": \"Token expired\", \"redirect\": \"http://localhost:5173/login?ref=exp\"}");
                 response.getWriter().flush();
@@ -46,7 +62,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 log.error(e.getMessage());
             }
         }
-        // TODO: extends session if user is still active
 
         if(email != null && SecurityContextHolder.getContext().getAuthentication() == null){
             CustomUserDetails userDetails = jwtService.buildCustomUserDetails(token);

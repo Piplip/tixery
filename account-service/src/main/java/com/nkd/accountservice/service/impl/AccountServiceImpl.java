@@ -13,7 +13,9 @@ import com.nkd.accountservice.service.AccountService;
 import com.nkd.accountservice.service.JwtService;
 import com.nkd.accountservice.tables.pojos.Confirmation;
 import com.nkd.accountservice.utils.CommonUtils;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
@@ -125,7 +127,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Response handleLogin(AccountDTO accountDTO, HttpServletRequest request) {
+    public Response handleLogin(AccountDTO accountDTO, HttpServletRequest request, HttpServletResponse response) {
         if(!isEmailExist(accountDTO.getEmail())){
             log.error("Email not found : {}", accountDTO.getEmail());
             return new Response(HttpStatus.BAD_REQUEST.name(), "Account not found", null);
@@ -148,6 +150,13 @@ public class AccountServiceImpl implements AccountService {
         if (authentication.isAuthenticated()) {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String token = jwtService.generateLoginToken(accountDTO.getEmail());
+
+            Cookie cookie = new Cookie("AUTHENTICATED", "true");
+            cookie.setPath("/");
+            cookie.setHttpOnly(true);
+            cookie.setMaxAge(60 * 60 * 24);
+            response.addCookie(cookie);
+
             return new Response(HttpStatus.OK.name(), "Login successful", token);
         }
         return new Response(HttpStatus.BAD_REQUEST.name(), "Username or password is incorrect", null);

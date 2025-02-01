@@ -4,7 +4,9 @@ import com.nkd.accountservice.domain.AccountDTO;
 import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.service.AccountService;
+import com.nkd.accountservice.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController {
 
     private final AccountService accountService;
+    private final JwtService jwtService;
 
     @PostMapping("/sign-up")
     public Response signUp(@RequestBody AccountDTO accountDTO){
@@ -43,8 +46,8 @@ public class AccountController {
     }
 
     @PostMapping("/login")
-    public Response login(@RequestBody AccountDTO accountDTO, HttpServletRequest request){
-        return accountService.handleLogin(accountDTO, request);
+    public Response login(@RequestBody AccountDTO accountDTO, HttpServletRequest request, HttpServletResponse response){
+        return accountService.handleLogin(accountDTO, request, response);
     }
 
     @GetMapping("/logout")
@@ -100,5 +103,10 @@ public class AccountController {
     @GetMapping("/get/jwt")
     public String getJWT(@RequestParam String email){
         return accountService.generateInternalJWT(email);
+    }
+
+    @GetMapping("/internal/account/jwt")
+    public String getAccountJWTToken(@RequestParam("email") String email){
+        return jwtService.generateLoginToken(email);
     }
 }

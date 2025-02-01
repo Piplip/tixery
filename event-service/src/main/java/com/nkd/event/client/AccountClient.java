@@ -15,4 +15,6 @@ public interface AccountClient {
     @GetMapping("internal/profile/name")
     Map<Integer, String> getListProfileName(@RequestParam("id_list") String profileIdList);
 
+    @GetMapping("internal/account/jwt")
+    String getAccountJWTToken(@RequestParam("email") String email);
 }
