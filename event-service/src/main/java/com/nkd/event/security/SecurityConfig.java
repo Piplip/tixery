@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request ->
                         request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested"
                                         , "/search/suggestions", "/search", "/search/trends", "/event/trends").permitAll()
+                                .requestMatchers("/create/**", "/delete", "/tickets/**").hasRole("HOST")
                                 .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)

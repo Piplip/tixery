@@ -1,14 +1,15 @@
 package com.nkd.event.controller;
 
 import com.nkd.event.dto.EventDTO;
+import com.nkd.event.dto.OnlineEventDTO;
 import com.nkd.event.dto.Response;
-import com.nkd.event.dto.TicketDTO;
 import com.nkd.event.service.EventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 public class EventController {
@@ -30,6 +31,11 @@ public class EventController {
         return eventService.createEvent(eventDTO, eventID, step);
     }
 
+    @PostMapping("/create/online")
+    public Response saveOnlineEvent(@RequestParam("eid") String eventID, @RequestBody OnlineEventDTO data) {
+        return eventService.saveOnlineEventInfo(eventID, data);
+    }
+
     @PostMapping("delete")
     public Response deleteEvent(@RequestParam("eid") String eventID) {
         return eventService.deleteEvent(eventID);
@@ -41,8 +47,9 @@ public class EventController {
     }
     
     @GetMapping("/get")
-    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID) {
-        return eventService.getAllEvents(userID);
+    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID,
+                                                  @RequestParam(value = "past", required = false, defaultValue = "false") String getPast) {
+        return eventService.getAllEvents(userID, getPast);
     }
 
     @GetMapping("/get/related")
@@ -59,41 +66,34 @@ public class EventController {
     public List<Map<String, Object>> getSuggestedEvents(@RequestParam("limit") Integer limit) {
         return eventService.getSuggestedEvents(limit);
     }
-    
-    @PostMapping("/tickets/add")
-    public Response addTicket(@RequestParam(name = "eid") String eventID, @RequestBody TicketDTO ticketDTO, @RequestParam("timezone") Integer timezone) {
-        return eventService.addTicket(eventID, ticketDTO, timezone);
-    }
-
-    @PutMapping("/tickets/update")
-    public Response deleteTicket(@RequestParam(name = "tid") Integer ticketID, @RequestBody TicketDTO ticketDTO, @RequestParam("timezone") Integer timezone) {
-        return eventService.updateTicket(ticketID, ticketDTO, timezone);
-    }
-
-    @PostMapping("/tickets/remove")
-    public Response deleteTicket(@RequestParam(name = "tid") Integer ticketID) {
-        return eventService.deleteTicket(ticketID);
-    }
-
-    @GetMapping("/search/suggestions")
-    public List<Map<String, Object>> getEventSearchSuggestions(@RequestParam("q") String query, @RequestParam(name = "type", required = false) Integer type
-            , @RequestParam(name = "lat", required = false) String lat, @RequestParam(name = "lon", required = false) String lon
-            , @RequestParam(value = "uid", required = false) Integer userID) {
-        return eventService.getEventSearchSuggestions(query, type, lat, lon, userID);
-    }
 
     @GetMapping("/search")
     public List<Map<String, Object>> getEventsSearch(@RequestParam("eids") String eventIDs) {
         return eventService.getEventSearch(eventIDs);
     }
 
-    @GetMapping("/search/trends")
-    public List<Map<String, Object>> getLocalizeSearchTrends(@RequestParam("lat") String lat, @RequestParam("lon") String lon) {
-        return eventService.getLocalizeSearchTrends(lat, lon);
-    }
-
     @GetMapping("/event/trends")
     public List<Map<String, Object>> getLocalizePopularEvents(@RequestParam("lat") String lat, @RequestParam("lon") String lon) {
         return eventService.getLocalizePopularEvents(lat, lon);
+    }
+
+    @PostMapping("/event/favorite/add")
+    public Response addToFavourite(@RequestParam("eid") String eventID, @RequestParam("pid") Integer profileID) {
+        return eventService.addToFavourite(eventID, profileID);
+    }
+
+    @PostMapping("/event/favorite/delete")
+    public Response removeFromFavorite(@RequestParam("eid") String eventID, @RequestParam("pid") Integer profileID) {
+        return eventService.removeFromFavorite(eventID, profileID);
+    }
+
+    @GetMapping("/event/favorite")
+    public List<UUID> getFavouriteEventIDs(@RequestParam("pid") Integer profileID) {
+        return eventService.getFavouriteEventIDs(profileID);
+    }
+
+    @PostMapping("/event/favorite/get")
+    public List<Map<String, Object>> getFavouriteEvents(@RequestBody List<String> eventIDs) {
+        return eventService.getFavouriteEvents(eventIDs);
     }
 }
