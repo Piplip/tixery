@@ -8,9 +8,13 @@ import com.nkd.accountservice.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.jooq.types.UInteger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -108,5 +112,25 @@ public class AccountController {
     @GetMapping("/internal/account/jwt")
     public String getAccountJWTToken(@RequestParam("email") String email){
         return jwtService.generateLoginToken(email);
+    }
+
+    @PostMapping("/follow")
+    public Response handleFollowOrganizer(@RequestParam("upid") Integer profileID, @RequestParam("opid") Integer organizerID, @RequestParam("follow") Boolean follow){
+        return accountService.handleFollowOrganizer(profileID, organizerID, follow);
+    }
+
+    @GetMapping("/follow")
+    public List<Integer> getFollow(@RequestParam("pid") Integer profileID){
+        return accountService.getFollow(profileID);
+    }
+
+    @PostMapping("/follow/detail")
+    public List<Map<String, Object>> getFollowDetail(@RequestBody List<UInteger> profileIDs){
+        return accountService.getFollowDetail(profileIDs);
+    }
+
+    @GetMapping("/attendee/stats")
+    public Map<String, Object> getAttendeeStats(@RequestParam("pid") String profileID){
+        return accountService.getAttendeeStats(profileID);
     }
 }

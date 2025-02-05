@@ -1,5 +1,6 @@
 package com.nkd.accountservice.service.impl;
 
+import com.nkd.accountservice.client.EventClient;
 import com.nkd.accountservice.domain.AccountDTO;
 import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
@@ -39,9 +40,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static com.nkd.accountservice.Tables.*;
 
@@ -58,6 +57,7 @@ public class AccountServiceImpl implements AccountService {
     private final RedisTemplate<String, String> redisTemplate;
     private final JwtService jwtService;
     private final CustomUserDetailService userDetailService;
+    private final EventClient eventClient;
 
     @Override
     @Transactional
@@ -212,7 +212,6 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Response createSetUpProfileRequest(String accountID) {
-        // should we check if account is exist or not?
         String requestID = CommonUtils.generateRandomString(20);
         redisTemplate.opsForValue().set("setup_profile_" + requestID, accountID, Duration.ofMinutes(10));
         return new Response(HttpStatus.OK.name(), "Request created", Map.of("requestID", requestID));
@@ -316,6 +315,78 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public String generateInternalJWT(String email) {
         return jwtService.generateInternalToken(email);
+    }
+
+    @Override
+    public Response handleFollowOrganizer(Integer profileID, Integer organizerID, Boolean follow) {
+        if(follow){
+            var isExist = context.fetchExists(context.selectFrom(FOLLOWERS)
+                    .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                        .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))
+                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 1)))));
+
+            if(isExist){
+                context.update(FOLLOWERS)
+                        .set(FOLLOWERS.IS_UNFOLLOW, (byte) 0)
+                        .set(FOLLOWERS.FOLLOW_DATE, LocalDateTime.now())
+                        .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                                .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))))
+                        .execute();
+            }
+            else {
+                context.insertInto(FOLLOWERS)
+                        .set(FOLLOWERS.FOLLOWER_PROFILE_ID, UInteger.valueOf(profileID))
+                        .set(FOLLOWERS.PROFILE_ID, UInteger.valueOf(organizerID))
+                        .set(FOLLOWERS.FOLLOW_DATE, LocalDateTime.now())
+                        .execute();
+            }
+        }
+        else{
+            context.update(FOLLOWERS)
+                    .set(FOLLOWERS.IS_UNFOLLOW, (byte) 1)
+                    .set(FOLLOWERS.UNFOLLOW_DATE, LocalDateTime.now())
+                    .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                            .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))))
+                    .execute();
+        }
+
+        context.update(PROFILE)
+                .set(PROFILE.TOTAL_FOLLOWERS, follow ? PROFILE.TOTAL_FOLLOWERS.plus(1) : PROFILE.TOTAL_FOLLOWERS.minus(1))
+                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(organizerID)))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "Success", null);
+    }
+
+    @Override
+    public List<Integer> getFollow(Integer profileID) {
+        return context.select(FOLLOWERS.PROFILE_ID)
+                .from(FOLLOWERS)
+                .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 0)).or(FOLLOWERS.IS_UNFOLLOW.isNull()))
+                .limit(10)
+                .fetchInto(Integer.class);
+    }
+
+    @Override
+    public List<Map<String, Object>> getFollowDetail(List<UInteger
+            > profileIDs) {
+        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL)
+                .from(PROFILE)
+                .where(PROFILE.PROFILE_ID.in(profileIDs))
+                .fetchMaps();
+    }
+
+    @Override
+    public Map<String, Object> getAttendeeStats(String profileID) {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total_saved", eventClient.getTotalFavouriteEvent(Integer.parseInt(profileID)));
+        stats.put("total_followed", context.selectCount().from(FOLLOWERS)
+                        .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 0)).or(FOLLOWERS.IS_UNFOLLOW.isNull()))
+                .fetchSingleInto(Integer.class));
+
+        return stats;
     }
 
     private void saveOrganizerProfile(String accountID, Profile profile){

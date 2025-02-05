@@ -96,4 +96,14 @@ public class EventController {
     public List<Map<String, Object>> getFavouriteEvents(@RequestBody List<String> eventIDs) {
         return eventService.getFavouriteEvents(eventIDs);
     }
+
+    @GetMapping("/event/favorite/total")
+    public Integer getTotalFavouriteEvent(@RequestParam("pid") Integer profileID) {
+        return eventService.getTotalFavouriteEvent(profileID);
+    }
+
+    @PostMapping("/event/followed")
+    public List<Map<String, Object>> getFollowedEvents(@RequestBody List<Integer> organizerIDs) {
+        return eventService.getFollowedEvents(organizerIDs);
+    }
 }

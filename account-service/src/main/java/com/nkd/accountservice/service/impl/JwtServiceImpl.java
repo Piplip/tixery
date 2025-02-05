@@ -9,6 +9,7 @@ import io.jsonwebtoken.security.Keys;
 import org.jooq.DSLContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -26,10 +27,17 @@ public class JwtServiceImpl implements JwtService {
 
     @Autowired
     private DSLContext context;
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
     @Value("${jwt.secret}")
     private String secretKey;
     private final long EXPIRE_DURATION = TimeUnit.DAYS.toMillis(1);
+
+    @Override
+    public String getInternalKey(){
+        return redisTemplate.opsForValue().get("internal_jwt");
+    }
 
     @Override
     public String generateLoginToken(String email) {
@@ -96,12 +104,6 @@ public class JwtServiceImpl implements JwtService {
 
     public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new java.util.Date());
-    }
-
-    @Override
-    public String extendSession(String token) {
-        final Claims claims = extractAllClaims(token);
-        return buildToken(claims, claims.getSubject(), new Date(), new Date(System.currentTimeMillis() + EXPIRE_DURATION));
     }
 
     @Override

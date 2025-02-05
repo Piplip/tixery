@@ -381,10 +381,15 @@ public class EventService {
         return context.select(LIKEDEVENTS.EVENT_ID)
                 .from(LIKEDEVENTS)
                 .where(LIKEDEVENTS.PROFILE_ID.eq(profileID))
+                .limit(10)
                 .fetchInto(UUID.class);
     }
 
     public List<Map<String, Object>> getFavouriteEvents(List<String> eventIDs) {
+        if(eventIDs.isEmpty()){
+            return List.of();
+        }
+
         List<UUID> eventIDList = eventIDs.stream()
                 .map(UUID::fromString)
                 .collect(Collectors.toList());
@@ -403,5 +408,34 @@ public class EventService {
                 .execute();
 
         return new Response(HttpStatus.OK.name(), "Removed successful", null);
+    }
+
+    public Integer getTotalFavouriteEvent(Integer profileID) {
+        return context.selectCount()
+                .from(LIKEDEVENTS)
+                .where(LIKEDEVENTS.PROFILE_ID.eq(profileID))
+                .fetchOneInto(Integer.class);
+    }
+
+    public List<Map<String, Object>> getFollowedEvents(List<Integer> organizerIDs) {
+        if (organizerIDs.isEmpty()) {
+            return List.of();
+        }
+
+        var subquery = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.LOCATION,
+                        rowNumber().over(partitionBy(EVENTS.ORGANIZER_ID).orderBy(EVENTS.START_TIME.asc())).as("row_num")
+                )
+                .from(EVENTS)
+                .where(EVENTS.ORGANIZER_ID.in(organizerIDs).and(EVENTS.START_TIME.gt(OffsetDateTime.now())))
+                .asTable("foo");
+
+        var eventRecord = context.select(subquery.field(EVENTS.EVENT_ID), subquery.field(EVENTS.NAME), subquery.field(EVENTS.EVENT_TYPE),
+                        subquery.field(EVENTS.IMAGES), subquery.field(EVENTS.START_TIME), subquery.field(EVENTS.LOCATION)
+                )
+                .from(subquery)
+                .where(field("row_num").le(2))
+                .fetchMaps();
+
+        return getEventTickets(eventRecord);
     }
 }

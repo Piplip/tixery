@@ -5,6 +5,10 @@ import com.nkd.accountservice.domain.Profile;
 import com.nkd.accountservice.domain.Response;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jooq.types.UInteger;
+
+import java.util.List;
+import java.util.Map;
 
 public interface AccountService {
     Response handleSignUp(AccountDTO accountDTO);
@@ -22,4 +26,8 @@ public interface AccountService {
     Response handleForgotPasswordReset(String email, String newPassword);
     Integer getUserID(String email);
     String generateInternalJWT(String email);
+    Response handleFollowOrganizer(Integer profileID, Integer organizerID, Boolean follow);
+    List<Integer> getFollow(Integer profileID);
+    List<Map<String, Object>> getFollowDetail(List<UInteger> profileIDs);
+    Map<String, Object> getAttendeeStats(String profileID);
 }
