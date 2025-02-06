@@ -1,8 +1,6 @@
 package com.nkd.accountservice.service;
 
-import com.nkd.accountservice.domain.AccountDTO;
-import com.nkd.accountservice.domain.Profile;
-import com.nkd.accountservice.domain.Response;
+import com.nkd.accountservice.domain.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jooq.types.UInteger;
@@ -30,4 +28,13 @@ public interface AccountService {
     List<Integer> getFollow(Integer profileID);
     List<Map<String, Object>> getFollowDetail(List<UInteger> profileIDs);
     Map<String, Object> getAttendeeStats(String profileID);
+    String getProfiles(String email);
+    Response updateNotificationPreferences(Integer profileID, String role, NotifyPreference preferences);
+    String getNotificationPreferences(Integer profileID);
+    Map<String, Object> getAttendeeProfile(String profileID);
+    Response updateAttendeeProfile(Integer profileID, Integer userDataID, Profile profile);
+    Boolean checkAccountHasSetUpPassword(String email);
+    Response updatePassword(PasswordDTO passwordDTO);
+    Response setPasswordForOauth2User(String email, String password);
+    Response handleSetPasswordRequestForOauth2User(String email);
 }

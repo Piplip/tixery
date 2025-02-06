@@ -1,8 +1,6 @@
 package com.nkd.accountservice.controller;
 
-import com.nkd.accountservice.domain.AccountDTO;
-import com.nkd.accountservice.domain.Profile;
-import com.nkd.accountservice.domain.Response;
+import com.nkd.accountservice.domain.*;
 import com.nkd.accountservice.service.AccountService;
 import com.nkd.accountservice.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -132,5 +130,51 @@ public class AccountController {
     @GetMapping("/attendee/stats")
     public Map<String, Object> getAttendeeStats(@RequestParam("pid") String profileID){
         return accountService.getAttendeeStats(profileID);
+    }
+
+    @GetMapping("/attendee/profiles")
+    public String getOrganizerProfiles(@RequestParam(value = "u") String email){
+        return accountService.getProfiles(email);
+    }
+
+    @PostMapping("/notification/preferences/update")
+    public Response updateNotificationPreferences(@RequestParam("pid") Integer profileID, @RequestParam("role") String role,
+                                                  @RequestBody NotifyPreference preferences){
+        return accountService.updateNotificationPreferences(profileID, role, preferences);
+    }
+
+    @GetMapping("/notification/preferences")
+    public String getNotificationPreferences(@RequestParam("pid") Integer profileID){
+        return accountService.getNotificationPreferences(profileID);
+    }
+
+    @GetMapping("/attendee/profile")
+    public Map<String, Object> getAttendeeProfile(@RequestParam("pid") String profileID){
+        return accountService.getAttendeeProfile(profileID);
+    }
+
+    @PutMapping("/attendee/profile/update")
+    public Response updateAttendeeProfile(@RequestParam("pid") Integer profileID, @RequestParam("udid") Integer userDataID, @RequestBody Profile profile){
+        return accountService.updateAttendeeProfile(profileID, userDataID, profile);
+    }
+
+    @GetMapping("/check-password")
+    public Boolean checkAccountHasSetUpPassword(@RequestParam("u") String email){
+        return accountService.checkAccountHasSetUpPassword(email);
+    }
+
+    @PostMapping("/update-password")
+    public Response updatePassword(@RequestBody PasswordDTO passwordDTO){
+        return accountService.updatePassword(passwordDTO);
+    }
+
+    @GetMapping("/oauth2/set-password")
+    public Response handleSetPasswordForOauth2User(@RequestParam("u") String email){
+        return accountService.handleSetPasswordRequestForOauth2User(email);
+    }
+
+    @PostMapping("/oauth2/set-password")
+    public Response setPasswordForOauth2User(@RequestParam("u") String email, @RequestBody String password){
+        return accountService.setPasswordForOauth2User(email, password);
     }
 }

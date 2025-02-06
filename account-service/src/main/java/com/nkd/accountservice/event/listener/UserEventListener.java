@@ -37,6 +37,7 @@ public class UserEventListener {
                     (String) userEvent.getData().get("code"),
                     (LocalDateTime) userEvent.getData().get("expirationTime")
             );
+            case OAUTH2_SET_PASSWORD -> emailService.sendOAuth2SetPasswordEmail((String) userEvent.getData().get("email"));
         }
     }
 }

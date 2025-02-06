@@ -37,6 +37,8 @@ spring:
             required: true
     verify:
       host: ${VERIFY_EMAIL_HOST:http://localhost:4001}
+    client:
+      host: ${CLIENT_HOST:http://localhost:5173}
   security:
     oauth2:
       client:

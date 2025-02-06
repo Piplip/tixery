@@ -78,4 +78,18 @@ public class EmailUtils {
         </html>
         """.formatted(code, expirationTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
     }
+
+    public static String getOAuth2SetPasswordMessage(String verifyHost) {
+        return """
+        <html>
+            <body>
+                <h2>Set Password</h2>
+                <p>Hello,</p>
+                <p>We noticed that you signed up using a third-party service. Please click the link below to set a password for your account.</p>
+                <a href="%s/account/password/set">Set Password</a>
+                <p>If you did not sign up using a third-party service, please ignore this email.</p>
+            </body>
+        </html>
+        """.formatted(verifyHost);
+    }
 }

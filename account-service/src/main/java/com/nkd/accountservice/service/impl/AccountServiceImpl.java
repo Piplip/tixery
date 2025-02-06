@@ -1,9 +1,7 @@
 package com.nkd.accountservice.service.impl;
 
 import com.nkd.accountservice.client.EventClient;
-import com.nkd.accountservice.domain.AccountDTO;
-import com.nkd.accountservice.domain.Profile;
-import com.nkd.accountservice.domain.Response;
+import com.nkd.accountservice.domain.*;
 import com.nkd.accountservice.enumeration.EventType;
 import com.nkd.accountservice.enums.RoleRoleName;
 import com.nkd.accountservice.enums.UserAccountAccountStatus;
@@ -225,11 +223,15 @@ public class AccountServiceImpl implements AccountService {
             return new Response(HttpStatus.BAD_REQUEST.name(), "Request not found", null);
         }
 
+        UInteger profileID;
+
         if(role.equals("attendee")){
-            saveAttendeeProfile(accountID, profile, null);
+            profileID = saveAttendeeProfile(accountID, profile, null);
+            createProfileNotificationPreferences(profileID, RoleRoleName.ATTENDEE);
         }
         else if(role.equals("organizer")){
-            saveOrganizerProfile(accountID, profile);
+            profileID = saveOrganizerProfile(accountID, profile);
+            createProfileNotificationPreferences(profileID, RoleRoleName.HOST);
         }
 
         redisTemplate.delete("setup_profile_" + requestID);
@@ -258,6 +260,10 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Response handleForgotPassword(String email) {
+        if(checkAccountHasSetUpPassword(email)){
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Invalid Operation", null);
+        }
+
         String code = CommonUtils.generateRandomNumber(6);
         redisTemplate.opsForValue().set("forgot_password_" + email, code, Duration.ofMinutes(10));
 
@@ -363,7 +369,7 @@ public class AccountServiceImpl implements AccountService {
         return context.select(FOLLOWERS.PROFILE_ID)
                 .from(FOLLOWERS)
                 .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
-                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 0)).or(FOLLOWERS.IS_UNFOLLOW.isNull()))
+                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 0).or(FOLLOWERS.IS_UNFOLLOW.isNull())))
                 .limit(10)
                 .fetchInto(Integer.class);
     }
@@ -383,13 +389,159 @@ public class AccountServiceImpl implements AccountService {
         stats.put("total_saved", eventClient.getTotalFavouriteEvent(Integer.parseInt(profileID)));
         stats.put("total_followed", context.selectCount().from(FOLLOWERS)
                         .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
-                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 0)).or(FOLLOWERS.IS_UNFOLLOW.isNull()))
+                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 0).or(FOLLOWERS.IS_UNFOLLOW.isNull())))
                 .fetchSingleInto(Integer.class));
 
         return stats;
     }
 
-    private void saveOrganizerProfile(String accountID, Profile profile){
+    @Override
+    public String getProfiles(String email) {
+        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL, PROFILE.CUSTOM_URL
+                        , PROFILE.TOTAL_EVENT_HOSTED, PROFILE.TOTAL_FOLLOWERS
+                )
+                .from(USER_ACCOUNT.join(PROFILE).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID)))
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
+                .fetch().formatJSON();
+    }
+
+    @Override
+    public Response updateNotificationPreferences(Integer profileID, String role, NotifyPreference preferences) {
+        String newPreferences;
+        if(role.equals("ATTENDEE")){
+            newPreferences = """
+                    {
+                        "feature_and_announcement": "%s",
+                        "post_event": "%s",
+                        "follow_organizer": "%s",
+                        "onsale_event": "%s",
+                        "liked_event": "%s"
+                    }
+                """.formatted(preferences.getFeatureAnnouncement(), preferences.getAdditionalInfo(), preferences.getOrganizerAnnounces(),
+                    preferences.getEventOnSales(), preferences.getLikedEvents());
+        }
+        else{
+            newPreferences = """
+                    {
+                        "feature_and_announcement": "%s",
+                        "sales_recap": "%s",
+                        "next_event_reminder": "%s",
+                        "order_confirmation": "%s"
+                    }
+                """.formatted(preferences.getFeatureAnnouncement(), preferences.getEventSalesRecap(), preferences.getImportantReminders(),
+                    preferences.getOrderConfirmations());
+        }
+
+        context.update(PROFILE)
+                .set(PROFILE.NOTIFY_PREFERENCES, newPreferences)
+                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "Success", null);
+    }
+
+    @Override
+    public String getNotificationPreferences(Integer profileID) {
+        return context.select(PROFILE.NOTIFY_PREFERENCES)
+                .from(PROFILE)
+                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                .fetchSingleInto(String.class);
+    }
+
+    @Override
+    public Map<String, Object> getAttendeeProfile(String profileID) {
+        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL, PROFILE.DESCRIPTION, USER_ACCOUNT.ACCOUNT_CREATED_AT,
+                        USER_DATA.FULL_NAME, USER_DATA.NICKNAME, USER_DATA.DATE_OF_BIRTH, USER_DATA.PHONE_NUMBER, USER_DATA.NATIONALITY, USER_DATA.GENDER,
+                        USER_DATA.INTERESTS, USER_DATA.USER_DATA_ID
+                )
+                .from(PROFILE.join(USER_ACCOUNT).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID))
+                        .leftJoin(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID)))
+                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                .fetchOneMap();
+    }
+
+    @Override
+    public Response updateAttendeeProfile(Integer profileID, Integer userDataID, Profile profile) {
+        context.update(PROFILE)
+            .set(PROFILE.PROFILE_NAME, profile.getPpName())
+            .set(PROFILE.DESCRIPTION, profile.getPpDescription())
+            .set(PROFILE.PROFILE_IMAGE_URL, profile.getPpImageURL())
+            .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+            .execute();
+
+        context.update(USER_DATA)
+                .set(USER_DATA.FULL_NAME, profile.getFullName())
+                .set(USER_DATA.NICKNAME, profile.getNickname())
+                .set(USER_DATA.DATE_OF_BIRTH, LocalDate.parse(profile.getDob(), DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
+                .set(USER_DATA.NATIONALITY, profile.getNationality())
+                .where(USER_DATA.USER_DATA_ID.eq(UInteger.valueOf(userDataID)))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "Profile updated", null);
+    }
+
+    @Override
+    public Boolean checkAccountHasSetUpPassword(String email) {
+        return context.fetchExists(context.selectFrom(USER_ACCOUNT)
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email)
+                    .and(USER_ACCOUNT.CREDENTIAL_ID.isNotNull())));
+    }
+
+    // TODO: Test this method
+    @Override
+    public Response updatePassword(PasswordDTO passwordDTO) {
+        var oldPassword = context.select(CREDENTIAL.PASSWORD)
+                .from(USER_ACCOUNT.join(CREDENTIAL).on(USER_ACCOUNT.CREDENTIAL_ID.eq(CREDENTIAL.CREDENTIAL_ID)))
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(passwordDTO.getEmail()))
+                .fetchSingleInto(String.class);
+
+        if(!encoder.matches(passwordDTO.getPassword(), oldPassword)){
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Old password is incorrect", null);
+        }
+
+        UInteger credentialID = context.select(USER_ACCOUNT.CREDENTIAL_ID)
+                .from(USER_ACCOUNT)
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(passwordDTO.getEmail()))
+                .fetchSingleInto(UInteger.class);
+
+        context.update(CREDENTIAL)
+                .set(CREDENTIAL.PASSWORD, encoder.encode(passwordDTO.getNewPassword()))
+                .set(CREDENTIAL.LAST_UPDATED_AT, LocalDateTime.now())
+                .where(CREDENTIAL.CREDENTIAL_ID.eq(credentialID))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "Password updated", null);
+    }
+
+    @Override
+    public Response setPasswordForOauth2User(String email, String password) {
+        UInteger credentialID = context.insertInto(CREDENTIAL)
+                .set(CREDENTIAL.PASSWORD, encoder.encode(password))
+                .set(CREDENTIAL.LAST_UPDATED_AT, LocalDateTime.now())
+                .returningResult(CREDENTIAL.CREDENTIAL_ID)
+                .fetchSingleInto(UInteger.class);
+
+        context.update(USER_ACCOUNT)
+                .set(USER_ACCOUNT.CREDENTIAL_ID, credentialID)
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "Password set", null);
+    }
+
+    @Override
+    public Response handleSetPasswordRequestForOauth2User(String email) {
+        UserEvent setPasswordEvt = new UserEvent();
+        setPasswordEvt.setEventType(EventType.OAUTH2_SET_PASSWORD);
+        setPasswordEvt.setData(Map.of("email", email));
+
+        publisher.publishEvent(setPasswordEvt);
+
+        return new Response(HttpStatus.OK.name(), "Set password request sent", null);
+    }
+
+    private UInteger saveOrganizerProfile(String accountID, Profile profile){
         UInteger updateProfileID;
         Optional<UInteger> profileID = context.select(PROFILE.PROFILE_ID).from(PROFILE)
                 .where(PROFILE.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
@@ -443,9 +595,11 @@ public class AccountServiceImpl implements AccountService {
                 .set(USER_ACCOUNT.ROLE_ID, roleID)
                 .where(USER_ACCOUNT.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
                 .execute();
+
+        return updateProfileID;
     }
 
-    private void saveAttendeeProfile(String accountID, Profile profile, UInteger pid) {
+    private UInteger saveAttendeeProfile(String accountID, Profile profile, UInteger pid) {
         UInteger profileID = null;
         if(pid == null){
             UInteger userDataID = context.insertInto(USER_DATA)
@@ -505,6 +659,8 @@ public class AccountServiceImpl implements AccountService {
             .set(USER_ACCOUNT.ROLE_ID, roleID)
             .where(USER_ACCOUNT.ACCOUNT_ID.eq(UInteger.valueOf(accountID)))
             .execute();
+
+        return profileID;
     }
 
     private boolean isEmailExist(String email) {
@@ -533,5 +689,34 @@ public class AccountServiceImpl implements AccountService {
 
         return !context.fetchExists(context.selectFrom(USER_ACCOUNT)
                         .where(condition.and(USER_ACCOUNT.ACCOUNT_STATUS.eq(UserAccountAccountStatus.VERIFIED))));
+    }
+
+    private void createProfileNotificationPreferences(UInteger profileID, RoleRoleName role){
+        String preferences = "";
+        if(role.equals(RoleRoleName.ATTENDEE)){
+            preferences = """
+                    {
+                        "feature_and_announcement": "true",
+                        "post_event": "true",
+                        "follow_organizer": "false",
+                        "onsale_event": "true",
+                        "liked_event": "true"
+                    }
+                    """;
+        }
+        else if(role.equals(RoleRoleName.HOST)){
+            preferences = """
+                    {
+                        "feature_and_announcement": "true",
+                        "sales_recap": "true",
+                        "next_event_reminder": "true",
+                        "order_confirmation": "true"
+                    }
+                    """;
+        }
+        context.update(PROFILE)
+                .set(PROFILE.NOTIFY_PREFERENCES, preferences)
+                .where(PROFILE.PROFILE_ID.eq(profileID))
+                .execute();
     }
 }

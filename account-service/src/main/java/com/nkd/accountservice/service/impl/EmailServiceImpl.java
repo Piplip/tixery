@@ -18,6 +18,7 @@ public class EmailServiceImpl implements EmailService {
 
     private static final String NEW_ACCOUNT_VERIFICATION = "NEW ACCOUNT ACTIVATION";
     private static final String PASSWORD_RESET = "RESET PASSWORD";
+    private static final String OAUTH2_SET_PASSWORD = "SET PASSWORD";
 
     private final JavaMailSender mailSender;
 
@@ -25,6 +26,8 @@ public class EmailServiceImpl implements EmailService {
     private String fromEmail;
     @Value("${spring.mail.verify.host}")
     private String verifyHost;
+    @Value("${spring.mail.client.host}")
+    private String clientHost;
 
     @Override
     public void sendRegistrationEmail(String email, Integer accountID, Integer confirmationID, String token, LocalDateTime expirationTime) {
@@ -50,6 +53,15 @@ public class EmailServiceImpl implements EmailService {
             sendEmail(email, EmailUtils.getResetPasswordMessage(code, expirationTime), PASSWORD_RESET);
         } catch(Exception e){
             EmailUtils.handleEmailException("Error sending password reset email to " + email + "at " + LocalDateTime.now());
+        }
+    }
+
+    @Override
+    public void sendOAuth2SetPasswordEmail(String email) {
+        try {
+            sendEmail(email, EmailUtils.getOAuth2SetPasswordMessage(clientHost), OAUTH2_SET_PASSWORD);
+        } catch(Exception e){
+            EmailUtils.handleEmailException("Error sending OAuth2 set password email to " + email + "at " + LocalDateTime.now());
         }
     }
 
