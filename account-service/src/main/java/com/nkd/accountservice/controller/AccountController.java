@@ -112,52 +112,6 @@ public class AccountController {
         return jwtService.generateLoginToken(email);
     }
 
-    @PostMapping("/follow")
-    public Response handleFollowOrganizer(@RequestParam("upid") Integer profileID, @RequestParam("opid") Integer organizerID, @RequestParam("follow") Boolean follow){
-        return accountService.handleFollowOrganizer(profileID, organizerID, follow);
-    }
-
-    @GetMapping("/follow")
-    public List<Integer> getFollow(@RequestParam("pid") Integer profileID){
-        return accountService.getFollow(profileID);
-    }
-
-    @PostMapping("/follow/detail")
-    public List<Map<String, Object>> getFollowDetail(@RequestBody List<UInteger> profileIDs){
-        return accountService.getFollowDetail(profileIDs);
-    }
-
-    @GetMapping("/attendee/stats")
-    public Map<String, Object> getAttendeeStats(@RequestParam("pid") String profileID){
-        return accountService.getAttendeeStats(profileID);
-    }
-
-    @GetMapping("/attendee/profiles")
-    public String getOrganizerProfiles(@RequestParam(value = "u") String email){
-        return accountService.getProfiles(email);
-    }
-
-    @PostMapping("/notification/preferences/update")
-    public Response updateNotificationPreferences(@RequestParam("pid") Integer profileID, @RequestParam("role") String role,
-                                                  @RequestBody NotifyPreference preferences){
-        return accountService.updateNotificationPreferences(profileID, role, preferences);
-    }
-
-    @GetMapping("/notification/preferences")
-    public String getNotificationPreferences(@RequestParam("pid") Integer profileID){
-        return accountService.getNotificationPreferences(profileID);
-    }
-
-    @GetMapping("/attendee/profile")
-    public Map<String, Object> getAttendeeProfile(@RequestParam("pid") String profileID){
-        return accountService.getAttendeeProfile(profileID);
-    }
-
-    @PutMapping("/attendee/profile/update")
-    public Response updateAttendeeProfile(@RequestParam("pid") Integer profileID, @RequestParam("udid") Integer userDataID, @RequestBody Profile profile){
-        return accountService.updateAttendeeProfile(profileID, userDataID, profile);
-    }
-
     @GetMapping("/check-password")
     public Boolean checkAccountHasSetUpPassword(@RequestParam("u") String email){
         return accountService.checkAccountHasSetUpPassword(email);

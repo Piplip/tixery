@@ -106,4 +106,9 @@ public class EventController {
     public List<Map<String, Object>> getFollowedEvents(@RequestBody List<Integer> organizerIDs) {
         return eventService.getFollowedEvents(organizerIDs);
     }
+
+    @GetMapping("/orders/profile")
+    public List<Map<String, Object>> getProfileOrders(@RequestParam("eid") String eventID) {
+        return eventService.getEventOrders(eventID);
+    }
 }

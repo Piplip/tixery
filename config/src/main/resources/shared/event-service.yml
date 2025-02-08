@@ -2,7 +2,8 @@ server:
   servlet:
     context-path: /events
   port: 9999
-
+client:
+  port: 5173
 
 jwt:
   secret: aW8uanNvbndlYnRva2VuLmltcGwuc2VjdXJpdHkuRGVmYXVsdFNlY3JldEtleUJ1aWxkZXJANjI1ZGIwZTA=

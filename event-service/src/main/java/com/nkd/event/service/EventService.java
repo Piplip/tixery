@@ -6,6 +6,8 @@ import com.nkd.event.client.AccountClient;
 import com.nkd.event.dto.EventDTO;
 import com.nkd.event.dto.OnlineEventDTO;
 import com.nkd.event.dto.Response;
+import com.nkd.event.enumeration.EventOperationType;
+import com.nkd.event.payment.EventOperation;
 import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +15,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.impl.DSL;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +42,7 @@ public class EventService {
 
     private final DSLContext context;
     private final AccountClient accountClient;
+    private final ApplicationEventPublisher publisher;
 
     public Response createEvent(EventDTO eventDTO, String eid, String step) {
         if (eid == null || eid.isEmpty()) {
@@ -194,11 +198,10 @@ public class EventService {
         return eventData;
     }
 
+    // TODO: Refine this method to handle the ticket visibility
     public Map<String, Object> getEvent(String eventID, Integer profileID) {
-        context.insertInto(EVENTVIEWS).set(EVENTVIEWS.EVENT_ID, UUID.fromString(eventID))
-                .set(EVENTVIEWS.VIEW_DATE, OffsetDateTime.now())
-                .set(EVENTVIEWS.PROFILE_ID, profileID)
-                .execute();
+        EventOperation viewOperation = EventOperation.buildOperation(Map.of("eventID", eventID, "profileID", profileID), EventOperationType.VIEW);
+        publisher.publishEvent(viewOperation);
 
         var eventRecord = context.select(
                         EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
@@ -214,7 +217,7 @@ public class EventService {
             return null;
         }
         var tickets = context.selectFrom(TICKETTYPES)
-                .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)))
+                .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)).and(TICKETTYPES.STATUS.eq("visible")))
                 .orderBy(TICKETTYPES.SALE_START_TIME)
                 .fetchMaps();
         
@@ -437,5 +440,10 @@ public class EventService {
                 .fetchMaps();
 
         return getEventTickets(eventRecord);
+    }
+
+    // TODO: Implement this method
+    public List<Map<String, Object>> getEventOrders(String eventID) {
+        return null;
     }
 }

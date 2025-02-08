@@ -14,6 +14,7 @@ import lombok.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TicketDTO {
 
+    private Integer ticketTypeID;
     private String ticketType;
     private String ticketName;
     private Integer quantity;

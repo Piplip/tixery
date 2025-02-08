@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
+</head>
+<body>
+<table align="center" width="600" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+    <tr>
+        <td style="padding: 3rem;">
+            <p style="font-size: 1.5rem; font-weight: bold;">
+                <span th:text="${username}"></span>, You've got the tickets
+            </p>
+            <a th:href="${clientHost + '/u/' + profileID}" target="_blank">
+                <button style="background-color: red; color: white; padding: 10px 20px; border: none; border-radius: 5px;">
+                    Go to My Tickets
+                </button>
+            </a>
+            <p style="font-size: 1rem;">
+                <b>Your tickets are not in this email. </b>Access your tickets via the web, go to the <b>Tickets section</b>
+                in your account on <a th:href="${clientHost}">Tixery.com</a> to view and download a printable PDF of your tickets.
+            </p>
+            <hr />
+        </td>
+    </tr>
+</table>
+</body>
+</html>

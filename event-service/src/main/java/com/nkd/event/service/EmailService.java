@@ -1,0 +1,63 @@
+package com.nkd.event.service;
+
+import com.nkd.event.dto.PaymentDTO;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class EmailService {
+
+    private final JavaMailSender mailSender;
+    private final SpringTemplateEngine templateEngine;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+    @Value("${client.host}")
+    private String clientHost;
+
+    // TODO: Enhanced email content
+    public void sendPaymentSuccessEmail(PaymentDTO paymentDTO){
+        Context context = new Context();
+        context.setVariable("username", paymentDTO.getUsername());
+        context.setVariable("clientHost", clientHost);
+        context.setVariable("profileID", paymentDTO.getProfileID());
+        String content = templateEngine.process("payment_success", context);
+
+        try {
+            sendEmail(paymentDTO.getEmail(), content, "Payment Success");
+        } catch (Exception e) {
+            handleEmailException("Error sending payment success email to " + paymentDTO.getEmail());
+        }
+    }
+
+    private void sendEmail(String toEmail, String content, String subject) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(content, true);
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending email");
+        }
+    }
+
+    private void handleEmailException(String message) {
+        log.error(message);
+        throw new RuntimeException(message);
+    }
+}

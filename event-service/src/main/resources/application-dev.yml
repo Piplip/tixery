@@ -7,3 +7,13 @@ POSTGRES_URL: jdbc:postgresql://localhost:5432/events
 REDIS_HOST: redis-18796.c294.ap-northeast-1-2.ec2.redns.redis-cloud.com
 REDIS_PORT: 18796
 REDIS_PASSWORD: oN7pR7PlYVYmp12LHGirQrqbMAQMenGY
+
+STRIPE_SECRET_KEY: sk_test_51Qd6SWKlOlLGTAI8A9M0NLOgRWyRpgeOe1zMq6FuM9blSibUaI6WBMte9vQgJFCyNxQJk1YWHljbgm1spMcErvzR00nYqAt23H
+
+#Email_Config
+EMAIL_HOST: smtp.gmail.com
+EMAIL_PORT: 587
+EMAIL_USERNAME: nguyenkhanhdu956@gmail.com
+EMAIL_PASSWORD: hizz khim zsgv xpqd
+
+CLIENT_HOST: http://localhost:5173

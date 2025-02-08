@@ -1,5 +1,6 @@
 package com.nkd.accountservice.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nkd.accountservice.client.EventClient;
 import com.nkd.accountservice.domain.*;
 import com.nkd.accountservice.enumeration.EventType;
@@ -375,9 +376,8 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public List<Map<String, Object>> getFollowDetail(List<UInteger
-            > profileIDs) {
-        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL)
+    public List<Map<String, Object>> getFollowDetail(List<UInteger> profileIDs) {
+        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL, PROFILE.CUSTOM_URL)
                 .from(PROFILE)
                 .where(PROFILE.PROFILE_ID.in(profileIDs))
                 .fetchMaps();
@@ -407,35 +407,28 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Response updateNotificationPreferences(Integer profileID, String role, NotifyPreference preferences) {
-        String newPreferences;
-        if(role.equals("ATTENDEE")){
-            newPreferences = """
-                    {
-                        "feature_and_announcement": "%s",
-                        "post_event": "%s",
-                        "follow_organizer": "%s",
-                        "onsale_event": "%s",
-                        "liked_event": "%s"
-                    }
-                """.formatted(preferences.getFeatureAnnouncement(), preferences.getAdditionalInfo(), preferences.getOrganizerAnnounces(),
-                    preferences.getEventOnSales(), preferences.getLikedEvents());
-        }
-        else{
-            newPreferences = """
-                    {
-                        "feature_and_announcement": "%s",
-                        "sales_recap": "%s",
-                        "next_event_reminder": "%s",
-                        "order_confirmation": "%s"
-                    }
-                """.formatted(preferences.getFeatureAnnouncement(), preferences.getEventSalesRecap(), preferences.getImportantReminders(),
-                    preferences.getOrderConfirmations());
-        }
+        ObjectMapper mapper = new ObjectMapper();
 
-        context.update(PROFILE)
-                .set(PROFILE.NOTIFY_PREFERENCES, newPreferences)
-                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
-                .execute();
+        var rawPreferences = getNotificationPreferences(profileID);
+
+        try {
+            String newPreferences;
+            if (rawPreferences != null) {
+                NotifyPreference oldPreferences = mapper.readValue(rawPreferences, NotifyPreference.class);
+                preferences.combinePreferences(oldPreferences);
+
+            }
+            newPreferences = role.equals("ATTENDEE") ?
+                    preferences.buildAttendeePreferences() : preferences.buildOrganizerPreferences();
+
+            context.update(PROFILE)
+                    .set(PROFILE.NOTIFY_PREFERENCES, newPreferences)
+                    .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                    .execute();
+        } catch (Exception e) {
+            log.error("Error parsing preferences: {}", e.getMessage());
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Internal Server Error", null);
+        }
 
         return new Response(HttpStatus.OK.name(), "Success", null);
     }
@@ -488,7 +481,6 @@ public class AccountServiceImpl implements AccountService {
                     .and(USER_ACCOUNT.CREDENTIAL_ID.isNotNull())));
     }
 
-    // TODO: Test this method
     @Override
     public Response updatePassword(PasswordDTO passwordDTO) {
         var oldPassword = context.select(CREDENTIAL.PASSWORD)
@@ -692,28 +684,9 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private void createProfileNotificationPreferences(UInteger profileID, RoleRoleName role){
-        String preferences = "";
-        if(role.equals(RoleRoleName.ATTENDEE)){
-            preferences = """
-                    {
-                        "feature_and_announcement": "true",
-                        "post_event": "true",
-                        "follow_organizer": "false",
-                        "onsale_event": "true",
-                        "liked_event": "true"
-                    }
-                    """;
-        }
-        else if(role.equals(RoleRoleName.HOST)){
-            preferences = """
-                    {
-                        "feature_and_announcement": "true",
-                        "sales_recap": "true",
-                        "next_event_reminder": "true",
-                        "order_confirmation": "true"
-                    }
-                    """;
-        }
+        String preferences = role.equals(RoleRoleName.ATTENDEE) ?
+                NotifyPreference.defaultAttendeePreferences() : NotifyPreference.defaultOrganizerPreferences();
+
         context.update(PROFILE)
                 .set(PROFILE.NOTIFY_PREFERENCES, preferences)
                 .where(PROFILE.PROFILE_ID.eq(profileID))

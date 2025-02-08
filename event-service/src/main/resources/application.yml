@@ -23,6 +23,31 @@ spring:
             connect-timeout: 5000
             read-timeout: 10000
             logger-level: full
+  mail:
+    host: ${EMAIL_HOST}
+    port: ${EMAIL_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        mime:
+          charset: UTF
+        smtp:
+          write:
+            timeout: 10000
+          connection:
+            timeout: 10000
+          timeout: 10000
+          auth: true
+          starttls:
+            enable: true
+            required: true
+client:
+  host: ${CLIENT_HOST:http://localhost:5173}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
 
 eureka:
   instance:
