@@ -1,6 +1,7 @@
 package com.nkd.event.controller;
 
 import com.nkd.event.dto.PaymentDTO;
+import com.nkd.event.dto.Response;
 import com.nkd.event.dto.StripeResponse;
 import com.nkd.event.enumeration.PaymentStatus;
 import com.nkd.event.service.PaymentService;
@@ -27,14 +28,13 @@ public class PaymentController {
     }
 
     @PostMapping("/stripe/success")
-    public ResponseEntity<StripeResponse> handleSuccessfulStripePayment(@RequestParam("order-id") Integer orderID) {
-        return ResponseEntity.status(HttpStatus.OK).body(paymentService.handleSuccessfulStripePayment(orderID));
+    public ResponseEntity<StripeResponse> handleSuccessfulStripePayment(@RequestParam("order-id") Integer orderID, @RequestParam("pid") Integer profileID) {
+        return ResponseEntity.status(HttpStatus.OK).body(paymentService.handleSuccessfulStripePayment(orderID, profileID));
     }
 
     @PostMapping("/stripe/failure")
-    public ResponseEntity<StripeResponse> handleFailedStripePayment(@RequestParam("order-id") Integer orderID) {
-        var response = paymentService.handleFailedStripePayment(orderID, PaymentStatus.USER_CANCELLED);
+    public ResponseEntity<StripeResponse> handleFailedStripePayment(@RequestParam("order-id") Integer orderID, @RequestParam("pid") Integer profileID) {
+        var response = paymentService.handleFailedStripePayment(orderID, profileID, PaymentStatus.USER_CANCELLED);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
-
 }

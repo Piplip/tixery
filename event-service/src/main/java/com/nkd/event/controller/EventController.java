@@ -4,6 +4,7 @@ import com.nkd.event.dto.EventDTO;
 import com.nkd.event.dto.OnlineEventDTO;
 import com.nkd.event.dto.Response;
 import com.nkd.event.service.EventService;
+import com.nkd.event.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,10 +16,12 @@ import java.util.UUID;
 public class EventController {
 
     private final EventService eventService;
+    private final PaymentService paymentService;
 
     @Autowired
-    public EventController(EventService eventService) {
+    public EventController(EventService eventService, PaymentService paymentService) {
         this.eventService = eventService;
+        this.paymentService = paymentService;
     }
 
     @PostMapping("/create/request")
@@ -108,7 +111,12 @@ public class EventController {
     }
 
     @GetMapping("/orders/profile")
-    public List<Map<String, Object>> getProfileOrders(@RequestParam("eid") String eventID) {
-        return eventService.getEventOrders(eventID);
+    public List<Map<String, Object>> getProfileOrders(@RequestParam("pid") Integer profileID
+            , @RequestParam(name = "last-id", required = false) Integer lastID) {
+        return eventService.getEventOrders(profileID, lastID);
+    }
+    @PostMapping("/order/cancel")
+    public Response cancelOrder(@RequestParam("order-id") Integer orderID, @RequestParam("uname") String username, @RequestParam("u") String email) {
+        return paymentService.cancelOrder(orderID, username, email);
     }
 }

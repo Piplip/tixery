@@ -6,16 +6,25 @@ import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
-import static com.nkd.event.Tables.TICKETTYPES;
+import static com.nkd.event.Tables.*;
+import static com.nkd.event.Tables.TICKETS;
 
 @RequiredArgsConstructor
 @Service
@@ -49,6 +58,7 @@ public class TicketService {
                 .set(TICKETTYPES.TICKET_TYPE, ticket.getTicketType())
                 .set(TICKETTYPES.NAME, ticket.getTicketName())
                 .set(TICKETTYPES.QUANTITY, ticket.getQuantity())
+                .set(TICKETTYPES.AVAILABLE_QUANTITY, ticket.getQuantity())
                 .set(TICKETTYPES.PRICE, ticket.getTicketType().equalsIgnoreCase("paid")
                         ? BigDecimal.valueOf(Double.parseDouble(ticket.getPrice())) : BigDecimal.ZERO)
                 .set(TICKETTYPES.DESCRIPTION, ticket.getDescription())
@@ -92,6 +102,7 @@ public class TicketService {
                 .set(TICKETTYPES.TICKET_TYPE, ticketDTO.getTicketType())
                 .set(TICKETTYPES.NAME, ticketDTO.getTicketName())
                 .set(TICKETTYPES.QUANTITY, ticketDTO.getQuantity())
+                .set(TICKETTYPES.AVAILABLE_QUANTITY, ticketDTO.getQuantity())
                 .set(TICKETTYPES.PRICE, ticketDTO.getTicketType().equalsIgnoreCase("paid")
                         ? BigDecimal.valueOf(Double.parseDouble(ticketDTO.getPrice())) : BigDecimal.ZERO)
                 .set(TICKETTYPES.DESCRIPTION, ticketDTO.getDescription())
@@ -115,7 +126,7 @@ public class TicketService {
         }
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public Response deleteTicket(Integer ticketID) {
         int rowsDeleted = context.deleteFrom(TICKETTYPES)
                 .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticketID))
@@ -126,5 +137,56 @@ public class TicketService {
         } else {
             return new Response(HttpStatus.NOT_FOUND.name(), "Ticket not found", null);
         }
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    protected void generateTickets(Integer orderID, List<TicketDTO> tickets, String eventID, Integer userID, Integer profileID) {
+        tickets.forEach(ticket -> {
+            var orderItemID = context.insertInto(ORDERITEMS)
+                    .set(ORDERITEMS.ORDER_ID, orderID)
+                    .set(ORDERITEMS.TICKET_TYPE_ID, ticket.getTicketTypeID())
+                    .set(ORDERITEMS.QUANTITY, ticket.getQuantity())
+                    .set(ORDERITEMS.PRICE, new BigDecimal(ticket.getPrice()))
+                    .returningResult(ORDERITEMS.ORDER_ITEM_ID)
+                    .fetchOneInto(Integer.class);
+            context.insertInto(TICKETS)
+                    .set(TICKETS.EVENT_ID, UUID.fromString(eventID))
+                    .set(TICKETS.ORDER_ITEM_ID, orderItemID)
+                    .set(TICKETS.USER_ID, userID)
+                    .set(TICKETS.PROFILE_ID, profileID)
+                    .set(TICKETS.PURCHASE_DATE, OffsetDateTime.now())
+                    .set(TICKETS.STATUS, "active")
+                    .execute();
+            context.update(TICKETTYPES)
+                    .set(TICKETTYPES.AVAILABLE_QUANTITY, TICKETTYPES.AVAILABLE_QUANTITY.minus(ticket.getQuantity()))
+                    .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticket.getTicketTypeID()))
+                    .execute();
+        });
+    }
+
+    public List<Map<String, Object>> getOrderTicket(Integer orderID) {
+        return context.select(TICKETTYPES.NAME, ORDERITEMS.PRICE, ORDERITEMS.QUANTITY, TICKETS.TICKET_ID, TICKETS.PURCHASE_DATE, EVENTS.ORGANIZER_ID,
+                        EVENTS.REFUND_POLICY, PAYMENTS.CURRENCY)
+                .from(ORDERS.join(ORDERITEMS).on(ORDERS.ORDER_ID.eq(ORDERITEMS.ORDER_ID))
+                        .join(TICKETTYPES).on(ORDERITEMS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                        .join(TICKETS).on(ORDERITEMS.ORDER_ITEM_ID.eq(TICKETS.ORDER_ITEM_ID))
+                        .join(EVENTS).on(TICKETS.EVENT_ID.eq(EVENTS.EVENT_ID))
+                        .join(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID)))
+                .where(ORDERS.ORDER_ID.eq(orderID))
+                .fetchMaps();
+    }
+
+    @Async("taskExecutor")
+    protected void cleanUpOnDeleteOrder(Integer orderID) {
+        context.deleteFrom(TICKETS)
+                .where(TICKETS.ORDER_ITEM_ID.in(
+                        context.select(ORDERITEMS.ORDER_ITEM_ID)
+                                .from(ORDERITEMS)
+                                .where(ORDERITEMS.ORDER_ID.eq(orderID))
+                ))
+                .execute();
+        context.deleteFrom(ORDERITEMS)
+                .where(ORDERITEMS.ORDER_ID.eq(orderID))
+                .execute();
     }
 }

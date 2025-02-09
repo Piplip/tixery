@@ -1,9 +1,12 @@
 package com.nkd.event.service;
 
 import com.nkd.event.dto.PaymentDTO;
+import com.nkd.event.dto.Response;
 import com.nkd.event.dto.StripeResponse;
 import com.nkd.event.dto.TicketDTO;
+import com.nkd.event.enumeration.EventOperationType;
 import com.nkd.event.enumeration.PaymentStatus;
+import com.nkd.event.payment.EventOperation;
 import com.stripe.Stripe;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -13,16 +16,13 @@ import org.jooq.DSLContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.nkd.event.Tables.*;
@@ -39,14 +39,43 @@ public class PaymentService {
 
     private final DSLContext context;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final ConcurrentHashMap<String, List<TicketDTO>> cache = new ConcurrentHashMap<>();
+    private final Map<String, List<TicketDTO>> cache = new HashMap<>();
 
+    private final TicketService ticketService;
     private final ApplicationEventPublisher publisher;
 
-    // TODO: Handle the capped ticket quantity
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public StripeResponse handleStripeCheckout(PaymentDTO paymentDTO) {
         Stripe.apiKey = secretKey;
+
+        try {
+            paymentDTO.getTickets().forEach(ticket -> {
+                Integer availableQuantity = context.select(TICKETTYPES.AVAILABLE_QUANTITY)
+                        .from(TICKETTYPES)
+                        .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticket.getTicketTypeID()))
+                        .fetchOneInto(Integer.class);
+                String totalKey = "total-" + ticket.getTicketTypeID();
+
+                Integer totalReservedQuantity = (Integer) redisTemplate.opsForValue().get(totalKey);
+                if (totalReservedQuantity == null) {
+                    totalReservedQuantity = 0;
+                }
+
+                if (availableQuantity == null || availableQuantity - totalReservedQuantity < ticket.getQuantity()) {
+                    throw new RuntimeException("Ticket not available for " + ticket.getTicketName() +
+                            ". Please lower the quantity and try again");
+                }
+
+                redisTemplate.opsForValue().increment(totalKey, ticket.getQuantity());
+
+                String profileKey = "reserved-for-" + paymentDTO.getProfileID();
+                redisTemplate.opsForValue().set(profileKey, ticket.getQuantity());
+            });
+
+        } catch (Exception e) {
+            log.error("Error checking ticket availability: {}", e.getMessage());
+            return StripeResponse.builder().status("failed").message(e.getMessage()).build();
+        }
 
         var orderID = context.insertInto(ORDERS)
                 .set(ORDERS.USER_ID, paymentDTO.getUserID())
@@ -78,8 +107,8 @@ public class PaymentService {
     }
 
     // TODO: Handle create Attendee record when close to event date
-    @Transactional
-    public StripeResponse handleSuccessfulStripePayment(Integer orderID) {
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StripeResponse handleSuccessfulStripePayment(Integer orderID, Integer profileID) {
         Object value = redisTemplate.opsForValue().get("stripe-order-" + orderID);
         StripeResponse response = new StripeResponse();
 
@@ -120,8 +149,10 @@ public class PaymentService {
                 Map<String, Object> outerMap = (Map<String, Object>) value;
                 response.setAmount(Long.parseLong(outerMap.get("amount").toString()));
 
+                cleanUpRedisCache(orderID, profileID);
+
                 List<TicketDTO> tickets = cache.get("stripe-order-" + orderID);
-                generateTickets(orderID, tickets, outerMap.get("eventID").toString(), ((Integer) outerMap.get("userID")),
+                ticketService.generateTickets(orderID, tickets, outerMap.get("eventID").toString(), ((Integer) outerMap.get("userID")),
                         ((Integer) outerMap.get("profileID")));
 
                 response.setStatus("success");
@@ -150,7 +181,9 @@ public class PaymentService {
         return response;
     }
 
-    public StripeResponse handleFailedStripePayment(Integer orderID, PaymentStatus status) {
+    public StripeResponse handleFailedStripePayment(Integer orderID, Integer profileID, PaymentStatus status) {
+        cleanUpRedisCache(orderID, profileID);
+
         if(orderID == null) {
             return StripeResponse.builder().status("failed").message("Order ID is required").build();
         }
@@ -180,25 +213,31 @@ public class PaymentService {
                 .paymentMethod("Stripe").build();
     }
 
-    @Transactional
-    protected void generateTickets(Integer orderID, List<TicketDTO> tickets, String eventID, Integer userID, Integer profileID) {
-        tickets.forEach(ticket -> {
-            var orderItemID = context.insertInto(ORDERITEMS)
-                    .set(ORDERITEMS.ORDER_ID, orderID)
-                    .set(ORDERITEMS.TICKET_TYPE_ID, ticket.getTicketTypeID())
-                    .set(ORDERITEMS.QUANTITY, ticket.getQuantity())
-                    .set(ORDERITEMS.PRICE, new BigDecimal(ticket.getPrice()))
-                    .returningResult(ORDERITEMS.ORDER_ITEM_ID)
-                    .fetchOneInto(Integer.class);
-            context.insertInto(TICKETS)
-                    .set(TICKETS.EVENT_ID, UUID.fromString(eventID))
-                    .set(TICKETS.ORDER_ITEM_ID, orderItemID)
-                    .set(TICKETS.USER_ID, userID)
-                    .set(TICKETS.PROFILE_ID, profileID)
-                    .set(TICKETS.PURCHASE_DATE, OffsetDateTime.now())
-                    .set(TICKETS.STATUS, "active")
-                    .execute();
-        });
+    public Response cancelOrder(Integer orderID, String username, String email) {
+        var paymentID = context.update(PAYMENTS)
+                .set(PAYMENTS.PAYMENT_STATUS, PaymentStatus.USER_CANCELLED.name())
+                .where(PAYMENTS.ORDER_ID.eq(orderID))
+                .returningResult(PAYMENTS.PAYMENT_ID)
+                .fetchOneInto(UUID.class);
+
+        var eventID = context.update(ORDERS)
+                .set(ORDERS.STATUS, "cancelled")
+                .set(ORDERS.CANCEL_REASON, PaymentStatus.USER_CANCELLED.getDescription())
+                .where(ORDERS.ORDER_ID.eq(orderID))
+                .returningResult(ORDERS.EVENT_ID)
+                .fetchOneInto(UUID.class);
+
+        assert paymentID != null;
+        assert eventID != null;
+        ticketService.cleanUpOnDeleteOrder(orderID);
+
+        EventOperation cancelEvent = EventOperation.builder()
+                .data(Map.of("orderID", orderID, "username", username, "eventID", eventID, "email", email))
+                .type(EventOperationType.CANCEL)
+                .build();
+        publisher.publishEvent(cancelEvent);
+
+        return new Response(HttpStatus.OK.name(), "Order cancelled successfully", null);
     }
 
     private StripeResponse createStripeResponse(SessionCreateParams params) {
@@ -243,4 +282,8 @@ public class PaymentService {
                 .build();
     }
 
+    private void cleanUpRedisCache(Integer orderID, Integer profileID) {
+        redisTemplate.delete("stripe-order-" + orderID);
+        redisTemplate.delete("reserved-for-" + profileID);
+    }
 }

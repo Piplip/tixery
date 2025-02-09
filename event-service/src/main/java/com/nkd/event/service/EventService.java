@@ -198,12 +198,14 @@ public class EventService {
         return eventData;
     }
 
-    // TODO: Refine this method to handle the ticket visibility
     public Map<String, Object> getEvent(String eventID, Integer profileID) {
-        EventOperation viewOperation = EventOperation.buildOperation(Map.of("eventID", eventID, "profileID", profileID), EventOperationType.VIEW);
+        EventOperation viewOperation = EventOperation.builder()
+                .data(Map.of("eventID", eventID, "profileID", profileID))
+                .type(EventOperationType.VIEW)
+                .build();
         publisher.publishEvent(viewOperation);
 
-        var eventRecord = context.select(
+        var eventData = context.select(
                         EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
                         EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION, EVENTS.CREATED_AT,
                         EVENTS.CATEGORY, EVENTS.SUB_CATEGORY, EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY, EVENTS.FAQ, EVENTS.FULL_DESCRIPTION,
@@ -211,17 +213,23 @@ public class EventService {
                 )
                 .from(EVENTS)
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
-                .fetchOne();
+                .fetchOneMap();
 
-        if (eventRecord == null) {
+        if (eventData == null) {
             return null;
         }
+
         var tickets = context.selectFrom(TICKETTYPES)
-                .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)).and(TICKETTYPES.STATUS.eq("visible")))
+                .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID))
+                        .and(TICKETTYPES.STATUS.eq("visible")
+                                .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
+                                        .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now())))
+                                .or(TICKETTYPES.STATUS.eq("custom")
+                                        .and(TICKETTYPES.VIS_START_TIME.lt(OffsetDateTime.now()))
+                                        .and(TICKETTYPES.VIS_END_TIME.gt(OffsetDateTime.now())))))
                 .orderBy(TICKETTYPES.SALE_START_TIME)
                 .fetchMaps();
-        
-        Map<String, Object> eventData = eventRecord.intoMap();
+
         eventData.put("tickets", tickets);
         
         return eventData;
@@ -442,8 +450,21 @@ public class EventService {
         return getEventTickets(eventRecord);
     }
 
-    // TODO: Implement this method
-    public List<Map<String, Object>> getEventOrders(String eventID) {
-        return null;
+    public List<Map<String, Object>> getEventOrders(Integer profileID, Integer lastOrderID) {
+        Condition condition = DSL.trueCondition();
+        if (lastOrderID != null) {
+            condition = ORDERS.ORDER_ID.gt(lastOrderID);
+        }
+
+        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.START_TIME, EVENTS.IMAGES, EVENTS.LOCATION,
+                        ORDERS.ORDER_ID, ORDERS.CREATED_AT)
+                .from(ORDERS)
+                .join(EVENTS).on(ORDERS.EVENT_ID.eq(EVENTS.EVENT_ID))
+                .where(ORDERS.PROFILE_ID.eq(profileID).and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
+                        .and(ORDERS.STATUS.eq("paid"))
+                        .and(condition))
+                .orderBy(ORDERS.CREATED_AT.desc())
+                .limit(10)
+                .fetchMaps();
     }
 }

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Cancellation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        img{
+            max-width: 200px;
+            margin: 0 auto;
+            display: block;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #2d2d2d;
+            font-size: 22px;
+        }
+        .content {
+            font-size: 16px;
+            color: #444;
+            margin: 20px 0;
+        }
+        .details {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: left;
+            display: inline-block;
+        }
+        .details p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .details span {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <img src="https://firebasestorage.googleapis.com/v0/b/medicare-10c3b.appspot.com/o/assets%2Flogo.svg?alt=media&token=25f58224-e0fd-4834-b0ac-e37d45e6ffad"
+         alt="tixery Logo" class="logo">
+    <h1>Hello, <span th:text="${userName}">User</span></h1>
+    <p class="content">
+        Your order for the event <b th:text="${eventName}">Event Name</b> was successfully canceled through Eventbrite.
+    </p>
+    <div class="details">
+        <p><span>Event Name:</span> <span th:text="${eventName}">Event Name</span></p>
+        <p><span>Order Number:</span> <span th:text="${orderID}">123456789</span></p>
+    </div>
+</div>
+</body>
+</html>

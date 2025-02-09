@@ -60,4 +60,18 @@ public class EmailService {
         log.error(message);
         throw new RuntimeException(message);
     }
+
+    public void sendCancellationEmail(Integer orderID, String eventName, String email) {
+        Context context = new Context();
+        context.setVariable("orderID", orderID);
+        context.setVariable("eventName", eventName);
+        String content = templateEngine.process("cancel_order", context);
+
+        try {
+            sendEmail(email, content, "Order Cancellation");
+        } catch (Exception e) {
+            handleEmailException("Error sending payment success email to " + email
+            );
+        }
+    }
 }

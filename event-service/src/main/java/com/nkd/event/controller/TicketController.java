@@ -7,6 +7,9 @@ import com.nkd.event.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 public class TicketController {
 
@@ -31,4 +34,10 @@ public class TicketController {
     public Response updateTicket(@RequestParam(name = "tid") Integer ticketID) {
         return ticketService.deleteTicket(ticketID);
     }
+
+    @GetMapping("/order/tickets")
+    public List<Map<String, Object>> getOrderTicket(@RequestParam("order-id") Integer orderID) {
+        return ticketService.getOrderTicket(orderID);
+    }
+
 }

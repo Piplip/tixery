@@ -13,7 +13,7 @@ public class PaymentListener {
 
     private final EmailService emailService;
 
-    @Async
+    @Async("taskExecutor")
     @EventListener
     public void handlePaymentSuccess(PaymentDTO payment) {
         emailService.sendPaymentSuccessEmail(payment);
