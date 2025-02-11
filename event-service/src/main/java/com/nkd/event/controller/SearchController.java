@@ -3,10 +3,7 @@ package com.nkd.event.controller;
 import com.nkd.event.dto.Response;
 import com.nkd.event.service.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +16,20 @@ public class SearchController {
     @Autowired
     public SearchController(SearchService searchService) {
         this.searchService = searchService;
+    }
+
+    @PostMapping("/search")
+    public List<Map<String, Object>> getEventsSearch(@RequestParam(value = "eids", required = false) String eventIDs,
+                                                     @RequestParam(value = "q", required = false) String query,
+                                                     @RequestParam(value = "categories", required = false) String categories,
+                                                     @RequestParam(value = "lat", required = false) String lat,
+                                                     @RequestParam(value = "lon", required = false) String lon,
+                                                     @RequestParam(value = "date", required = false) String time,
+                                                     @RequestParam(value = "price", required = false) String price,
+                                                     @RequestParam(value = "online", required = false) Boolean online,
+                                                     @RequestParam(value = "followed", required = false) Boolean isFollowOnly,
+                                                     @RequestBody(required = false) List<Integer> followList) {
+        return searchService.getEventSearch(eventIDs, query, categories, lat, lon, time, price, online, isFollowOnly, followList);
     }
 
     @GetMapping("/search/suggestions")

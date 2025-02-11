@@ -205,6 +205,10 @@ public class UserDataServiceImpl implements UserDataService {
 
     @Override
     public Map<Integer, String> getListProfileName(String profileIdList) {
+        if(profileIdList == null){
+            return new HashMap<>();
+        }
+
         List<Integer> profileID = Stream.of(profileIdList.split(",")).map(Integer::parseInt).toList();
 
         var nameList = context.select(PROFILE.PROFILE_NAME)

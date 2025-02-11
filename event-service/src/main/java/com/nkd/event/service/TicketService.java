@@ -1,36 +1,42 @@
 package com.nkd.event.service;
 
+import com.nkd.event.dto.PrintTicketDTO;
 import com.nkd.event.dto.Response;
 import com.nkd.event.dto.TicketDTO;
+import com.nkd.event.utils.CommonUtils;
 import com.nkd.event.utils.EventUtils;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.util.Pair;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
+import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 import static com.nkd.event.Tables.*;
-import static com.nkd.event.Tables.TICKETS;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class TicketService {
 
     private final DSLContext context;
+    private final TemplateEngine templateEngine;
 
     public Response addTicket(String eventID, TicketDTO ticket, Integer timezone) {
         var salesTime = EventUtils.transformDate(ticket.getStartDate(), ticket.getEndDate(),
@@ -126,7 +132,7 @@ public class TicketService {
         }
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public Response deleteTicket(Integer ticketID) {
         int rowsDeleted = context.deleteFrom(TICKETTYPES)
                 .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticketID))
@@ -139,7 +145,8 @@ public class TicketService {
         }
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Async("taskExecutor")
+    @Transactional
     protected void generateTickets(Integer orderID, List<TicketDTO> tickets, String eventID, Integer userID, Integer profileID) {
         tickets.forEach(ticket -> {
             var orderItemID = context.insertInto(ORDERITEMS)
@@ -149,13 +156,20 @@ public class TicketService {
                     .set(ORDERITEMS.PRICE, new BigDecimal(ticket.getPrice()))
                     .returningResult(ORDERITEMS.ORDER_ITEM_ID)
                     .fetchOneInto(Integer.class);
-            context.insertInto(TICKETS)
+            var ticketID = context.insertInto(TICKETS)
                     .set(TICKETS.EVENT_ID, UUID.fromString(eventID))
                     .set(TICKETS.ORDER_ITEM_ID, orderItemID)
                     .set(TICKETS.USER_ID, userID)
                     .set(TICKETS.PROFILE_ID, profileID)
                     .set(TICKETS.PURCHASE_DATE, OffsetDateTime.now())
                     .set(TICKETS.STATUS, "active")
+                    .returningResult(TICKETS.TICKET_ID)
+                    .fetchOneInto(Integer.class);
+            context.insertInto(ATTENDEES)
+                    .set(ATTENDEES.EVENT_ID, UUID.fromString(eventID))
+                    .set(ATTENDEES.USER_ID, userID)
+                    .set(ATTENDEES.PROFILE_ID, profileID)
+                    .set(ATTENDEES.TICKET_ID, ticketID)
                     .execute();
             context.update(TICKETTYPES)
                     .set(TICKETTYPES.AVAILABLE_QUANTITY, TICKETTYPES.AVAILABLE_QUANTITY.minus(ticket.getQuantity()))
@@ -188,5 +202,36 @@ public class TicketService {
         context.deleteFrom(ORDERITEMS)
                 .where(ORDERITEMS.ORDER_ID.eq(orderID))
                 .execute();
+    }
+
+    public ResponseEntity<?> downloadTicket(PrintTicketDTO ticket) {
+        try {
+            Context context = new Context();
+            context.setVariable("ticket", ticket);
+            context.setVariable("eventImg", CommonUtils.convertUrlToDataUri(ticket.getEventImg()));
+            byte[] qrBytes = EventUtils.generateTicketQRCode(ticket.getTicketID(), ticket.getEventID(), ticket.getOrderID());
+            String qrDataUri = "data:image/png;base64," + Base64.getEncoder().encodeToString(qrBytes);
+            context.setVariable("qrCode", qrDataUri);
+            context.setVariable("printDate", OffsetDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
+            String htmlContent = templateEngine.process("print_ticket", context);
+
+            ByteArrayOutputStream pdfStream = new ByteArrayOutputStream();
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.withHtmlContent(htmlContent, new ClassPathResource("templates/").getURL().toString());
+            builder.toStream(pdfStream);
+            builder.run();
+
+            byte[] pdfBytes = pdfStream.toByteArray();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDisposition(ContentDisposition.attachment().filename("ticket.pdf").build());
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Error generating ticket", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 }

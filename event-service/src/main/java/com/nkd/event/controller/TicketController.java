@@ -1,10 +1,11 @@
 package com.nkd.event.controller;
 
+import com.nkd.event.dto.PrintTicketDTO;
 import com.nkd.event.dto.Response;
 import com.nkd.event.dto.TicketDTO;
-import com.nkd.event.service.EventService;
 import com.nkd.event.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +39,11 @@ public class TicketController {
     @GetMapping("/order/tickets")
     public List<Map<String, Object>> getOrderTicket(@RequestParam("order-id") Integer orderID) {
         return ticketService.getOrderTicket(orderID);
+    }
+
+    @PostMapping("/ticket/download")
+    public ResponseEntity<?> downloadTicket(@RequestBody PrintTicketDTO printTicketDTO) {
+        return ticketService.downloadTicket(printTicketDTO);
     }
 
 }

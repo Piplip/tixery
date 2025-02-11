@@ -5,6 +5,9 @@ spring:
     active: dev
   config:
     import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}
+  threads:
+    virtual:
+      enabled: true
   data:
     redis:
       host: ${REDIS_HOST}

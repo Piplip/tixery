@@ -35,7 +35,7 @@ public class PaymentService {
     @Value("${stripe.secret-key}")
     private String secretKey;
     @Value("${client.port}")
-    private String port;
+    private String clientPort;
 
     private final DSLContext context;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -44,34 +44,12 @@ public class PaymentService {
     private final TicketService ticketService;
     private final ApplicationEventPublisher publisher;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public StripeResponse handleStripeCheckout(PaymentDTO paymentDTO) {
         Stripe.apiKey = secretKey;
 
         try {
-            paymentDTO.getTickets().forEach(ticket -> {
-                Integer availableQuantity = context.select(TICKETTYPES.AVAILABLE_QUANTITY)
-                        .from(TICKETTYPES)
-                        .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticket.getTicketTypeID()))
-                        .fetchOneInto(Integer.class);
-                String totalKey = "total-" + ticket.getTicketTypeID();
-
-                Integer totalReservedQuantity = (Integer) redisTemplate.opsForValue().get(totalKey);
-                if (totalReservedQuantity == null) {
-                    totalReservedQuantity = 0;
-                }
-
-                if (availableQuantity == null || availableQuantity - totalReservedQuantity < ticket.getQuantity()) {
-                    throw new RuntimeException("Ticket not available for " + ticket.getTicketName() +
-                            ". Please lower the quantity and try again");
-                }
-
-                redisTemplate.opsForValue().increment(totalKey, ticket.getQuantity());
-
-                String profileKey = "reserved-for-" + paymentDTO.getProfileID();
-                redisTemplate.opsForValue().set(profileKey, ticket.getQuantity());
-            });
-
+            handleReserveTicket(paymentDTO.getTickets(), paymentDTO.getProfileID());
         } catch (Exception e) {
             log.error("Error checking ticket availability: {}", e.getMessage());
             return StripeResponse.builder().status("failed").message(e.getMessage()).build();
@@ -106,8 +84,7 @@ public class PaymentService {
         return response;
     }
 
-    // TODO: Handle create Attendee record when close to event date
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public StripeResponse handleSuccessfulStripePayment(Integer orderID, Integer profileID) {
         Object value = redisTemplate.opsForValue().get("stripe-order-" + orderID);
         StripeResponse response = new StripeResponse();
@@ -240,6 +217,31 @@ public class PaymentService {
         return new Response(HttpStatus.OK.name(), "Order cancelled successfully", null);
     }
 
+    private void handleReserveTicket(List<TicketDTO> tickets, Integer profileID){
+        tickets.forEach(ticket -> {
+            Integer availableQuantity = context.select(TICKETTYPES.AVAILABLE_QUANTITY)
+                    .from(TICKETTYPES)
+                    .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticket.getTicketTypeID()))
+                    .fetchOneInto(Integer.class);
+            String totalKey = "total-" + ticket.getTicketTypeID();
+
+            Integer totalReservedQuantity = (Integer) redisTemplate.opsForValue().get(totalKey);
+            if (totalReservedQuantity == null) {
+                totalReservedQuantity = 0;
+            }
+
+            if (availableQuantity == null || availableQuantity - totalReservedQuantity < ticket.getQuantity()) {
+                throw new RuntimeException("Ticket not available for " + ticket.getTicketName() +
+                        ". Please lower the quantity and try again");
+            }
+
+            redisTemplate.opsForValue().increment(totalKey, ticket.getQuantity());
+
+            String profileKey = "reserved-for-" + profileID;
+            redisTemplate.opsForValue().set(profileKey, ticket.getQuantity());
+        });
+    }
+
     private StripeResponse createStripeResponse(SessionCreateParams params) {
         Session session;
 
@@ -276,8 +278,8 @@ public class PaymentService {
         
         return SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl("http://localhost:" + port + "/payment/success" + "?orderID=" + orderID)
-                .setCancelUrl("http://localhost:" + port + "/payment/error" + "?orderID=" + orderID)
+                .setSuccessUrl("http://localhost:" + clientPort + "/payment/success" + "?orderID=" + orderID)
+                .setCancelUrl("http://localhost:" + clientPort + "/payment/error" + "?orderID=" + orderID)
                 .addLineItem(lineItem)
                 .build();
     }

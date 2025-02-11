@@ -44,7 +44,7 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(request ->
                         request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested"
-                                        , "/search/suggestions", "/search", "/search/trends", "/event/trends").permitAll()
+                                        , "/search/suggestions", "/search", "/search/trends", "/event/trends", "/events/**").permitAll()
                                 .requestMatchers("/create/**", "/delete", "/tickets/**").hasRole("HOST")
                                 .requestMatchers("/order/tickets").hasRole("ATTENDEE")
                                 .anyRequest().authenticated()

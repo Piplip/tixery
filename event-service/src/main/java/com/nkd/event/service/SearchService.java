@@ -1,21 +1,23 @@
 package com.nkd.event.service;
 
 import com.nkd.event.dto.Response;
+import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static com.nkd.event.Tables.EVENTS;
-import static com.nkd.event.Tables.SEARCHHISTORY;
+import static com.nkd.event.Tables.*;
 import static org.jooq.impl.DSL.jsonbGetAttribute;
 
 @Service
@@ -23,6 +25,7 @@ import static org.jooq.impl.DSL.jsonbGetAttribute;
 public class SearchService {
 
     private final DSLContext context;
+    private final EventService eventService;
 
     public List<Map<String, Object>> getEventSearchSuggestions(String query, Integer type, String lat, String lon, Integer userID) {
         String userLocationPoint = "POINT(" + lon + " " + lat + ")";
@@ -35,6 +38,8 @@ public class SearchService {
 
         Condition condition = DSL.condition("search_vector @@ to_tsquery(?)", query)
                 .and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
+                .or(EVENTS.TAGS.like("%" + query + "%"))
+                .or(EVENTS.NAME.like("%" + query + "%"))
                 .or(jsonbGetAttribute(EVENTS.LOCATION, "location").like(query));
 
         if(type == 1){
@@ -75,6 +80,54 @@ public class SearchService {
                 .orderBy(Objects.requireNonNull(subquery.field(SEARCHHISTORY.SEARCH_TIMESTAMP)).desc())
                 .limit(10)
                 .fetchMaps();
+    }
+
+    public List<Map<String, Object>> getEventSearch(String eventIDs, String query, String categories, String lat, String lon,
+                                                    String time, String price, Boolean online, Boolean isFollowOnly, List<Integer> followList) {
+        Table<?> view = EVENTS;
+        Condition condition = DSL.trueCondition();
+        if(eventIDs != null && !eventIDs.isEmpty()){
+            List<UUID> eventIDList = Stream.of(eventIDs.split(","))
+                    .map(UUID::fromString)
+                    .collect(Collectors.toList());
+            condition = condition.and(EVENTS.EVENT_ID.in(eventIDList));
+        }
+        else {
+            if(query != null && !query.isEmpty()){
+                condition = condition.and(EVENTS.NAME.like("%" + query + "%")
+                        .or(DSL.condition("search_vector @@ to_tsquery(?)", query))
+                        .or(EVENTS.TAGS.like("%" + query + "%"))
+                        .or(EVENTS.LOCATION.like("%" + query + "%")
+                        .or(jsonbGetAttribute(EVENTS.LOCATION, "location").like(query))));
+            }
+            if(categories != null && !categories.isEmpty()){
+                List<String> categoryList = Stream.of(categories.split(",")).collect(Collectors.toList());
+                condition = condition.and(EVENTS.CATEGORY.in(categoryList));
+            }
+            if(time != null && !time.isEmpty()){
+                condition = condition.and(EventUtils.constructTimeCondition(time));
+            }
+            if(price != null && !price.isEmpty()){
+                condition = price.equals("free") ? condition.and(TICKETTYPES.TICKET_TYPE.equalIgnoreCase("free"))
+                        : condition.and(TICKETTYPES.PRICE.greaterThan(BigDecimal.valueOf(0.0))
+                        .and(TICKETTYPES.STATUS.eq("visible")
+                                .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
+                                        .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now())))
+                                .or(TICKETTYPES.STATUS.eq("custom")
+                                        .and(TICKETTYPES.VIS_START_TIME.lt(OffsetDateTime.now()))
+                                        .and(TICKETTYPES.VIS_END_TIME.gt(OffsetDateTime.now())))));
+                view = view.join(TICKETTYPES).on(EVENTS.EVENT_ID.eq(TICKETTYPES.EVENT_ID));
+            }
+            if(Optional.ofNullable(online).orElse(false)){
+                condition = condition.and(EVENTS.EVENT_TYPE.eq("online"));
+            }
+            if(Optional.ofNullable(isFollowOnly).orElse(false)){
+                condition = condition.and(EVENTS.ORGANIZER_ID.in(followList));
+            }
+        }
+        var eventRecord = eventService.getEventRecord(condition, lat, lon, view);
+
+        return eventService.getEventTickets(eventService.getListOrganizerEvent(eventRecord));
     }
 
     @Transactional

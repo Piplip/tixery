@@ -61,10 +61,11 @@ public class EmailService {
         throw new RuntimeException(message);
     }
 
-    public void sendCancellationEmail(Integer orderID, String eventName, String email) {
+    public void sendCancellationEmail(Integer orderID, String eventName, String email, String username) {
         Context context = new Context();
         context.setVariable("orderID", orderID);
         context.setVariable("eventName", eventName);
+        context.setVariable("username", username);
         String content = templateEngine.process("cancel_order", context);
 
         try {

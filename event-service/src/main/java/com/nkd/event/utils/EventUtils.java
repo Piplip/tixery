@@ -1,12 +1,19 @@
 package com.nkd.event.utils;
 
+import net.glxn.qrgen.QRCode;
+import net.glxn.qrgen.image.ImageType;
+import org.jooq.Condition;
+import org.jooq.impl.DSL;
 import org.springframework.data.util.Pair;
 
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+
+import static com.nkd.event.Tables.EVENTS;
 
 public class EventUtils {
 
@@ -34,5 +41,65 @@ public class EventUtils {
     
         final ZoneOffset offset = ZoneOffset.ofHours(timezone);
         return parsedDate.atTime(parsedTime).atOffset(offset);
+    }
+
+    public static byte[] generateTicketQRCode(Integer ticketID, String eventID, Integer orderID){
+        String qrData = String.format(
+                "{\"event_id\":\"%s\",\"order_id\":\"%s\",\"ticket_id\":\"%s\"}",
+                eventID, orderID, ticketID);
+        ByteArrayOutputStream qrStream = QRCode.from(qrData)
+                .withSize(150, 150)
+                .to(ImageType.PNG)
+                .stream();
+
+        return qrStream.toByteArray();
+    }
+
+    public static Condition constructTimeCondition(String time){
+        Condition condition = DSL.trueCondition();
+
+        OffsetDateTime currentTime = OffsetDateTime.now();
+        OffsetDateTime startTime;
+        OffsetDateTime endTime;
+
+        switch (time) {
+            case "today" -> {
+                startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
+                endTime = currentTime.withHour(23).withMinute(59).withSecond(59);
+                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
+            }
+            case "tomorrow" -> {
+                startTime = currentTime.plusDays(1).withHour(0).withMinute(0).withSecond(0);
+                endTime = currentTime.plusDays(1).withHour(23).withMinute(59).withSecond(59);
+                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
+            }
+            case "weekend" -> {
+                startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
+                endTime = currentTime.plusDays(2).withHour(23).withMinute(59).withSecond(59);
+                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
+            }
+            case "week" -> {
+                startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
+                endTime = currentTime.plusDays(7).withHour(23).withMinute(59).withSecond(59);
+                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
+            }
+            case "next-week" -> {
+                startTime = currentTime.plusDays(7).withHour(0).withMinute(0).withSecond(0);
+                endTime = currentTime.plusDays(14).withHour(23).withMinute(59).withSecond(59);
+                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
+            }
+            case "month" -> {
+                startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
+                endTime = currentTime.plusMonths(1).withHour(23).withMinute(59).withSecond(59);
+                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
+            }
+            case "next-month" -> {
+                startTime = currentTime.plusMonths(1).withHour(0).withMinute(0).withSecond(0);
+                endTime = currentTime.plusMonths(2).withHour(23).withMinute(59).withSecond(59);
+                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
+            }
+        }
+
+        return condition;
     }
 }

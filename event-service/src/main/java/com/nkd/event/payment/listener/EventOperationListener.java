@@ -37,7 +37,8 @@ public class EventOperationListener {
                 String eventName = context.select(EVENTS.NAME).from(EVENTS)
                                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(String.valueOf(data.get("eventID")))))
                                 .fetchOneInto(String.class);
-                emailService.sendCancellationEmail((Integer) data.get("orderID"), eventName, (String) data.get("email"));
+                String username = data.get("username").toString();
+                emailService.sendCancellationEmail((Integer) data.get("orderID"), eventName, (String) data.get("email"), username);
             }
         }
     }
