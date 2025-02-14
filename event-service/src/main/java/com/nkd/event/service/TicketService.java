@@ -38,7 +38,7 @@ public class TicketService {
     private final DSLContext context;
     private final TemplateEngine templateEngine;
 
-    public Response addTicket(String eventID, TicketDTO ticket, Integer timezone) {
+    public Response addTicket(String eventID, TicketDTO ticket, Integer timezone, Boolean isRecurring) {
         var salesTime = EventUtils.transformDate(ticket.getStartDate(), ticket.getEndDate(),
                 ticket.getStartTime(), ticket.getEndTime(), timezone);
 
@@ -79,6 +79,15 @@ public class TicketService {
                 .set(TICKETTYPES.CURRENCY, currencyData)
                 .returningResult(TICKETTYPES.TICKET_TYPE_ID)
                 .fetchOneInto(Integer.class);
+
+        if(isRecurring){
+            ticket.getOccurrence().forEach(item -> {
+                context.insertInto(TICKETTYPEOCCURRENCES)
+                        .set(TICKETTYPEOCCURRENCES.TICKET_TYPE_ID, ticketID)
+                        .set(TICKETTYPEOCCURRENCES.OCCURRENCE_ID, item)
+                        .execute();
+            });
+        }
 
         return new Response(HttpStatus.OK.name(), "OK", ticketID);
     }

@@ -1,7 +1,7 @@
-package com.nkd.event.payment.listener;
+package com.nkd.event.event.listener;
 
 import com.nkd.event.enumeration.EventOperationType;
-import com.nkd.event.payment.EventOperation;
+import com.nkd.event.event.EventOperation;
 import com.nkd.event.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,4 +37,6 @@ public class TicketDTO {
     private String currency;
     private String currencySymbol;
     private String currencyFullForm;
+    private List<Integer> occurrence;
+    private Boolean enabled;
 }

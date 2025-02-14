@@ -223,5 +223,4 @@ public class UserDataServiceImpl implements UserDataService {
         return returnVal;
     }
 
-    // TODO: Implement switching default profile
 }

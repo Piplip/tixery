@@ -2,6 +2,7 @@ package com.nkd.event.controller;
 
 import com.nkd.event.dto.EventDTO;
 import com.nkd.event.dto.OnlineEventDTO;
+import com.nkd.event.dto.RecurrenceDTO;
 import com.nkd.event.dto.Response;
 import com.nkd.event.service.EventService;
 import com.nkd.event.service.PaymentService;
@@ -39,20 +40,32 @@ public class EventController {
         return eventService.saveOnlineEventInfo(eventID, data);
     }
 
+    @PostMapping("/update/recurrence")
+    public Response updateRecurrenceEvent(@RequestParam("eid") String eventID, @RequestParam("timezone") Integer timezone,
+                                        @RequestBody List<RecurrenceDTO> data) {
+        return eventService.updateRecurrenceEvent(eventID, timezone, data);
+    }
+
+    @PostMapping("/delete/recurrence")
+    public Response deleteOccurrence(@RequestParam("date") String date, @RequestParam("eid") String eventID) {
+        return eventService.deleteOccurrence(date, eventID);
+    }
+
     @PostMapping("delete")
     public Response deleteEvent(@RequestParam("eid") String eventID) {
         return eventService.deleteEvent(eventID);
     }
 
     @GetMapping("/get/specific")
-    public Map<String, Object> getEventById(@RequestParam("eid") String eventID, @RequestParam(value = "pid", required = false) Integer profileID) {
-        return eventService.getEvent(eventID, profileID);
+    public Map<String, Object> getEventById(@RequestParam("eid") String eventID, @RequestParam(value = "pid", required = false) Integer profileID,
+                                            @RequestParam(value = "is_organizer", required = false) Boolean isOrganizer) {
+        return eventService.getEvent(eventID, profileID, isOrganizer);
     }
     
     @GetMapping("/get")
-    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID,
+    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID, @RequestParam("tz") Integer timezone,
                                                   @RequestParam(value = "past", required = false, defaultValue = "false") String getPast) {
-        return eventService.getAllEvents(userID, getPast);
+        return eventService.getAllEvents(userID, timezone,getPast);
     }
 
     @GetMapping("/get/related")

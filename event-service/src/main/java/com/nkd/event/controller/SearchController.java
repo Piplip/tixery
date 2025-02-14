@@ -19,8 +19,7 @@ public class SearchController {
     }
 
     @PostMapping("/search")
-    public List<Map<String, Object>> getEventsSearch(@RequestParam(value = "eids", required = false) String eventIDs,
-                                                     @RequestParam(value = "q", required = false) String query,
+    public List<Map<String, Object>> getEventsSearch(@RequestParam(value = "q", required = false) String query,
                                                      @RequestParam(value = "categories", required = false) String categories,
                                                      @RequestParam(value = "lat", required = false) String lat,
                                                      @RequestParam(value = "lon", required = false) String lon,
@@ -29,7 +28,7 @@ public class SearchController {
                                                      @RequestParam(value = "online", required = false) Boolean online,
                                                      @RequestParam(value = "followed", required = false) Boolean isFollowOnly,
                                                      @RequestBody(required = false) List<Integer> followList) {
-        return searchService.getEventSearch(eventIDs, query, categories, lat, lon, time, price, online, isFollowOnly, followList);
+        return searchService.getEventSearch(query, categories, lat, lon, time, price, online, isFollowOnly, followList);
     }
 
     @GetMapping("/search/suggestions")

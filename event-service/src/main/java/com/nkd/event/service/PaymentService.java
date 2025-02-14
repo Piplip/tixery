@@ -6,7 +6,7 @@ import com.nkd.event.dto.StripeResponse;
 import com.nkd.event.dto.TicketDTO;
 import com.nkd.event.enumeration.EventOperationType;
 import com.nkd.event.enumeration.PaymentStatus;
-import com.nkd.event.payment.EventOperation;
+import com.nkd.event.event.EventOperation;
 import com.stripe.Stripe;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -18,7 +18,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;

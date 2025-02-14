@@ -131,4 +131,9 @@ public class AccountController {
     public Response setPasswordForOauth2User(@RequestParam("u") String email, @RequestBody String password){
         return accountService.setPasswordForOauth2User(email, password);
     }
+
+    @GetMapping("/profile/switch")
+    public Response switchProfile(@RequestParam("u") String email, @RequestParam("pid") Integer profileID){
+        return accountService.switchProfile(email, profileID);
+    }
 }

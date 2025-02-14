@@ -59,47 +59,40 @@ public class EventUtils {
         Condition condition = DSL.trueCondition();
 
         OffsetDateTime currentTime = OffsetDateTime.now();
-        OffsetDateTime startTime;
-        OffsetDateTime endTime;
+        OffsetDateTime startTime = null;
+        OffsetDateTime endTime = null;
 
         switch (time) {
             case "today" -> {
                 startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.withHour(23).withMinute(59).withSecond(59);
-                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
             }
             case "tomorrow" -> {
                 startTime = currentTime.plusDays(1).withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusDays(1).withHour(23).withMinute(59).withSecond(59);
-                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
             }
             case "weekend" -> {
                 startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusDays(2).withHour(23).withMinute(59).withSecond(59);
-                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
             }
             case "week" -> {
                 startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusDays(7).withHour(23).withMinute(59).withSecond(59);
-                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
             }
             case "next-week" -> {
                 startTime = currentTime.plusDays(7).withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusDays(14).withHour(23).withMinute(59).withSecond(59);
-                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
             }
             case "month" -> {
                 startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusMonths(1).withHour(23).withMinute(59).withSecond(59);
-                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
             }
             case "next-month" -> {
                 startTime = currentTime.plusMonths(1).withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusMonths(2).withHour(23).withMinute(59).withSecond(59);
-                condition = condition.and(EVENTS.START_TIME.between(startTime, endTime));
             }
         }
 
-        return condition;
+        return condition.and(EVENTS.START_TIME.between(startTime, endTime));
     }
 }

@@ -37,4 +37,5 @@ public interface AccountService {
     Response updatePassword(PasswordDTO passwordDTO);
     Response setPasswordForOauth2User(String email, String password);
     Response handleSetPasswordRequestForOauth2User(String email);
+    Response switchProfile(String email, Integer profileID);
 }

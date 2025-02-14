@@ -22,8 +22,9 @@ public class TicketController {
     }
 
     @PostMapping("/tickets/add")
-    public Response addTicket(@RequestParam(name = "eid") String eventID, @RequestBody TicketDTO ticketDTO, @RequestParam("timezone") Integer timezone) {
-        return ticketService.addTicket(eventID, ticketDTO, timezone);
+    public Response addTicket(@RequestParam(name = "eid") String eventID, @RequestBody TicketDTO ticketDTO, @RequestParam("timezone") Integer timezone,
+                              @RequestParam(value = "is_recurring", defaultValue = "false") Boolean isRecurring) {
+        return ticketService.addTicket(eventID, ticketDTO, timezone, isRecurring);
     }
 
     @PutMapping("/tickets/update")

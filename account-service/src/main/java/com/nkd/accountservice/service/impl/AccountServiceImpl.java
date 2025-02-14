@@ -533,6 +533,18 @@ public class AccountServiceImpl implements AccountService {
         return new Response(HttpStatus.OK.name(), "Set password request sent", null);
     }
 
+    @Override
+    public Response switchProfile(String email, Integer profileID) {
+        context.update(USER_ACCOUNT)
+                .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, UInteger.valueOf(profileID))
+                .where(USER_ACCOUNT.ACCOUNT_EMAIL.eq(email))
+                .execute();
+
+        String newToken = jwtService.generateLoginToken(email);
+
+        return new Response(HttpStatus.OK.name(), "Profile switched", newToken);
+    }
+
     private UInteger saveOrganizerProfile(String accountID, Profile profile){
         UInteger updateProfileID;
         Optional<UInteger> profileID = context.select(PROFILE.PROFILE_ID).from(PROFILE)

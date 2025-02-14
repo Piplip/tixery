@@ -5,17 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nkd.event.client.AccountClient;
 import com.nkd.event.dto.EventDTO;
 import com.nkd.event.dto.OnlineEventDTO;
+import com.nkd.event.dto.RecurrenceDTO;
 import com.nkd.event.dto.Response;
 import com.nkd.event.enumeration.EventOperationType;
-import com.nkd.event.payment.EventOperation;
+import com.nkd.event.event.EventOperation;
 import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
+import org.jooq.impl.QOM;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,10 +30,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.nkd.event.Tables.*;
@@ -82,7 +82,15 @@ public class EventService {
                         Optional.ofNullable(eventDTO.getLatitude()).orElse("0.0"),
                         Optional.ofNullable(eventDTO.getLongitude()).orElse("0.0"),
                         Optional.ofNullable(eventDTO.getLocationName()).orElse("").replace("\r", "\\r").replace("\n", "\\n")
-                )) : null;
+                ))
+                        :
+                        JSONB.jsonb("""
+                                {
+                                    "locationType": "online",
+                                    "enabled": "true",
+                                    "access": "true",
+                                }
+                                """);
 
                 final List<String> faqJsonList = Optional.ofNullable(eventDTO.getFaqs())
                         .orElse(List.of())
@@ -118,7 +126,7 @@ public class EventService {
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
             }
-            case "3" -> {
+            case "4" -> {
                 JSONB refundJSON = null;
                 if(eventDTO.getAllowRefund()){
                     refundJSON = JSONB.jsonb("""
@@ -169,42 +177,56 @@ public class EventService {
     }
 
     // TODO: Gross, sold tickets will be implement later
-    public List<Map<String, Object>> getAllEvents(Integer userID, String getPast) {
+    public List<Map<String, Object>> getAllEvents(Integer userID, Integer timezone, String getPast) {
         Condition condition = EVENTS.ORGANIZER_ID.eq(userID);
         if (getPast.equalsIgnoreCase("false")) {
-            condition = condition.and(EVENTS.START_TIME.gt(OffsetDateTime.now()));
+            condition = condition.and(EVENTS.START_TIME.gt(OffsetDateTime.of(LocalDate.now(), LocalTime.MIN, ZoneOffset.ofHours(timezone))));
         }
         else {
             condition = condition.and(EVENTS.START_TIME.lt(OffsetDateTime.now()));
         }
 
-        var eventData = context.select(EVENTS.EVENT_ID, EVENTS.PROFILE_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.LOCATION, EVENTS.START_TIME, EVENTS.STATUS)
+        var eventData = context.select(EVENTS.EVENT_ID, EVENTS.PROFILE_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.LOCATION,
+                        EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.STATUS)
                 .from(EVENTS)
                 .where(condition)
                 .orderBy(EVENTS.START_TIME.asc())
                 .fetchMaps();
 
+        Condition ticketCondition = TICKETTYPES.STATUS.eq("visible")
+                        .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
+                                .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now())))
+                        .or(TICKETTYPES.STATUS.eq("custom")
+                                .and(TICKETTYPES.VIS_START_TIME.lt(OffsetDateTime.now()))
+                                .and(TICKETTYPES.VIS_END_TIME.gt(OffsetDateTime.now())));
         eventData.forEach(event -> {
             Optional<Integer> ticketCount = context.select(sum(TICKETTYPES.QUANTITY))
                     .from(TICKETTYPES)
-                    .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")))
+                    .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")).and(ticketCondition))
+                    .fetchOptionalInto(Integer.class);
+            Optional<Integer> remainingTicket = context.select(sum(TICKETTYPES.AVAILABLE_QUANTITY))
+                    .from(TICKETTYPES)
+                    .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")).and(ticketCondition))
                     .fetchOptionalInto(Integer.class);
             Object images = event.get("images");
             if(images != null){
                 event.put("images", images);
             }
             event.put("ticketCount", ticketCount.orElse(0));
+            event.put("remainingTicket", remainingTicket.orElse(0));
         });
 
         return eventData;
     }
 
-    public Map<String, Object> getEvent(String eventID, Integer profileID) {
-        EventOperation viewOperation = EventOperation.builder()
-                .data(Map.of("eventID", eventID, "profileID", profileID))
-                .type(EventOperationType.VIEW)
-                .build();
-        publisher.publishEvent(viewOperation);
+    public Map<String, Object> getEvent(String eventID, Integer profileID, Boolean isOrganizer) {
+        if(!Optional.ofNullable(isOrganizer).orElse(false)){
+            EventOperation viewOperation = EventOperation.builder()
+                    .data(Map.of("eventID", eventID, "profileID", profileID))
+                    .type(EventOperationType.VIEW)
+                    .build();
+            publisher.publishEvent(viewOperation);
+        }
 
         var eventData = context.select(
                         EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
@@ -218,6 +240,20 @@ public class EventService {
 
         if (eventData == null) {
             return null;
+        }
+
+        if(eventData.get("is_recurring").equals(true)){
+            var occurrenceData = context.select(EVENTOCCURRENCES.OCCURRENCE_ID, EVENTOCCURRENCES.START_DATE, EVENTOCCURRENCES.START_TIME, EVENTOCCURRENCES.END_TIME)
+                .from(EVENTOCCURRENCES)
+                .where(EVENTOCCURRENCES.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchMaps();
+
+            eventData.put("occurrences", occurrenceData);
+            var ticketOccurrenceData = context.select(TICKETTYPEOCCURRENCES.TICKET_TYPE_OCCURRENCE_ID, TICKETTYPEOCCURRENCES.TICKET_TYPE_ID, TICKETTYPEOCCURRENCES.OCCURRENCE_ID)
+                    .from(TICKETTYPEOCCURRENCES).join(TICKETTYPES).on(TICKETTYPES.TICKET_TYPE_ID.eq(TICKETTYPEOCCURRENCES.TICKET_TYPE_ID))
+                    .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)))
+                    .fetchMaps();
+            eventData.put("ticketOccurrences", ticketOccurrenceData);
         }
 
         var tickets = context.selectFrom(TICKETTYPES)
@@ -469,12 +505,18 @@ public class EventService {
                 .fetchMaps();
     }
 
-    public List<Map<String, Object>> getEventRecord(Condition condition, String lat, String lon, Table<?> view){
+    public List<Map<String, Object>> getEventRecord(Condition condition, String lat, String lon, Table<?> view, Boolean isOnline){
         String userLocationPoint = "POINT(" + lon + " " + lat + ")";
 
         condition = condition.and(EVENTS.STATUS.eq("published"))
                 .and(EVENTS.START_TIME.gt(OffsetDateTime.now()));
-//                .and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000);
+
+        if(isOnline){
+            condition = condition.and(String.valueOf(EVENTS.LOCATION.toString().contains("online")));
+        }
+        else {
+//            condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000);
+        }
 
         return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
@@ -488,7 +530,7 @@ public class EventService {
 
     public List<Map<String, Object>> getOnlineEvents(String lat, String lon) {
         var eventRecord = getEventRecord(
-                DSL.trueCondition().and(String.valueOf(EVENTS.LOCATION.toString().contains("online"))), lat, lon, EVENTS);
+                DSL.trueCondition().and(DSL.trueCondition()), lat, lon, EVENTS, true);
 
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
@@ -496,20 +538,35 @@ public class EventService {
     public List<Map<String, Object>> getSuggestedEventByTime(String lat, String lon, String timeType) {
         Condition condition = EventUtils.constructTimeCondition(timeType);
 
-        var eventRecord = getEventRecord(condition, lat, lon, EVENTS);
+        var eventRecord = getEventRecord(condition, lat, lon, EVENTS, false);
 
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
 
     public List<Map<String, Object>> getSuggestedEventByType(String lat, String lon, String eventType) {
-        var eventRecord = getEventRecord(EVENTS.EVENT_TYPE.equalIgnoreCase(eventType), lat, lon, EVENTS);
+        var eventRecord = getEventRecord(EVENTS.EVENT_TYPE.equalIgnoreCase(eventType), lat, lon, EVENTS, false);
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
 
-    // TODO: Fix this: wrong condition for getting events by cost (especially free events)
     public List<Map<String, Object>> getSuggestedEventsByCost(String lat, String lon, Double cost) {
-        var eventRecord = getEventRecord(TICKETTYPES.PRICE.lessOrEqual(BigDecimal.valueOf(cost)), lat, lon,
-                EVENTS.join(TICKETTYPES).on(EVENTS.EVENT_ID.eq(TICKETTYPES.EVENT_ID)));
+        Condition condition = DSL.trueCondition();
+
+        condition = condition.and(TICKETTYPES.STATUS.eq("visible")
+            .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
+                    .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now())))
+            .or(TICKETTYPES.STATUS.eq("custom")
+                    .and(TICKETTYPES.VIS_START_TIME.lt(OffsetDateTime.now()))
+                    .and(TICKETTYPES.VIS_END_TIME.gt(OffsetDateTime.now()))));
+
+        if(cost == 0.0){
+            condition = condition.and(TICKETTYPES.TICKET_TYPE.equalIgnoreCase("free"));
+        }
+        else{
+            condition = condition.and(TICKETTYPES.PRICE.lessOrEqual(BigDecimal.valueOf(cost)));
+        }
+
+        var eventRecord = getEventRecord(condition, lat, lon,
+                EVENTS.join(TICKETTYPES).on(EVENTS.EVENT_ID.eq(TICKETTYPES.EVENT_ID)), false);
 
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
@@ -530,5 +587,38 @@ public class EventService {
         });
 
         return eventRecord;
+    }
+
+    public Response updateRecurrenceEvent(String eventID, Integer timezone, List<RecurrenceDTO> data) {
+        List<Integer> occurenceIDs = new LinkedList<>();
+        context.deleteFrom(EVENTOCCURRENCES)
+                .where(EVENTOCCURRENCES.EVENT_ID.eq(UUID.fromString(eventID)))
+                .execute();
+        context.update(EVENTS)
+                .set(EVENTS.START_TIME, LocalDate.parse(data.getFirst().getStartDate(), DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        .atTime(LocalTime.parse(data.getFirst().getStartTime(), DateTimeFormatter.ofPattern("HH:mm"))).atOffset(ZoneOffset.ofHours(timezone)))
+                .set(EVENTS.END_TIME, LocalDate.parse(data.getLast().getStartDate(), DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        .atTime(LocalTime.parse(data.getLast().getEndTime(), DateTimeFormatter.ofPattern("HH:mm"))).atOffset(ZoneOffset.ofHours(timezone)))
+                .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .execute();
+        data.forEach(item -> {
+            var id = context.insertInto(EVENTOCCURRENCES)
+                    .set(EVENTOCCURRENCES.EVENT_ID, UUID.fromString(eventID))
+                    .set(EVENTOCCURRENCES.START_DATE, LocalDate.parse(item.getStartDate(), DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                    .set(EVENTOCCURRENCES.START_TIME, LocalTime.parse(item.getStartTime(), DateTimeFormatter.ofPattern("HH:mm")))
+                    .set(EVENTOCCURRENCES.END_TIME, LocalTime.parse(item.getEndTime(), DateTimeFormatter.ofPattern("HH:mm")))
+                    .returningResult(EVENTOCCURRENCES.OCCURRENCE_ID)
+                    .fetchOneInto(Integer.class);
+            occurenceIDs.add(id);
+        });
+        return new Response(HttpStatus.OK.name(), "OK", occurenceIDs);
+    }
+
+    public Response deleteOccurrence(String date, String eventID) {
+        context.deleteFrom(EVENTOCCURRENCES)
+                .where(EVENTOCCURRENCES.EVENT_ID.eq(UUID.fromString(eventID))
+                        .and(EVENTOCCURRENCES.START_DATE.eq(LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd")))))
+                .execute();
+        return new Response(HttpStatus.OK.name(), "OK", null);
     }
 }

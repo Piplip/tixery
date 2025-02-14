@@ -1,4 +1,4 @@
-package com.nkd.event.payment.listener;
+package com.nkd.event.event.listener;
 
 import com.nkd.event.dto.PaymentDTO;
 import com.nkd.event.service.EmailService;

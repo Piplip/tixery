@@ -1,4 +1,4 @@
-package com.nkd.event.payment;
+package com.nkd.event.event;
 
 import com.nkd.event.enumeration.EventOperationType;
 import lombok.*;
