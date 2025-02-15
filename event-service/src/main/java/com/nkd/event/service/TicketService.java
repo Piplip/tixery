@@ -49,6 +49,10 @@ public class TicketService {
                     ticket.getVisibleStartTime(), ticket.getVisibleEndTime(), timezone);
         }
 
+        String currency = ticket.getCurrency() != null ? ticket.getCurrency() : "USD";
+        String currencySymbol = ticket.getCurrencySymbol() != null ? ticket.getCurrencySymbol() : "$";
+        String currencyFullForm = ticket.getCurrencyFullForm() != null ? ticket.getCurrencyFullForm() : "United States Dollar";
+
         JSONB currencyData = JSONB.jsonb(
                 """
                 {
@@ -56,7 +60,7 @@ public class TicketService {
                     "symbol": "%s",
                     "fullForm": "%s"
                 }
-                """.formatted(ticket.getCurrency(), ticket.getCurrencySymbol(), ticket.getCurrencyFullForm())
+                """.formatted(currency, currencySymbol, currencyFullForm)
         );
 
         var ticketID = context.insertInto(TICKETTYPES)
@@ -142,10 +146,16 @@ public class TicketService {
     }
 
     @Transactional
-    public Response deleteTicket(Integer ticketID) {
+    public Response deleteTicket(Integer ticketID, Boolean isRecurring) {
         int rowsDeleted = context.deleteFrom(TICKETTYPES)
                 .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticketID))
                 .execute();
+
+        if(isRecurring){
+            context.deleteFrom(TICKETTYPEOCCURRENCES)
+                    .where(TICKETTYPEOCCURRENCES.TICKET_TYPE_ID.eq(ticketID))
+                    .execute();
+        }
 
         if (rowsDeleted > 0) {
             return new Response(HttpStatus.OK.name(), "Ticket deleted successfully", null);

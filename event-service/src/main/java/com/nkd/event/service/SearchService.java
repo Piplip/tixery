@@ -71,7 +71,10 @@ public class SearchService {
         }
         if(categories != null && !categories.isEmpty()){
             List<String> categoryList = Stream.of(categories.split(",")).collect(Collectors.toList());
-            condition = condition.and(EVENTS.CATEGORY.in(categoryList));
+            condition = condition.and(CATEGORIES.NAME.in(categoryList).or(SUBCATEGORIES.NAME.in(categoryList)).or(EVENTTYPES.NAME.in(categoryList)));
+            view = view.join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
+                    .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
+                    .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(CATEGORIES.EVENT_TYPE_ID));
         }
         if(time != null && !time.isEmpty()){
             condition = condition.and(EventUtils.constructTimeCondition(time));
@@ -92,7 +95,7 @@ public class SearchService {
             view = view.join(TICKETTYPES).on(EVENTS.EVENT_ID.eq(TICKETTYPES.EVENT_ID));
         }
         if(Optional.ofNullable(online).orElse(false)){
-            condition = condition.and(EVENTS.EVENT_TYPE.eq("online"));
+            condition = condition.and(String.valueOf(EVENTS.LOCATION.toString().contains("online")));
         }
         if(Optional.ofNullable(isFollowOnly).orElse(false)){
             condition = condition.and(EVENTS.ORGANIZER_ID.in(followList));
@@ -119,13 +122,15 @@ public class SearchService {
                 .or(jsonbGetAttribute(EVENTS.LOCATION, "location").like(query));
 
         if(type == 1){
-            condition = condition.and(EVENTS.EVENT_TYPE.eq("online"));
+            condition = condition.and(String.valueOf(EVENTS.LOCATION.toString().contains("online")));
         } else if (type == 2) {
             condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 1000);
         }
 
-        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.SHORT_DESCRIPTION, EVENTS.TAGS, EVENTS.LOCATION, EVENTS.CATEGORY)
+        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.SHORT_DESCRIPTION, EVENTS.TAGS, EVENTS.LOCATION, CATEGORIES.NAME.as("category"))
                 .from(EVENTS)
+                .join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
+                .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
                 .where(condition)
                 .limit(10)
                 .fetchMaps();

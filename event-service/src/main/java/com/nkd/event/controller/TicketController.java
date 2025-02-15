@@ -33,8 +33,8 @@ public class TicketController {
     }
 
     @PostMapping("/tickets/remove")
-    public Response updateTicket(@RequestParam(name = "tid") Integer ticketID) {
-        return ticketService.deleteTicket(ticketID);
+    public Response deleteTicket(@RequestParam(name = "tid") Integer ticketID, @RequestParam(value = "is_recurring", required = false) Boolean isRecurring) {
+        return ticketService.deleteTicket(ticketID, isRecurring);
     }
 
     @GetMapping("/order/tickets")

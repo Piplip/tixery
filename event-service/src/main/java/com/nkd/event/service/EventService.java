@@ -12,13 +12,11 @@ import com.nkd.event.event.EventOperation;
 import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
-import org.jooq.impl.QOM;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -70,7 +68,6 @@ public class EventService {
                     {
                         "location": "%s",
                         "locationType": "%s",
-                        "reserveSeating": %s,
                         "lat": %s,
                         "lon": %s,
                         "name": "%s"
@@ -88,7 +85,7 @@ public class EventService {
                                 {
                                     "locationType": "online",
                                     "enabled": "true",
-                                    "access": "true",
+                                    "access": "true"
                                 }
                                 """);
 
@@ -146,9 +143,8 @@ public class EventService {
                 }
 
                 context.update(EVENTS)
-                        .set(EVENTS.EVENT_TYPE, eventDTO.getType())
-                        .set(EVENTS.CATEGORY, eventDTO.getCategory())
-                        .set(EVENTS.SUB_CATEGORY, eventDTO.getSubCategory())
+                        .set(EVENTS.SUB_CATEGORY_ID, context.select(SUBCATEGORIES.SUB_CATEGORY_ID).from(SUBCATEGORIES)
+                                .where(SUBCATEGORIES.NAME.eq(eventDTO.getSubCategory())).fetchOneInto(Integer.class))
                         .set(EVENTS.TAGS, eventDTO.getTags())
                         .set(EVENTS.VISIBILITY, eventDTO.getEventVisibility())
                         .set(EVENTS.REFUND_POLICY, refundJSON)
@@ -229,12 +225,14 @@ public class EventService {
         }
 
         var eventData = context.select(
-                        EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
+                        EVENTS.EVENT_ID, EVENTS.NAME, EVENTTYPES.NAME.as("event_type"), EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
                         EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION, EVENTS.CREATED_AT,
-                        EVENTS.CATEGORY, EVENTS.SUB_CATEGORY, EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY, EVENTS.FAQ, EVENTS.FULL_DESCRIPTION,
-                        EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.PROFILE_ID
+                        CATEGORIES.NAME.as("category"), SUBCATEGORIES.NAME.as("sub_category"), EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY,
+                        EVENTS.FAQ, EVENTS.FULL_DESCRIPTION, EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.PROFILE_ID
                 )
-                .from(EVENTS)
+                .from(EVENTS).join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
+                .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
+                .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(CATEGORIES.EVENT_TYPE_ID))
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
                 .fetchOneMap();
 
@@ -293,7 +291,7 @@ public class EventService {
                 .orderBy(EVENTS.START_TIME.asc())
                 .fetchOneInto(Integer.class);
 
-        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME,
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .from(EVENTS)
                 .where(EVENTS.ORGANIZER_ID.eq(organizerID).and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
@@ -305,7 +303,7 @@ public class EventService {
     }
 
     public List<Map<String, Object>> getAllProfileEvent(Integer profileID) {
-        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME,
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .from(EVENTS)
                 .where(EVENTS.PROFILE_ID.eq(profileID))
@@ -351,7 +349,7 @@ public class EventService {
     }
 
     public List<Map<String, Object>> getSuggestedEvents(Integer limit) {
-        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .distinctOn(EVENTS.ORGANIZER_ID)
                 .from(EVENTS)
@@ -365,7 +363,7 @@ public class EventService {
     public List<Map<String, Object>> getLocalizePopularEvents(String lat, String lon) {
         String userLocationPoint = "POINT(" + lon + " " + lat + ")";
 
-        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .from(POPULAREVENTS).join(EVENTS).on(POPULAREVENTS.EVENT_ID.eq(EVENTS.EVENT_ID))
                 .where(EVENTS.VISIBILITY.eq("public")
@@ -437,7 +435,7 @@ public class EventService {
                 .map(UUID::fromString)
                 .collect(Collectors.toList());
 
-        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.LOCATION)
+        var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.LOCATION)
                 .from(EVENTS)
                 .where(EVENTS.EVENT_ID.in(eventIDList))
                 .fetchMaps();
@@ -465,14 +463,14 @@ public class EventService {
             return List.of();
         }
 
-        var subquery = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.LOCATION,
+        var subquery = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.LOCATION,
                         rowNumber().over(partitionBy(EVENTS.ORGANIZER_ID).orderBy(EVENTS.START_TIME.asc())).as("row_num")
                 )
                 .from(EVENTS)
                 .where(EVENTS.ORGANIZER_ID.in(organizerIDs).and(EVENTS.START_TIME.gt(OffsetDateTime.now())))
                 .asTable("foo");
 
-        var eventRecord = context.select(subquery.field(EVENTS.EVENT_ID), subquery.field(EVENTS.NAME), subquery.field(EVENTS.EVENT_TYPE),
+        var eventRecord = context.select(subquery.field(EVENTS.EVENT_ID), subquery.field(EVENTS.NAME),
                         subquery.field(EVENTS.IMAGES), subquery.field(EVENTS.START_TIME), subquery.field(EVENTS.LOCATION)
                 )
                 .from(subquery)
@@ -518,7 +516,7 @@ public class EventService {
 //            condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000);
         }
 
-        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.EVENT_TYPE, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
+        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .distinctOn(EVENTS.PROFILE_ID)
                 .from(view)
@@ -544,7 +542,10 @@ public class EventService {
     }
 
     public List<Map<String, Object>> getSuggestedEventByType(String lat, String lon, String eventType) {
-        var eventRecord = getEventRecord(EVENTS.EVENT_TYPE.equalIgnoreCase(eventType), lat, lon, EVENTS, false);
+        var eventRecord = getEventRecord(EVENTTYPES.NAME.equalIgnoreCase(eventType), lat, lon
+                , EVENTS.join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
+                        .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
+                        .join(EVENTTYPES).on(CATEGORIES.EVENT_TYPE_ID.eq(EVENTTYPES.EVENT_TYPE_ID)), false);
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
 
@@ -620,5 +621,19 @@ public class EventService {
                         .and(EVENTOCCURRENCES.START_DATE.eq(LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd")))))
                 .execute();
         return new Response(HttpStatus.OK.name(), "OK", null);
+    }
+
+    public Map<String, Object> getOnlineEventInfo(String eventID) {
+        return context.select(
+                        EVENTS.EVENT_ID, EVENTS.NAME, EVENTTYPES.NAME.as("event_type"), EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
+                        EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION, EVENTS.CREATED_AT,
+                        CATEGORIES.NAME.as("category"), SUBCATEGORIES.NAME.as("sub_category"), EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY,
+                        EVENTS.FAQ, EVENTS.FULL_DESCRIPTION, EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.PROFILE_ID
+                )
+                .from(EVENTS).join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
+                .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
+                .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(CATEGORIES.EVENT_TYPE_ID))
+                .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchOneMap();
     }
 }

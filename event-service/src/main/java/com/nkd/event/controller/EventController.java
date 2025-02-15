@@ -41,7 +41,7 @@ public class EventController {
     }
 
     @PostMapping("/update/recurrence")
-    public Response updateRecurrenceEvent(@RequestParam("eid") String eventID, @RequestParam("timezone") Integer timezone,
+    public Response updateRecurrenceEvent(@RequestParam("eid") String eventID, @RequestParam("tz") Integer timezone,
                                         @RequestBody List<RecurrenceDTO> data) {
         return eventService.updateRecurrenceEvent(eventID, timezone, data);
     }
@@ -66,6 +66,11 @@ public class EventController {
     public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID, @RequestParam("tz") Integer timezone,
                                                   @RequestParam(value = "past", required = false, defaultValue = "false") String getPast) {
         return eventService.getAllEvents(userID, timezone,getPast);
+    }
+
+    @GetMapping("/get/online")
+    public Map<String, Object> getOnlineEventInfo(@RequestParam("eid") String eventID) {
+        return eventService.getOnlineEventInfo(eventID);
     }
 
     @GetMapping("/get/related")
