@@ -75,7 +75,6 @@ public class EventService {
                 """.formatted(
                         Optional.ofNullable(eventDTO.getLocation()).orElse("").replace("\r", "\\r").replace("\n", "\\n"),
                         Optional.of(eventDTO.getLocationType()).orElse("").replace("\r", "\\r").replace("\n", "\\n"),
-                        Optional.ofNullable(eventDTO.getReserveSeating()).orElse(false),
                         Optional.ofNullable(eventDTO.getLatitude()).orElse("0.0"),
                         Optional.ofNullable(eventDTO.getLongitude()).orElse("0.0"),
                         Optional.ofNullable(eventDTO.getLocationName()).orElse("").replace("\r", "\\r").replace("\n", "\\n")
@@ -106,6 +105,7 @@ public class EventService {
                         .set(EVENTS.IMAGES, eventDTO.getImages())
                         .set(EVENTS.VIDEOS, eventDTO.getVideos())
                         .set(EVENTS.NAME, eventDTO.getTitle())
+                        .set(EVENTS.RESERVE_SEATING, eventDTO.getReserveSeating())
                         .set(EVENTS.SHORT_DESCRIPTION, eventDTO.getSummary())
                         .set(EVENTS.FULL_DESCRIPTION, eventDTO.getAdditionalInfo())
                         .set(EVENTS.IS_RECURRING, eventDTO.getEventType().equalsIgnoreCase("recurring"))
@@ -143,6 +143,8 @@ public class EventService {
                 }
 
                 context.update(EVENTS)
+                        .set(EVENTS.EVENT_TYPE_ID, context.select(EVENTTYPES.EVENT_TYPE_ID).from(EVENTTYPES)
+                                .where(EVENTTYPES.NAME.equalIgnoreCase(eventDTO.getType())).fetchOneInto(Integer.class))
                         .set(EVENTS.SUB_CATEGORY_ID, context.select(SUBCATEGORIES.SUB_CATEGORY_ID).from(SUBCATEGORIES)
                                 .where(SUBCATEGORIES.NAME.eq(eventDTO.getSubCategory())).fetchOneInto(Integer.class))
                         .set(EVENTS.TAGS, eventDTO.getTags())
@@ -172,7 +174,7 @@ public class EventService {
         return new Response(HttpStatus.OK.name(), "OK", eventID);
     }
 
-    // TODO: Gross, sold tickets will be implement later
+    // TODO: Gross,will be implement later
     public List<Map<String, Object>> getAllEvents(Integer userID, Integer timezone, String getPast) {
         Condition condition = EVENTS.ORGANIZER_ID.eq(userID);
         if (getPast.equalsIgnoreCase("false")) {
@@ -232,7 +234,7 @@ public class EventService {
                 )
                 .from(EVENTS).join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
                 .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
-                .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(CATEGORIES.EVENT_TYPE_ID))
+                .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(EVENTS.EVENT_TYPE_ID))
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
                 .fetchOneMap();
 
@@ -348,12 +350,16 @@ public class EventService {
         return eventRecord;
     }
 
-    public List<Map<String, Object>> getSuggestedEvents(Integer limit) {
+    public List<Map<String, Object>> getSuggestedEvents(Integer limit, Integer profileID, String lat, String lon) {
+        String userLocationPoint = "POINT(" + lon + " " + lat + ")";
+        // TODO: enhance suggestion base on user interests
         var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .distinctOn(EVENTS.ORGANIZER_ID)
                 .from(EVENTS)
-                .where(EVENTS.START_TIME.gt(OffsetDateTime.now()))
+                .where(EVENTS.START_TIME.gt(OffsetDateTime.now())
+                                        .and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000)
+                )
                 .limit(limit)
                 .fetchMaps();
 
@@ -545,7 +551,7 @@ public class EventService {
         var eventRecord = getEventRecord(EVENTTYPES.NAME.equalIgnoreCase(eventType), lat, lon
                 , EVENTS.join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
                         .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
-                        .join(EVENTTYPES).on(CATEGORIES.EVENT_TYPE_ID.eq(EVENTTYPES.EVENT_TYPE_ID)), false);
+                        .join(EVENTTYPES).on(EVENTS.EVENT_TYPE_ID.eq(EVENTTYPES.EVENT_TYPE_ID)), false);
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
 
@@ -632,8 +638,10 @@ public class EventService {
                 )
                 .from(EVENTS).join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
                 .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
-                .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(CATEGORIES.EVENT_TYPE_ID))
+                .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(EVENTS.EVENT_TYPE_ID))
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
                 .fetchOneMap();
     }
+
+    // TODO: Scheduling task to update events status to PAST after end time
 }

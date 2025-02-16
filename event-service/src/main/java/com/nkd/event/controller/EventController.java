@@ -84,8 +84,11 @@ public class EventController {
     }
 
     @GetMapping("/get/suggested")
-    public List<Map<String, Object>> getSuggestedEvents(@RequestParam("limit") Integer limit) {
-        return eventService.getSuggestedEvents(limit);
+    public List<Map<String, Object>> getSuggestedEvents(@RequestParam(value = "limit", defaultValue = "8") Integer limit,
+                                                        @RequestParam(value = "pid", required = false) Integer profileID,
+                                                        @RequestParam(value = "lat", required = false) String lat,
+                                                        @RequestParam(value = "lon", required = false) String lon) {
+        return eventService.getSuggestedEvents(limit, profileID, lat, lon);
     }
 
     @GetMapping("/events/cost")
@@ -95,7 +98,7 @@ public class EventController {
     }
 
     @GetMapping("/events/online")
-    public List<Map<String, Object>> getSuugestedOnlineEvents(@RequestParam("lat") String lat, @RequestParam("lon") String lon) {
+    public List<Map<String, Object>> getSuggestedOnlineEvents(@RequestParam("lat") String lat, @RequestParam("lon") String lon) {
         return eventService.getOnlineEvents(lat, lon);
     }
 

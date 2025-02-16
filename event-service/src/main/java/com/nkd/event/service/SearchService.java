@@ -57,7 +57,7 @@ public class SearchService {
                 .fetchMaps();
     }
 
-    public List<Map<String, Object>> getEventSearch(String query, String categories, String lat, String lon, String time,
+    public List<Map<String, Object>> getEventSearch(String query, String category, String subCategory, String lat, String lon, String time,
                                                     String price, Boolean online, Boolean isFollowOnly, List<Integer> followList) {
         Table<?> view = EVENTS;
         Condition condition = DSL.trueCondition();
@@ -69,12 +69,11 @@ public class SearchService {
                     .or(EVENTS.LOCATION.like("%" + query + "%")
                     .or(jsonbGetAttribute(EVENTS.LOCATION, "location").like(query))));
         }
-        if(categories != null && !categories.isEmpty()){
-            List<String> categoryList = Stream.of(categories.split(",")).collect(Collectors.toList());
-            condition = condition.and(CATEGORIES.NAME.in(categoryList).or(SUBCATEGORIES.NAME.in(categoryList)).or(EVENTTYPES.NAME.in(categoryList)));
+        if(category != null && !category.isEmpty() && subCategory != null && !subCategory.isEmpty()){
+            condition = condition.and(CATEGORIES.NAME.like(category))
+                    .and(SUBCATEGORIES.NAME.like(subCategory));
             view = view.join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
-                    .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
-                    .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(CATEGORIES.EVENT_TYPE_ID));
+                    .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID));
         }
         if(time != null && !time.isEmpty()){
             condition = condition.and(EventUtils.constructTimeCondition(time));
@@ -94,11 +93,8 @@ public class SearchService {
             }
             view = view.join(TICKETTYPES).on(EVENTS.EVENT_ID.eq(TICKETTYPES.EVENT_ID));
         }
-        if(Optional.ofNullable(online).orElse(false)){
-            condition = condition.and(String.valueOf(EVENTS.LOCATION.toString().contains("online")));
-        }
         if(Optional.ofNullable(isFollowOnly).orElse(false)){
-            condition = condition.and(EVENTS.ORGANIZER_ID.in(followList));
+            condition = condition.and(EVENTS.PROFILE_ID.in(followList));
         }
 
         var eventRecord = eventService.getEventRecord(condition, lat, lon, view, Optional.ofNullable(online).orElse(false));
