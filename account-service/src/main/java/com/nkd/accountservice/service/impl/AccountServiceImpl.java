@@ -545,6 +545,33 @@ public class AccountServiceImpl implements AccountService {
         return new Response(HttpStatus.OK.name(), "Profile switched", newToken);
     }
 
+    @Override
+    public Response handleSaveInterest(Integer userDataID, String interests) {
+        context.update(USER_DATA)
+                .set(USER_DATA.INTERESTS, interests)
+                .where(USER_DATA.USER_DATA_ID.eq(UInteger.valueOf(userDataID)))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "Interests updated", null);
+    }
+
+    @Override
+    public String getInterest(Integer userDataID) {
+        return context.select(USER_DATA.INTERESTS)
+                .from(USER_DATA)
+                .where(USER_DATA.USER_DATA_ID.eq(UInteger.valueOf(userDataID)))
+                .fetchSingleInto(String.class);
+    }
+
+    @Override
+    public Map<String, Object> getOrderAttendeeInfo(Integer profileID) {
+        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, USER_DATA.FULL_NAME, USER_DATA.PHONE_NUMBER, USER_ACCOUNT.ACCOUNT_EMAIL)
+                .from(PROFILE.join(USER_ACCOUNT).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID))
+                        .join(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID)))
+                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                .fetchOneMap();
+    }
+
     private UInteger saveOrganizerProfile(String accountID, Profile profile){
         UInteger updateProfileID;
         Optional<UInteger> profileID = context.select(PROFILE.PROFILE_ID).from(PROFILE)

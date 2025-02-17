@@ -221,6 +221,14 @@ public class TicketService {
         context.deleteFrom(ORDERITEMS)
                 .where(ORDERITEMS.ORDER_ID.eq(orderID))
                 .execute();
+        context.update(TICKETTYPES)
+                .set(TICKETTYPES.AVAILABLE_QUANTITY, TICKETTYPES.QUANTITY)
+                .where(TICKETTYPES.TICKET_TYPE_ID.in(
+                        context.select(ORDERITEMS.TICKET_TYPE_ID)
+                                .from(ORDERITEMS)
+                                .where(ORDERITEMS.ORDER_ID.eq(orderID))
+                ))
+                .execute();
     }
 
     public ResponseEntity<?> downloadTicket(PrintTicketDTO ticket) {

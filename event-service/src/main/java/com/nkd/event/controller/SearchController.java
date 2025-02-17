@@ -53,4 +53,11 @@ public class SearchController {
     public Response deleteSearchHistory(@RequestParam("search-id") Integer searchID) {
         return searchService.deleteSearchHistory(searchID);
     }
+
+    @GetMapping("/search/orders")
+    public List<Map<String, Object>> loadOrders(@RequestParam(value = "q", defaultValue = "") String query,
+                                                @RequestParam(value = "range", defaultValue = "3") Integer range,
+                                                @RequestParam("pid") Integer profileID) {
+        return searchService.loadOrders(query, range, profileID);
+    }
 }

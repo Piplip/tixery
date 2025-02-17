@@ -12,10 +12,7 @@ import com.nkd.event.event.EventOperation;
 import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.Table;
+import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -123,6 +120,12 @@ public class EventService {
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
             }
+            case "3" -> {
+                context.update(EVENTS)
+                        .set(EVENTS.CAPACITY, eventDTO.getCapacity())
+                        .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
+                        .execute();
+            }
             case "4" -> {
                 JSONB refundJSON = null;
                 if(eventDTO.getAllowRefund()){
@@ -152,7 +155,6 @@ public class EventService {
                         .set(EVENTS.REFUND_POLICY, refundJSON)
                         .set(EVENTS.STATUS, eventDTO.getPublishType().equals("now") ? "published" : "scheduled")
                         .set(EVENTS.PUBLISH_DATETIME, publishTime)
-                        .set(EVENTS.CAPACITY, eventDTO.getCapacity())
                         .set(EVENTS.UPDATED_AT, OffsetDateTime.now().withOffsetSameLocal(offset))
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
@@ -174,29 +176,38 @@ public class EventService {
         return new Response(HttpStatus.OK.name(), "OK", eventID);
     }
 
-    // TODO: Gross,will be implement later
     public List<Map<String, Object>> getAllEvents(Integer userID, Integer timezone, String getPast) {
         Condition condition = EVENTS.ORGANIZER_ID.eq(userID);
         if (getPast.equalsIgnoreCase("false")) {
             condition = condition.and(EVENTS.START_TIME.gt(OffsetDateTime.of(LocalDate.now(), LocalTime.MIN, ZoneOffset.ofHours(timezone))));
-        }
-        else {
+        } else {
             condition = condition.and(EVENTS.START_TIME.lt(OffsetDateTime.now()));
         }
 
-        var eventData = context.select(EVENTS.EVENT_ID, EVENTS.PROFILE_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.LOCATION,
+        var eventData = context.select(EVENTS.EVENT_ID, EVENTS.PROFILE_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.LOCATION, EVENTS.IS_RECURRING,
                         EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.STATUS)
                 .from(EVENTS)
                 .where(condition)
                 .orderBy(EVENTS.START_TIME.asc())
                 .fetchMaps();
 
+        List<UUID> eventIds = eventData.stream()
+                .map(event -> (UUID) event.get("event_id"))
+                .toList();
+
+        Map<UUID, Record3<UUID, String, BigDecimal>> grossData = context.select(ORDERS.EVENT_ID, PAYMENTS.CURRENCY, sum(PAYMENTS.AMOUNT).as("gross"))
+                .from(ORDERS).join(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID))
+                .where(ORDERS.STATUS.eq("paid").and(ORDERS.EVENT_ID.in(eventIds)))
+                .groupBy(ORDERS.EVENT_ID, PAYMENTS.CURRENCY)
+                .fetchMap(ORDERS.EVENT_ID);
+
         Condition ticketCondition = TICKETTYPES.STATUS.eq("visible")
-                        .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
-                                .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now())))
-                        .or(TICKETTYPES.STATUS.eq("custom")
-                                .and(TICKETTYPES.VIS_START_TIME.lt(OffsetDateTime.now()))
-                                .and(TICKETTYPES.VIS_END_TIME.gt(OffsetDateTime.now())));
+                .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
+                        .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now())))
+                .or(TICKETTYPES.STATUS.eq("custom")
+                        .and(TICKETTYPES.VIS_START_TIME.lt(OffsetDateTime.now()))
+                        .and(TICKETTYPES.VIS_END_TIME.gt(OffsetDateTime.now())));
+
         eventData.forEach(event -> {
             Optional<Integer> ticketCount = context.select(sum(TICKETTYPES.QUANTITY))
                     .from(TICKETTYPES)
@@ -207,9 +218,20 @@ public class EventService {
                     .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")).and(ticketCondition))
                     .fetchOptionalInto(Integer.class);
             Object images = event.get("images");
-            if(images != null){
+            if (images != null) {
                 event.put("images", images);
             }
+
+            UUID eventId = (UUID) event.get("event_id");
+            Record3<UUID, String, BigDecimal> record = grossData.get(eventId);
+            if (record != null) {
+                event.put("gross", record.get("gross", BigDecimal.class));
+                event.put("currency", record.get(PAYMENTS.CURRENCY));
+            } else {
+                event.put("gross", BigDecimal.ZERO);
+                event.put("currency", "USD");
+            }
+
             event.put("ticketCount", ticketCount.orElse(0));
             event.put("remainingTicket", remainingTicket.orElse(0));
         });
@@ -358,7 +380,7 @@ public class EventService {
                 .distinctOn(EVENTS.ORGANIZER_ID)
                 .from(EVENTS)
                 .where(EVENTS.START_TIME.gt(OffsetDateTime.now())
-                                        .and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000)
+//                                        .and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 10000)
                 )
                 .limit(limit)
                 .fetchMaps();
@@ -642,6 +664,4 @@ public class EventService {
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
                 .fetchOneMap();
     }
-
-    // TODO: Scheduling task to update events status to PAST after end time
 }

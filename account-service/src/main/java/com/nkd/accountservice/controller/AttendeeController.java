@@ -61,4 +61,19 @@ public class AttendeeController {
     public Response updateAttendeeProfile(@RequestParam("pid") Integer profileID, @RequestParam("udid") Integer userDataID, @RequestBody Profile profile){
         return accountService.updateAttendeeProfile(profileID, userDataID, profile);
     }
+
+    @GetMapping("/attendee/interest")
+    public String getInterest(@RequestParam("udid") Integer userDataID){
+        return accountService.getInterest(userDataID);
+    }
+
+    @PostMapping("/attendee/interest")
+    public Response handleInterest(@RequestParam("udid") Integer userDataID, @RequestBody String interests){
+        return accountService.handleSaveInterest(userDataID, interests);
+    }
+
+    @GetMapping("/order/attendee/info")
+    public Map<String, Object> getOrderAttendeeInfo(@RequestParam("pid") Integer profileID){
+        return accountService.getOrderAttendeeInfo(profileID);
+    }
 }

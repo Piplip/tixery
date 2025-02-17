@@ -38,4 +38,7 @@ public interface AccountService {
     Response setPasswordForOauth2User(String email, String password);
     Response handleSetPasswordRequestForOauth2User(String email);
     Response switchProfile(String email, Integer profileID);
+    Response handleSaveInterest(Integer userDataID, String interests);
+    String getInterest(Integer userDataID);
+    Map<String, Object> getOrderAttendeeInfo(Integer profileID);
 }
