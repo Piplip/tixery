@@ -141,17 +141,15 @@ public class SearchService {
         return new Response(HttpStatus.OK.name(), "Search history deleted successfully", null);
     }
 
-    public List<Map<String, Object>> loadOrders(String query, Integer range, Integer profileID) {
-        Condition condition = ORDERS.PROFILE_ID.eq(profileID)
-                .and(ORDERS.CREATED_AT.gt(OffsetDateTime.now().minusMonths(range)))
-                .and(EVENTS.NAME.like("%" + query + "%"));
+    public List<Map<String, Object>> loadOrders(String query, Integer range, Integer organizerID) {
+        Condition condition = DSL.trueCondition();
 
         if(!query.isEmpty()){
             try {
-                int orderId = Integer.parseInt(query.trim());
-                condition = condition.or(ORDERS.ORDER_ID.eq(orderId));
+                int orderID = Integer.parseInt(query.trim());
+                condition = condition.and(ORDERS.ORDER_ID.eq(orderID));
             } catch (NumberFormatException e) {
-                log.info("Query is not a number");
+                condition = condition.and(EVENTS.NAME.like("%" + query + "%"));
             }
         }
 
@@ -160,12 +158,13 @@ public class SearchService {
                 .from(ORDERS)
                 .leftJoin(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID))
                 .rightJoin(EVENTS).on(ORDERS.EVENT_ID.eq(EVENTS.EVENT_ID))
-                .where(condition)
+                .where(condition.and(EVENTS.ORGANIZER_ID.eq(organizerID))
+                        .and(ORDERS.CREATED_AT.gt(OffsetDateTime.now().minusMonths(range))))
                 .fetchMaps();
 
         return orders.stream()
-                .peek(order -> order.put("tickets", context.select(TICKETS.TICKET_ID, TICKETTYPES.NAME, ORDERITEMS.QUANTITY,
-                                TICKETTYPES.TICKET_TYPE_ID)
+                .peek(order -> order.put("tickets", context.select(TICKETS.TICKET_ID, TICKETTYPES.NAME, ORDERITEMS.QUANTITY
+                                , TICKETTYPES.PRICE, TICKETTYPES.CURRENCY, TICKETTYPES.TICKET_TYPE_ID)
                         .from(TICKETS)
                         .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
                         .rightJoin(TICKETTYPES).on(ORDERITEMS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))

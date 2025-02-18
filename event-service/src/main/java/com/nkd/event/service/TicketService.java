@@ -211,16 +211,16 @@ public class TicketService {
 
     @Async("taskExecutor")
     protected void cleanUpOnDeleteOrder(Integer orderID) {
-        context.deleteFrom(TICKETS)
-                .where(TICKETS.ORDER_ITEM_ID.in(
-                        context.select(ORDERITEMS.ORDER_ITEM_ID)
-                                .from(ORDERITEMS)
-                                .where(ORDERITEMS.ORDER_ID.eq(orderID))
-                ))
-                .execute();
-        context.deleteFrom(ORDERITEMS)
-                .where(ORDERITEMS.ORDER_ID.eq(orderID))
-                .execute();
+//        context.deleteFrom(TICKETS)
+//                .where(TICKETS.ORDER_ITEM_ID.in(
+//                        context.select(ORDERITEMS.ORDER_ITEM_ID)
+//                                .from(ORDERITEMS)
+//                                .where(ORDERITEMS.ORDER_ID.eq(orderID))
+//                ))
+//                .execute();
+//        context.deleteFrom(ORDERITEMS)
+//                .where(ORDERITEMS.ORDER_ID.eq(orderID))
+//                .execute();
         context.update(TICKETTYPES)
                 .set(TICKETTYPES.AVAILABLE_QUANTITY, TICKETTYPES.QUANTITY)
                 .where(TICKETTYPES.TICKET_TYPE_ID.in(

@@ -524,8 +524,7 @@ public class EventService {
                         ORDERS.ORDER_ID, ORDERS.CREATED_AT)
                 .from(ORDERS)
                 .join(EVENTS).on(ORDERS.EVENT_ID.eq(EVENTS.EVENT_ID))
-                .where(ORDERS.PROFILE_ID.eq(profileID).and(ORDERS.STATUS.eq("paid"))
-                        .and(condition))
+                .where(ORDERS.PROFILE_ID.eq(profileID).and(ORDERS.STATUS.eq("paid")).and(condition))
                 .orderBy(ORDERS.CREATED_AT.desc())
                 .limit(10)
                 .fetchMaps();
