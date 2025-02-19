@@ -179,9 +179,9 @@ public class EventService {
     public List<Map<String, Object>> getAllEvents(Integer userID, Integer timezone, String getPast) {
         Condition condition = EVENTS.ORGANIZER_ID.eq(userID);
         if (getPast.equalsIgnoreCase("false")) {
-            condition = condition.and(EVENTS.START_TIME.gt(OffsetDateTime.of(LocalDate.now(), LocalTime.MIN, ZoneOffset.ofHours(timezone))));
+            condition = condition.and(EVENTS.END_TIME.gt(OffsetDateTime.now()));
         } else {
-            condition = condition.and(EVENTS.START_TIME.lt(OffsetDateTime.now()));
+            condition = condition.and(EVENTS.END_TIME.lt(OffsetDateTime.now()));
         }
 
         var eventData = context.select(EVENTS.EVENT_ID, EVENTS.PROFILE_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.LOCATION, EVENTS.IS_RECURRING,
