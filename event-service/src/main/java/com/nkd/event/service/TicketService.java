@@ -107,6 +107,10 @@ public class TicketService {
                     ticketDTO.getVisibleStartTime(), ticketDTO.getVisibleEndTime(), timezone);
         }
 
+        String currency = ticketDTO.getCurrency() != null ? ticketDTO.getCurrency() : "USD";
+        String currencySymbol = ticketDTO.getCurrencySymbol() != null ? ticketDTO.getCurrencySymbol() : "$";
+        String currencyFullForm = ticketDTO.getCurrencyFullForm() != null ? ticketDTO.getCurrencyFullForm() : "United States Dollar";
+
         JSONB currencyData = JSONB.jsonb(
                 """
                 {
@@ -114,7 +118,7 @@ public class TicketService {
                     "symbol": "%s",
                     "fullForm": "%s"
                 }
-                """.formatted(ticketDTO.getCurrency(), ticketDTO.getCurrencySymbol(), ticketDTO.getCurrencyFullForm())
+                """.formatted(currency, currencySymbol, currencyFullForm)
         );
 
         int rowsUpdated = context.update(TICKETTYPES)
@@ -204,7 +208,7 @@ public class TicketService {
                         .join(TICKETTYPES).on(ORDERITEMS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
                         .join(TICKETS).on(ORDERITEMS.ORDER_ITEM_ID.eq(TICKETS.ORDER_ITEM_ID))
                         .join(EVENTS).on(TICKETS.EVENT_ID.eq(EVENTS.EVENT_ID))
-                        .join(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID)))
+                        .leftJoin(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID)))
                 .where(ORDERS.ORDER_ID.eq(orderID))
                 .fetchMaps();
     }

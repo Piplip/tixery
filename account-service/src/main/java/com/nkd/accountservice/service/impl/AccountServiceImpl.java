@@ -13,6 +13,7 @@ import com.nkd.accountservice.service.AccountService;
 import com.nkd.accountservice.service.JwtService;
 import com.nkd.accountservice.tables.pojos.Confirmation;
 import com.nkd.accountservice.utils.CommonUtils;
+import com.nkd.accountservice.utils.ResponseMessageCode;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -129,17 +130,17 @@ public class AccountServiceImpl implements AccountService {
     public Response handleLogin(AccountDTO accountDTO, HttpServletRequest request, HttpServletResponse response) {
         if(!isEmailExist(accountDTO.getEmail())){
             log.error("Email not found : {}", accountDTO.getEmail());
-            return new Response(HttpStatus.BAD_REQUEST.name(), "Account not found", null);
+            return new Response(HttpStatus.BAD_REQUEST.name(), ResponseMessageCode.ACCOUNT_NOT_FOUND, null);
         }
         if(checkVerifiedAccount(accountDTO.getEmail())){
             log.error("Account not verified : {}", accountDTO.getEmail());
-            return new Response(HttpStatus.BAD_REQUEST.name(), "Account not verified", null);
+            return new Response(HttpStatus.BAD_REQUEST.name(), ResponseMessageCode.ACCOUNT_NOT_VERIFIED, null);
         }
         else if(context.fetchExists(context.selectFrom(USER_ACCOUNT).where(USER_ACCOUNT.CREDENTIAL_ID.isNull()
                 .and(USER_ACCOUNT.ACCOUNT_EMAIL.eq(accountDTO.getEmail()))))) {
             log.error("Mismatch login method : {}", accountDTO.getEmail());
             return new Response(HttpStatus.BAD_REQUEST.name()
-                    , "The email you use to login is associated to google login! Please use it to log into your account", null);
+                    , ResponseMessageCode.MISMATCH_LOGIN_METHOD, null);
         }
 
         CustomUserDetails userDetails = userDetailService.loadUserByUsername(accountDTO.getEmail());
@@ -156,9 +157,9 @@ public class AccountServiceImpl implements AccountService {
             cookie.setMaxAge(60 * 60 * 24);
             response.addCookie(cookie);
 
-            return new Response(HttpStatus.OK.name(), "Login successful", token);
+            return new Response(HttpStatus.OK.name(), ResponseMessageCode.LOGIN_SUCCESSFUL, token);
         }
-        return new Response(HttpStatus.BAD_REQUEST.name(), "Username or password is incorrect", null);
+        return new Response(HttpStatus.BAD_REQUEST.name(), ResponseMessageCode.USERNAME_OR_PASSWORD_INCORRECT, null);
     }
 
     @Override

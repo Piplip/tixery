@@ -240,7 +240,7 @@ public class EventService {
     }
 
     public Map<String, Object> getEvent(String eventID, Integer profileID, Boolean isOrganizer) {
-        if(!Optional.ofNullable(isOrganizer).orElse(false)){
+        if(!Optional.ofNullable(isOrganizer).orElse(false) && profileID != null){
             EventOperation viewOperation = EventOperation.builder()
                     .data(Map.of("eventID", eventID, "profileID", profileID))
                     .type(EventOperationType.VIEW)
@@ -280,6 +280,7 @@ public class EventService {
 
         var tickets = context.selectFrom(TICKETTYPES)
                 .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID))
+                        .and(Boolean.TRUE.equals(isOrganizer) ? trueCondition() : TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now()))
                         .and(TICKETTYPES.STATUS.eq("visible")
                                 .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
                                         .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now())))
@@ -341,6 +342,7 @@ public class EventService {
             var tickets = context.select(TICKETTYPES.PRICE, TICKETTYPES.TICKET_TYPE, TICKETTYPES.CURRENCY)
                     .from(TICKETTYPES)
                     .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id"))
+                            .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now()))
                             .and(TICKETTYPES.STATUS.eq("visible")
                                     .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
                                             .and(TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now())))
@@ -487,6 +489,7 @@ public class EventService {
     }
 
     public List<Map<String, Object>> getFollowedEvents(List<Integer> organizerIDs) {
+        System.out.println(organizerIDs.toString());
         if (organizerIDs.isEmpty()) {
             return List.of();
         }
@@ -502,7 +505,7 @@ public class EventService {
                         subquery.field(EVENTS.IMAGES), subquery.field(EVENTS.START_TIME), subquery.field(EVENTS.LOCATION)
                 )
                 .from(subquery)
-                .where(field("row_num").le(2))
+                .where(field("row_num").lessOrEqual(2))
                 .fetchMaps();
 
         return getEventTickets(eventRecord);
@@ -537,7 +540,9 @@ public class EventService {
                 .and(EVENTS.START_TIME.gt(OffsetDateTime.now()));
 
         if(isOnline){
-            condition = condition.and(String.valueOf(EVENTS.LOCATION.toString().contains("online")));
+            System.out.println("ONLINE FINDER");
+            condition = condition.and(jsonbGetAttribute(EVENTS.LOCATION, "locationType").equalIgnoreCase("online"));
+            System.out.println(jsonbGetAttribute(EVENTS.LOCATION, "locationType"));
         }
         else {
 //            condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000);

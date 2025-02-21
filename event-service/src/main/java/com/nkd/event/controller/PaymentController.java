@@ -37,4 +37,10 @@ public class PaymentController {
         var response = paymentService.handleFailedStripePayment(orderID, profileID, PaymentStatus.USER_CANCELLED);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
+    @PostMapping("/free/checkout")
+    public ResponseEntity<?> handleFreeCheckout(@RequestBody PaymentDTO paymentDTO) {
+        Response response = paymentService.handleFreeCheckout(paymentDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 }

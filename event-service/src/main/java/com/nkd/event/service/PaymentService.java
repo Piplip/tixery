@@ -168,6 +168,11 @@ public class PaymentService {
             return StripeResponse.builder().status("failed").message("Order does not exist").build();
         }
 
+        // check already paid payment
+        if(context.fetchExists(ORDERS, ORDERS.ORDER_ID.eq(orderID).and(ORDERS.STATUS.eq("paid")))) {
+            return StripeResponse.builder().status("failed").message("Order already paid").build();
+        }
+
         var paymentID = context.update(PAYMENTS)
                 .set(PAYMENTS.PAYMENT_STATUS, status.name())
                 .where(PAYMENTS.ORDER_ID.eq(orderID))
@@ -288,5 +293,31 @@ public class PaymentService {
     private void cleanUpRedisCache(Integer orderID, Integer profileID) {
         redisTemplate.delete("stripe-order-" + orderID);
         redisTemplate.delete("reserved-for-" + profileID);
+    }
+
+    public Response handleFreeCheckout(PaymentDTO paymentDTO) {
+        try {
+            handleReserveTicket(paymentDTO.getTickets(), paymentDTO.getProfileID());
+        } catch (Exception e) {
+            log.error("Error checking ticket availability: {}", e.getMessage());
+            return new Response(HttpStatus.BAD_REQUEST.name(), e.getMessage(), null);
+        }
+
+        var orderID = context.insertInto(ORDERS)
+                .set(ORDERS.USER_ID, paymentDTO.getUserID())
+                .set(ORDERS.PROFILE_ID, paymentDTO.getProfileID())
+                .set(ORDERS.EVENT_ID, UUID.fromString(paymentDTO.getEventID()))
+                .set(ORDERS.STATUS, "paid")
+                .returningResult(ORDERS.ORDER_ID)
+                .fetchOneInto(Integer.class);
+
+        try {
+            ticketService.generateTickets(orderID, paymentDTO.getTickets(), paymentDTO.getEventID(), paymentDTO.getUserID(), paymentDTO.getProfileID());
+        } catch (Exception e) {
+            log.error("Error generating tickets: {}", e.getMessage());
+            return new Response(HttpStatus.INTERNAL_SERVER_ERROR.name(), e.getMessage(), null);
+        }
+
+        return new Response(HttpStatus.OK.name(), "Order successfully! Enjoy the event!!", null);
     }
 }
