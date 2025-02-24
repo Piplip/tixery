@@ -63,9 +63,9 @@ public class EventController {
     }
     
     @GetMapping("/get")
-    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID, @RequestParam("tz") Integer timezone,
-                                                  @RequestParam(value = "past", required = false, defaultValue = "false") String getPast) {
-        return eventService.getAllEvents(userID, timezone,getPast);
+    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID, @RequestParam(value = "past",
+            required = false, defaultValue = "false") String getPast) {
+        return eventService.getAllEvents(userID,getPast);
     }
 
     @GetMapping("/get/online")
@@ -164,6 +164,13 @@ public class EventController {
     @PostMapping("/order/cancel")
     public Response cancelOrder(@RequestParam("order-id") Integer orderID, @RequestParam("uname") String username, @RequestParam("u") String email) {
         return paymentService.cancelOrder(orderID, username, email);
+    }
+
+    @PostMapping("/create/auto")
+    public Response createEventWithAI(@RequestParam("pid") Integer profileID, @RequestParam("uid") Integer userID,
+                                      @RequestParam(value = "price", required = false) Double price,
+                                      @RequestParam(value = "free", defaultValue = "false") Boolean isFree, @RequestBody EventDTO eventDTO){
+        return eventService.createEventWithAI(userID, profileID, price, isFree, eventDTO);
     }
 
 }

@@ -1,27 +1,24 @@
 package com.nkd.event.service;
 
 import com.nkd.event.dto.Response;
+import com.nkd.event.dto.UserInteraction;
 import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.Table;
+import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.nkd.event.Tables.*;
-import static org.jooq.impl.DSL.jsonbGetAttribute;
+import static org.jooq.impl.DSL.*;
 
 @Service
 @RequiredArgsConstructor
@@ -70,9 +67,15 @@ public class SearchService {
                     .or(EVENTS.LOCATION.like("%" + query + "%")
                     .or(jsonbGetAttribute(EVENTS.LOCATION, "location").like(query))));
         }
-        if(category != null && !category.isEmpty() && subCategory != null && !subCategory.isEmpty()){
-            condition = condition.and(CATEGORIES.NAME.like(category))
-                    .and(SUBCATEGORIES.NAME.like(subCategory));
+        if(category != null){
+            condition = condition.and(CATEGORIES.NAME.like(category));
+
+            if (subCategory != null) {
+                condition = condition.and(SUBCATEGORIES.NAME.like(subCategory));
+            } else {
+                condition = condition.and(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID));
+            }
+
             view = view.join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
                     .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID));
         }
@@ -171,5 +174,16 @@ public class SearchService {
                         .where(ORDERITEMS.ORDER_ID.eq((Integer) order.get("order_id")))
                         .fetchMaps()))
                 .collect(Collectors.toList());
+    }
+
+    public void trackUserInteraction(UserInteraction userInteraction) {
+        context.insertInto(USERINTERACTIONS)
+                .set(USERINTERACTIONS.PROFILE_ID, userInteraction.getProfileID())
+                .set(USERINTERACTIONS.EVENT_ID, UUID.fromString(userInteraction.getEventID()))
+                .set(USERINTERACTIONS.INTERACTION_TYPE, userInteraction.getType())
+                .set(USERINTERACTIONS.INTERACTION_STRENGTH, userInteraction.getStrength())
+                .set(USERINTERACTIONS.ORGANIZER_ID, userInteraction.getOrganizerID())
+                .set(USERINTERACTIONS.TIMESTAMP, LocalDateTime.now())
+                .execute();
     }
 }

@@ -1,5 +1,6 @@
 package com.nkd.event.controller;
 
+import com.nkd.event.dto.CouponDTO;
 import com.nkd.event.dto.PrintTicketDTO;
 import com.nkd.event.dto.Response;
 import com.nkd.event.dto.TicketDTO;
@@ -45,6 +46,16 @@ public class TicketController {
     @PostMapping("/ticket/download")
     public ResponseEntity<?> downloadTicket(@RequestBody PrintTicketDTO printTicketDTO) {
         return ticketService.downloadTicket(printTicketDTO);
+    }
+
+    @PostMapping("/coupon/use")
+    public Response handleCoupon(@RequestParam("coupon") String coupon, @RequestParam("pid") Integer profileID) {
+        return ticketService.handleCoupon(coupon, profileID);
+    }
+
+    @PostMapping("/coupon/activate")
+    public Response activateCoupon(@RequestBody List<CouponDTO> coupon) {
+        return ticketService.activateCoupon(coupon);
     }
 
 }

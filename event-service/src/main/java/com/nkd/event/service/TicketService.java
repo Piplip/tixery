@@ -1,16 +1,20 @@
 package com.nkd.event.service;
 
+import com.nkd.event.dto.CouponDTO;
 import com.nkd.event.dto.PrintTicketDTO;
 import com.nkd.event.dto.Response;
 import com.nkd.event.dto.TicketDTO;
+import com.nkd.event.tables.records.DiscountcodesRecord;
 import com.nkd.event.utils.CommonUtils;
 import com.nkd.event.utils.EventUtils;
+import com.nkd.event.utils.ResponseCode;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.util.Pair;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
@@ -27,6 +31,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static com.nkd.event.Tables.*;
 
@@ -37,6 +42,7 @@ public class TicketService {
 
     private final DSLContext context;
     private final TemplateEngine templateEngine;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public Response addTicket(String eventID, TicketDTO ticket, Integer timezone, Boolean isRecurring) {
         var salesTime = EventUtils.transformDate(ticket.getStartDate(), ticket.getEndDate(),
@@ -264,5 +270,41 @@ public class TicketService {
             log.error("Error generating ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+
+    public Response activateCoupon(List<CouponDTO> coupon) {
+        coupon.forEach(item -> {
+            context.insertInto(DISCOUNTCODES)
+                    .set(DISCOUNTCODES.CODE, item.getCode())
+                    .set(DISCOUNTCODES.DISCOUNT_TYPE, item.getType())
+                    .set(DISCOUNTCODES.DISCOUNT_AMOUNT, BigDecimal.valueOf(item.getDiscount()))
+                    .set(DISCOUNTCODES.QUANTITY, item.getQuantity())
+                    .set(DISCOUNTCODES.VALID_FROM, OffsetDateTime.parse(item.getValidFrom()))
+                    .set(DISCOUNTCODES.VALID_TO, OffsetDateTime.parse(item.getValidTo()))
+                    .execute();
+        });
+        return new Response(HttpStatus.OK.name(), ResponseCode.COUPON_ACTIVATED, null);
+    }
+
+    public Response handleCoupon(String coupon, Integer profileID) {
+        DiscountcodesRecord record = context.selectFrom(DISCOUNTCODES)
+                .where(DISCOUNTCODES.CODE.eq(coupon))
+                .fetchOne();
+
+        if(record == null) {
+            return new Response(HttpStatus.NOT_FOUND.name(), ResponseCode.COUPON_NOT_FOUND, null);
+        }
+
+        if(record.getValidFrom().isAfter(OffsetDateTime.now()) || record.getValidTo().isBefore(OffsetDateTime.now())) {
+            return new Response(HttpStatus.BAD_REQUEST.name(), ResponseCode.COUPON_EXPIRED, null);
+        }
+
+        if(record.getQuantity() == 0) {
+            return new Response(HttpStatus.BAD_REQUEST.name(), ResponseCode.COUPON_RAN_OUT, null);
+        }
+
+        redisTemplate.opsForValue().set("coupon-" + profileID, coupon, 10, TimeUnit.MINUTES);
+        var data = Map.of("type", record.getDiscountType(), "amount", record.getDiscountAmount());
+        return new Response(HttpStatus.OK.name(), "Coupon applied successfully", data);
     }
 }

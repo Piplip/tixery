@@ -7,6 +7,8 @@ import com.nkd.event.dto.TicketDTO;
 import com.nkd.event.enumeration.EventOperationType;
 import com.nkd.event.enumeration.PaymentStatus;
 import com.nkd.event.event.EventOperation;
+import com.nkd.event.tables.records.DiscountcodesRecord;
+import com.nkd.event.utils.ResponseCode;
 import com.stripe.Stripe;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -125,8 +128,6 @@ public class PaymentService {
                 Map<String, Object> outerMap = (Map<String, Object>) value;
                 response.setAmount(Long.parseLong(outerMap.get("amount").toString()));
 
-                cleanUpRedisCache(orderID, profileID);
-
                 List<TicketDTO> tickets = cache.get("stripe-order-" + orderID);
                 ticketService.generateTickets(orderID, tickets, outerMap.get("eventID").toString(), ((Integer) outerMap.get("userID")),
                         ((Integer) outerMap.get("profileID")));
@@ -147,6 +148,7 @@ public class PaymentService {
                         .build();
 
                 publisher.publishEvent(payment);
+                cleanUpOnSuccessPayment(orderID, profileID);
             } catch (Exception e) {
                 response.setStatus("failed");
                 response.setMessage("Internal server error");
@@ -158,7 +160,7 @@ public class PaymentService {
     }
 
     public StripeResponse handleFailedStripePayment(Integer orderID, Integer profileID, PaymentStatus status) {
-        cleanUpRedisCache(orderID, profileID);
+        cleanUpOnSuccessPayment(orderID, profileID);
 
         if(orderID == null) {
             return StripeResponse.builder().status("failed").message("Order ID is required").build();
@@ -290,9 +292,29 @@ public class PaymentService {
                 .build();
     }
 
-    private void cleanUpRedisCache(Integer orderID, Integer profileID) {
+    private void cleanUpOnSuccessPayment(Integer orderID, Integer profileID) {
         redisTemplate.delete("stripe-order-" + orderID);
         redisTemplate.delete("reserved-for-" + profileID);
+
+        cache.remove("stripe-order-" + orderID);
+
+        String coupon = (String) redisTemplate.opsForValue().get("coupon-" + profileID);
+
+        if(coupon == null) {
+            return;
+        }
+
+        context.update(DISCOUNTCODES)
+                .set(DISCOUNTCODES.QUANTITY, DISCOUNTCODES.QUANTITY.minus(1))
+                .where(DISCOUNTCODES.CODE.eq(coupon))
+                .execute();
+
+        context.insertInto(APPLIEDDISCOUNTS)
+                .set(APPLIEDDISCOUNTS.ORDER_ID, orderID)
+                .set(APPLIEDDISCOUNTS.CODE, coupon)
+                .execute();
+
+        redisTemplate.delete("coupon-" + profileID);
     }
 
     public Response handleFreeCheckout(PaymentDTO paymentDTO) {

@@ -3,6 +3,7 @@ package com.nkd.event.utils;
 import net.glxn.qrgen.QRCode;
 import net.glxn.qrgen.image.ImageType;
 import org.jooq.Condition;
+import org.jooq.JSONB;
 import org.jooq.impl.DSL;
 import org.springframework.data.util.Pair;
 
@@ -12,6 +13,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 import static com.nkd.event.Tables.EVENTS;
 
@@ -94,5 +96,32 @@ public class EventUtils {
         }
 
         return condition.and(EVENTS.START_TIME.between(startTime, endTime));
+    }
+
+    public static JSONB constructLocation(String locationType, String lat, String lon, String location, String locationName){
+        return locationType.equals("venue") ?
+                JSONB.jsonb("""
+                    {
+                        "location": "%s",
+                        "locationType": "%s",
+                        "lat": %s,
+                        "lon": %s,
+                        "name": "%s"
+                    }
+                """.formatted(
+                        Optional.ofNullable(location).orElse("").replace("\r", "\\r").replace("\n", "\\n"),
+                        Optional.of(locationType).orElse("").replace("\r", "\\r").replace("\n", "\\n"),
+                        Optional.ofNullable(lat).orElse("0.0"),
+                        Optional.ofNullable(lon).orElse("0.0"),
+                        Optional.ofNullable(locationName).orElse("").replace("\r", "\\r").replace("\n", "\\n")
+                ))
+                :
+                JSONB.jsonb("""
+                                {
+                                    "locationType": "online",
+                                    "enabled": "true",
+                                    "access": "true"
+                                }
+                                """);
     }
 }

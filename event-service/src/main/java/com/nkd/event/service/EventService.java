@@ -3,13 +3,11 @@ package com.nkd.event.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nkd.event.client.AccountClient;
-import com.nkd.event.dto.EventDTO;
-import com.nkd.event.dto.OnlineEventDTO;
-import com.nkd.event.dto.RecurrenceDTO;
-import com.nkd.event.dto.Response;
+import com.nkd.event.dto.*;
 import com.nkd.event.enumeration.EventOperationType;
 import com.nkd.event.event.EventOperation;
 import com.nkd.event.utils.EventUtils;
+import com.nkd.event.utils.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.*;
@@ -38,6 +36,7 @@ public class EventService {
 
     private final DSLContext context;
     private final AccountClient accountClient;
+    private final TicketService ticketService;
     private final ApplicationEventPublisher publisher;
 
     public Response createEvent(EventDTO eventDTO, String eid, String step) {
@@ -61,29 +60,8 @@ public class EventService {
                 final OffsetDateTime eventStartTime = eventDate.atTime(startTime).atOffset(offset);
                 final OffsetDateTime eventEndTime = eventDate.atTime(endTime).atOffset(offset);
 
-                final JSONB locationJsonb = eventDTO.getLocationType().equals("venue") ? JSONB.jsonb("""
-                    {
-                        "location": "%s",
-                        "locationType": "%s",
-                        "lat": %s,
-                        "lon": %s,
-                        "name": "%s"
-                    }
-                """.formatted(
-                        Optional.ofNullable(eventDTO.getLocation()).orElse("").replace("\r", "\\r").replace("\n", "\\n"),
-                        Optional.of(eventDTO.getLocationType()).orElse("").replace("\r", "\\r").replace("\n", "\\n"),
-                        Optional.ofNullable(eventDTO.getLatitude()).orElse("0.0"),
-                        Optional.ofNullable(eventDTO.getLongitude()).orElse("0.0"),
-                        Optional.ofNullable(eventDTO.getLocationName()).orElse("").replace("\r", "\\r").replace("\n", "\\n")
-                ))
-                        :
-                        JSONB.jsonb("""
-                                {
-                                    "locationType": "online",
-                                    "enabled": "true",
-                                    "access": "true"
-                                }
-                                """);
+                final JSONB locationJsonb = EventUtils.constructLocation(eventDTO.getLocationType(), eventDTO.getLatitude(), eventDTO.getLongitude()
+                        , eventDTO.getLocation(), eventDTO.getLocationName());
 
                 final List<String> faqJsonList = Optional.ofNullable(eventDTO.getFaqs())
                         .orElse(List.of())
@@ -120,12 +98,10 @@ public class EventService {
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
             }
-            case "3" -> {
-                context.update(EVENTS)
-                        .set(EVENTS.CAPACITY, eventDTO.getCapacity())
-                        .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
-                        .execute();
-            }
+            case "3" -> context.update(EVENTS)
+                    .set(EVENTS.CAPACITY, eventDTO.getCapacity())
+                    .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
+                    .execute();
             case "4" -> {
                 JSONB refundJSON = null;
                 if(eventDTO.getAllowRefund()){
@@ -176,7 +152,7 @@ public class EventService {
         return new Response(HttpStatus.OK.name(), "OK", eventID);
     }
 
-    public List<Map<String, Object>> getAllEvents(Integer userID, Integer timezone, String getPast) {
+    public List<Map<String, Object>> getAllEvents(Integer userID, String getPast) {
         Condition condition = EVENTS.ORGANIZER_ID.eq(userID);
         if (getPast.equalsIgnoreCase("false")) {
             condition = condition.and(EVENTS.END_TIME.gt(OffsetDateTime.now()));
@@ -254,9 +230,9 @@ public class EventService {
                         CATEGORIES.NAME.as("category"), SUBCATEGORIES.NAME.as("sub_category"), EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY,
                         EVENTS.FAQ, EVENTS.FULL_DESCRIPTION, EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.PROFILE_ID
                 )
-                .from(EVENTS).join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
-                .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
-                .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(EVENTS.EVENT_TYPE_ID))
+                .from(EVENTS).leftJoin(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
+                .leftJoin(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
+                .leftJoin(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(EVENTS.EVENT_TYPE_ID))
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
                 .fetchOneMap();
 
@@ -303,7 +279,7 @@ public class EventService {
                 .execute();
 
         if (rowsDeleted > 0) {
-            return new Response(HttpStatus.OK.name(), "Event deleted successfully", null);
+            return new Response(HttpStatus.OK.name(), ResponseCode.DELETE_SUCCESS, null);
         } else {
             return new Response(HttpStatus.NOT_FOUND.name(), "Event not found", null);
         }
@@ -321,7 +297,7 @@ public class EventService {
                 .from(EVENTS)
                 .where(EVENTS.ORGANIZER_ID.eq(organizerID).and(EVENTS.START_TIME.gt(OffsetDateTime.now()))
                         .and(EVENTS.EVENT_ID.ne(UUID.fromString(eventID.trim()))))
-                .limit(6)
+                .limit(4)
                 .fetchMaps();
 
         return getEventTickets(eventRecord);
@@ -375,15 +351,11 @@ public class EventService {
     }
 
     public List<Map<String, Object>> getSuggestedEvents(Integer limit, Integer profileID, String lat, String lon) {
-        String userLocationPoint = "POINT(" + lon + " " + lat + ")";
-        // TODO: enhance suggestion base on user interests
+        var suggested = getEventsSuggestion(profileID, lat, lon);
         var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
-                .distinctOn(EVENTS.ORGANIZER_ID)
                 .from(EVENTS)
-                .where(EVENTS.START_TIME.gt(OffsetDateTime.now())
-//                                        .and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 10000)
-                )
+                .where(EVENTS.EVENT_ID.in(suggested))
                 .limit(limit)
                 .fetchMaps();
 
@@ -397,7 +369,7 @@ public class EventService {
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .from(POPULAREVENTS).join(EVENTS).on(POPULAREVENTS.EVENT_ID.eq(EVENTS.EVENT_ID))
                 .where(EVENTS.VISIBILITY.eq("public")
-//                .and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000)
+                .and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000)
                 .and(EVENTS.STATUS.eq("published"))
                 .and(EVENTS.START_TIME.gt(OffsetDateTime.now())))
                 .orderBy(POPULAREVENTS.VIEW_COUNT)
@@ -545,7 +517,7 @@ public class EventService {
             System.out.println(jsonbGetAttribute(EVENTS.LOCATION, "locationType"));
         }
         else {
-//            condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000);
+            condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000);
         }
 
         return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
@@ -667,5 +639,205 @@ public class EventService {
                 .join(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(EVENTS.EVENT_TYPE_ID))
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
                 .fetchOneMap();
+    }
+
+    @Transactional
+    public Response createEventWithAI(Integer userID, Integer profileID, Double price, Boolean isFree, EventDTO eventDTO) {
+        final ZoneOffset offset = ZoneOffset.ofHours(Integer.parseInt(eventDTO.getTimezone()));
+        final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        final LocalDate eventDate = LocalDate.parse(eventDTO.getEventDate(), DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        final LocalTime startTime = LocalTime.parse(eventDTO.getEventStartTime(), timeFormatter);
+        final LocalTime endTime = LocalTime.parse(eventDTO.getEventEndTime(), timeFormatter);
+
+        final OffsetDateTime eventStartTime = eventDate.atTime(startTime).atOffset(offset);
+        final OffsetDateTime eventEndTime = eventDate.atTime(endTime).atOffset(offset);
+
+        final JSONB locationJsonb = EventUtils.constructLocation(eventDTO.getLocationType(), eventDTO.getLatitude(), eventDTO.getLongitude()
+                , eventDTO.getLocation(), eventDTO.getLocationName());
+
+        var createdID = context.insertInto(EVENTS)
+                .set(EVENTS.NAME, eventDTO.getTitle())
+                .set(EVENTS.SHORT_DESCRIPTION, eventDTO.getSummary())
+                .set(EVENTS.FULL_DESCRIPTION, eventDTO.getAdditionalInfo())
+                .set(EVENTS.START_TIME, eventStartTime)
+                .set(EVENTS.END_TIME, eventEndTime)
+                .set(EVENTS.LOCATION, locationJsonb)
+                .set(EVENTS.RESERVE_SEATING, eventDTO.getReserveSeating())
+                .set(EVENTS.CAPACITY, eventDTO.getCapacity())
+                .set(EVENTS.IMAGES, eventDTO.getImages())
+                .set(EVENTS.IS_RECURRING, false)
+                .set(EVENTS.TIMEZONE, eventDTO.getTimezone())
+                .set(EVENTS.ORGANIZER_ID, userID)
+                .set(EVENTS.PROFILE_ID, profileID)
+                .set(EVENTS.TAGS, eventDTO.getTags())
+                .set(EVENTS.STATUS, "draft")
+                .returningResult(EVENTS.EVENT_ID)
+                .fetchOneInto(UUID.class);
+
+        TicketDTO ticket = TicketDTO.builder()
+                .ticketName("General Admission")
+                .price(isFree ? "0" : price.toString())
+                .ticketType(isFree ? "free" : "paid")
+                .minPerOrder(1).maxPerOrder(1)
+                .quantity(eventDTO.getCapacity())
+                .startDate(eventStartTime.minusMonths(1).isAfter(OffsetDateTime.now()) ? eventDTO.getEventStartTime()
+                        : OffsetDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                .startTime("00:00")
+                .endDate(eventEndTime.minusDays(1).format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                .endTime("23:59")
+                .visibility("visible")
+                .build();
+
+        assert createdID != null;
+        ticketService.addTicket(createdID.toString(), ticket, profileID, false);
+
+        return new Response(HttpStatus.OK.name(), "OK", createdID);
+    }
+
+    /**
+     * Retrieves a list of up to 12 future, published event IDs as suggestions for a user.
+     * Suggestions are based on liked events, attended events, similar categories/tags,
+     * search history, and popular events.
+     *
+     * @param profileID The ID of the user profile.
+     * @param lat       The latitude of the user's location.
+     * @param lon       The longitude of the user's location.
+     * @return A list of recommended event IDs.
+     */
+    public List<UUID> getEventsSuggestion(Integer profileID, String lat, String lon) {
+        // 1. Fetch events the user has liked
+        List<UUID> likedEventIds = context.select(LIKEDEVENTS.EVENT_ID)
+                .from(LIKEDEVENTS)
+                .where(LIKEDEVENTS.PROFILE_ID.eq(profileID))
+                .fetch(0, UUID.class);
+
+        // 2. Fetch attended event IDs
+        List<UUID> attendedEventIds = context.select(TICKETS.EVENT_ID)
+                .from(TICKETS)
+                .where(TICKETS.PROFILE_ID.eq(profileID))
+                .fetch(0, UUID.class);
+
+        // Combine liked and attended event IDs (for similarity extraction)
+        Set<UUID> userEventIds = new HashSet<>();
+        userEventIds.addAll(likedEventIds);
+        userEventIds.addAll(attendedEventIds);
+
+        // 3. Fetch sub-category IDs of these events
+        List<Integer> userSubCategoryIds = context.selectDistinct(EVENTS.SUB_CATEGORY_ID)
+                .from(EVENTS)
+                .where(EVENTS.EVENT_ID.in(userEventIds))
+                .fetch(0, Integer.class);
+
+        // Fetch event IDs in similar sub-categories
+        List<UUID> similarCategoryEventIds = context.select(EVENTS.EVENT_ID)
+                .from(EVENTS)
+                .where(EVENTS.SUB_CATEGORY_ID.in(userSubCategoryIds))
+                .fetch(0, UUID.class);
+
+        // 4. Fetch tags from the user's events and then get similar tag events
+        List<String> userTags = context.selectDistinct(field("tag", String.class))
+                .from(EVENTS, unnest(EVENTS.TAGS).as("tag"))
+                .where(EVENTS.EVENT_ID.in(userEventIds))
+                .fetch(0, String.class);
+
+        List<UUID> similarTagEventIds = new ArrayList<>();
+        if (!userTags.isEmpty()) {
+            similarTagEventIds = context.select(EVENTS.EVENT_ID)
+                    .from(EVENTS)
+                    .where(arrayOverlap(EVENTS.TAGS, array(userTags.toArray(new String[0]))))
+                    .fetch(0, UUID.class);
+        }
+
+        // 5. Fetch search-based event IDs (using search history and location)
+        String searchTerm = getUserSearchKeywords(profileID);
+        String userLocationPoint = "POINT(" + lon + " " + lat + ")";
+        Field<Double> distance = DSL.field("ST_Distance(coordinates, ST_GeographyFromText(?))", Double.class, userLocationPoint);
+        List<UUID> searchBasedEventIds = context.select(EVENTS.EVENT_ID)
+                .from(EVENTS)
+                .where(DSL.condition("search_vector @@ to_tsquery(?)", searchTerm))
+                .and(distance.lessThan(10000.0)) // Within 10 km
+                .fetch(0, UUID.class);
+
+        // 6. Fetch popular event IDs
+        List<UUID> popularEventIds = context.select(POPULAREVENTS.EVENT_ID)
+                .from(POPULAREVENTS)
+                .fetch(0, UUID.class);
+
+        // 7. Fetch view events for the user (bonus factor)
+        // This query retrieves the top 5 events viewed by the user (with a view count)
+        List<Map<String, Object>> viewEventMaps = context
+                .select(count(EVENTS.EVENT_ID).as("view_count"), EVENTVIEWS.EVENT_ID)
+                .from(EVENTVIEWS).join(EVENTS).on(EVENTS.EVENT_ID.eq(EVENTVIEWS.EVENT_ID))
+                .where(EVENTVIEWS.PROFILE_ID.eq(profileID))
+                .groupBy(EVENTVIEWS.EVENT_ID)
+                .orderBy(count(EVENTS.EVENT_ID).desc())
+                .limit(5)
+                .fetchMaps();
+        // Convert the view events into a Map for bonus scoring (eventId -> view_count)
+        Map<UUID, Integer> viewEventScores = new HashMap<>();
+        for (Map<String, Object> map : viewEventMaps) {
+            UUID eventId = (UUID) map.get(EVENTVIEWS.EVENT_ID.getName());
+            // For simplicity, we add a fixed bonus weight. You might also use the actual count.
+            viewEventScores.put(eventId, 3);
+        }
+
+        // 8. Combine candidate event IDs from the various signals.
+        // Note: We do NOT add userEventIds here because we want to recommend new events.
+        Set<UUID> candidateEventIds = new HashSet<>();
+        candidateEventIds.addAll(similarCategoryEventIds);
+        candidateEventIds.addAll(similarTagEventIds);
+        candidateEventIds.addAll(searchBasedEventIds);
+        candidateEventIds.addAll(popularEventIds);
+        candidateEventIds.addAll(viewEventScores.keySet());
+
+        // Remove events the user has already interacted with (liked/attended)
+        candidateEventIds.removeAll(userEventIds);
+
+        // 9. Ranking: Assign scores based on occurrence in each candidate list.
+        // Adjust the weights as needed.
+        Map<UUID, Integer> eventScores = new HashMap<>();
+        for (UUID eventId : candidateEventIds) {
+            int score = 0;
+            if (similarCategoryEventIds.contains(eventId)) score += 2;
+            if (similarTagEventIds.contains(eventId)) score += 2;
+            if (searchBasedEventIds.contains(eventId)) score += 1;
+            if (popularEventIds.contains(eventId)) score += 1;
+            // Bonus: Add weight if the event appears in view events
+            if (viewEventScores.containsKey(eventId)) score += viewEventScores.get(eventId);
+            eventScores.put(eventId, score);
+        }
+
+        // 10. Sort the candidate events by their composite score (descending) and limit the results.
+        List<UUID> sortedEventIds = eventScores.entrySet().stream()
+                .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
+                .limit(12)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        // Optionally, if you need to do an additional DB filter (e.g., only published, future events),
+        // you can perform a final SQL query with the sorted IDs:
+        return context.selectDistinct(EVENTS.EVENT_ID)
+                .from(EVENTS)
+                .where(EVENTS.EVENT_ID.in(sortedEventIds))
+                .and(EVENTS.STATUS.eq("published"))
+                .and(EVENTS.START_TIME.greaterThan(OffsetDateTime.now()))
+                // To preserve your ordering, you might want to sort in memory as done above.
+                .fetch(0, UUID.class);
+    }
+
+    /**
+     * Retrieves the user's recent search terms and combines them for use in a offunction to_tsquery.
+     *
+     * @param profileID The ID of the user profile.
+     * @return A string of search terms joined with ' | ' for tsquery.
+     */
+    private String getUserSearchKeywords(Integer profileID) {
+        return context.select(arrayAgg(SEARCHHISTORY.SEARCH_TERM))
+                .from(SEARCHHISTORY)
+                .where(SEARCHHISTORY.USER_ID.eq(profileID))
+                .groupBy(SEARCHHISTORY.SEARCH_TIMESTAMP)
+                .orderBy(SEARCHHISTORY.SEARCH_TIMESTAMP.desc())
+                .limit(5)
+                .fetchOne(0, String.class);
     }
 }

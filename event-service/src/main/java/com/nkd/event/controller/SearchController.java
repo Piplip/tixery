@@ -1,6 +1,7 @@
 package com.nkd.event.controller;
 
 import com.nkd.event.dto.Response;
+import com.nkd.event.dto.UserInteraction;
 import com.nkd.event.service.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -59,5 +60,10 @@ public class SearchController {
                                                 @RequestParam(value = "range", defaultValue = "3") Integer range,
                                                 @RequestParam("pid") Integer organizerID) {
         return searchService.loadOrders(query, range, organizerID);
+    }
+
+    @PostMapping("/attendee/interaction")
+    public void trackUserInteraction(@RequestBody UserInteraction userInteraction) {
+        searchService.trackUserInteraction(userInteraction);
     }
 }
