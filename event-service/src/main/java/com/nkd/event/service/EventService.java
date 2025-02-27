@@ -3,6 +3,7 @@ package com.nkd.event.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nkd.event.client.AccountClient;
+import com.nkd.event.client.SuggestionClient;
 import com.nkd.event.dto.*;
 import com.nkd.event.enumeration.EventOperationType;
 import com.nkd.event.event.EventOperation;
@@ -36,6 +37,7 @@ public class EventService {
 
     private final DSLContext context;
     private final AccountClient accountClient;
+    private final SuggestionClient suggestionClient;
     private final TicketService ticketService;
     private final ApplicationEventPublisher publisher;
 
@@ -351,7 +353,8 @@ public class EventService {
     }
 
     public List<Map<String, Object>> getSuggestedEvents(Integer limit, Integer profileID, String lat, String lon) {
-        var suggested = getEventsSuggestion(profileID, lat, lon);
+        var suggested = suggestionClient.getEventSuggestions(profileID);
+
         var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .from(EVENTS)
@@ -512,21 +515,18 @@ public class EventService {
                 .and(EVENTS.START_TIME.gt(OffsetDateTime.now()));
 
         if(isOnline){
-            System.out.println("ONLINE FINDER");
             condition = condition.and(jsonbGetAttribute(EVENTS.LOCATION, "locationType").equalIgnoreCase("online"));
-            System.out.println(jsonbGetAttribute(EVENTS.LOCATION, "locationType"));
         }
         else {
-            condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 5000);
+            condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 30000);
         }
 
         return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
-                .distinctOn(EVENTS.PROFILE_ID)
                 .from(view)
                 .where(condition)
-                .orderBy(EVENTS.PROFILE_ID)
-                .limit(8)
+                .orderBy(EVENTS.START_TIME)
+                .limit(12)
                 .fetchMaps();
     }
 
@@ -692,152 +692,5 @@ public class EventService {
         ticketService.addTicket(createdID.toString(), ticket, profileID, false);
 
         return new Response(HttpStatus.OK.name(), "OK", createdID);
-    }
-
-    /**
-     * Retrieves a list of up to 12 future, published event IDs as suggestions for a user.
-     * Suggestions are based on liked events, attended events, similar categories/tags,
-     * search history, and popular events.
-     *
-     * @param profileID The ID of the user profile.
-     * @param lat       The latitude of the user's location.
-     * @param lon       The longitude of the user's location.
-     * @return A list of recommended event IDs.
-     */
-    public List<UUID> getEventsSuggestion(Integer profileID, String lat, String lon) {
-        // 1. Fetch events the user has liked
-        List<UUID> likedEventIds = context.select(LIKEDEVENTS.EVENT_ID)
-                .from(LIKEDEVENTS)
-                .where(LIKEDEVENTS.PROFILE_ID.eq(profileID))
-                .fetch(0, UUID.class);
-
-        // 2. Fetch attended event IDs
-        List<UUID> attendedEventIds = context.select(TICKETS.EVENT_ID)
-                .from(TICKETS)
-                .where(TICKETS.PROFILE_ID.eq(profileID))
-                .fetch(0, UUID.class);
-
-        // Combine liked and attended event IDs (for similarity extraction)
-        Set<UUID> userEventIds = new HashSet<>();
-        userEventIds.addAll(likedEventIds);
-        userEventIds.addAll(attendedEventIds);
-
-        // 3. Fetch sub-category IDs of these events
-        List<Integer> userSubCategoryIds = context.selectDistinct(EVENTS.SUB_CATEGORY_ID)
-                .from(EVENTS)
-                .where(EVENTS.EVENT_ID.in(userEventIds))
-                .fetch(0, Integer.class);
-
-        // Fetch event IDs in similar sub-categories
-        List<UUID> similarCategoryEventIds = context.select(EVENTS.EVENT_ID)
-                .from(EVENTS)
-                .where(EVENTS.SUB_CATEGORY_ID.in(userSubCategoryIds))
-                .fetch(0, UUID.class);
-
-        // 4. Fetch tags from the user's events and then get similar tag events
-        List<String> userTags = context.selectDistinct(field("tag", String.class))
-                .from(EVENTS, unnest(EVENTS.TAGS).as("tag"))
-                .where(EVENTS.EVENT_ID.in(userEventIds))
-                .fetch(0, String.class);
-
-        List<UUID> similarTagEventIds = new ArrayList<>();
-        if (!userTags.isEmpty()) {
-            similarTagEventIds = context.select(EVENTS.EVENT_ID)
-                    .from(EVENTS)
-                    .where(arrayOverlap(EVENTS.TAGS, array(userTags.toArray(new String[0]))))
-                    .fetch(0, UUID.class);
-        }
-
-        // 5. Fetch search-based event IDs (using search history and location)
-        String searchTerm = getUserSearchKeywords(profileID);
-        String userLocationPoint = "POINT(" + lon + " " + lat + ")";
-        Field<Double> distance = DSL.field("ST_Distance(coordinates, ST_GeographyFromText(?))", Double.class, userLocationPoint);
-        List<UUID> searchBasedEventIds = context.select(EVENTS.EVENT_ID)
-                .from(EVENTS)
-                .where(DSL.condition("search_vector @@ to_tsquery(?)", searchTerm))
-                .and(distance.lessThan(10000.0)) // Within 10 km
-                .fetch(0, UUID.class);
-
-        // 6. Fetch popular event IDs
-        List<UUID> popularEventIds = context.select(POPULAREVENTS.EVENT_ID)
-                .from(POPULAREVENTS)
-                .fetch(0, UUID.class);
-
-        // 7. Fetch view events for the user (bonus factor)
-        // This query retrieves the top 5 events viewed by the user (with a view count)
-        List<Map<String, Object>> viewEventMaps = context
-                .select(count(EVENTS.EVENT_ID).as("view_count"), EVENTVIEWS.EVENT_ID)
-                .from(EVENTVIEWS).join(EVENTS).on(EVENTS.EVENT_ID.eq(EVENTVIEWS.EVENT_ID))
-                .where(EVENTVIEWS.PROFILE_ID.eq(profileID))
-                .groupBy(EVENTVIEWS.EVENT_ID)
-                .orderBy(count(EVENTS.EVENT_ID).desc())
-                .limit(5)
-                .fetchMaps();
-        // Convert the view events into a Map for bonus scoring (eventId -> view_count)
-        Map<UUID, Integer> viewEventScores = new HashMap<>();
-        for (Map<String, Object> map : viewEventMaps) {
-            UUID eventId = (UUID) map.get(EVENTVIEWS.EVENT_ID.getName());
-            // For simplicity, we add a fixed bonus weight. You might also use the actual count.
-            viewEventScores.put(eventId, 3);
-        }
-
-        // 8. Combine candidate event IDs from the various signals.
-        // Note: We do NOT add userEventIds here because we want to recommend new events.
-        Set<UUID> candidateEventIds = new HashSet<>();
-        candidateEventIds.addAll(similarCategoryEventIds);
-        candidateEventIds.addAll(similarTagEventIds);
-        candidateEventIds.addAll(searchBasedEventIds);
-        candidateEventIds.addAll(popularEventIds);
-        candidateEventIds.addAll(viewEventScores.keySet());
-
-        // Remove events the user has already interacted with (liked/attended)
-        candidateEventIds.removeAll(userEventIds);
-
-        // 9. Ranking: Assign scores based on occurrence in each candidate list.
-        // Adjust the weights as needed.
-        Map<UUID, Integer> eventScores = new HashMap<>();
-        for (UUID eventId : candidateEventIds) {
-            int score = 0;
-            if (similarCategoryEventIds.contains(eventId)) score += 2;
-            if (similarTagEventIds.contains(eventId)) score += 2;
-            if (searchBasedEventIds.contains(eventId)) score += 1;
-            if (popularEventIds.contains(eventId)) score += 1;
-            // Bonus: Add weight if the event appears in view events
-            if (viewEventScores.containsKey(eventId)) score += viewEventScores.get(eventId);
-            eventScores.put(eventId, score);
-        }
-
-        // 10. Sort the candidate events by their composite score (descending) and limit the results.
-        List<UUID> sortedEventIds = eventScores.entrySet().stream()
-                .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
-                .limit(12)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-
-        // Optionally, if you need to do an additional DB filter (e.g., only published, future events),
-        // you can perform a final SQL query with the sorted IDs:
-        return context.selectDistinct(EVENTS.EVENT_ID)
-                .from(EVENTS)
-                .where(EVENTS.EVENT_ID.in(sortedEventIds))
-                .and(EVENTS.STATUS.eq("published"))
-                .and(EVENTS.START_TIME.greaterThan(OffsetDateTime.now()))
-                // To preserve your ordering, you might want to sort in memory as done above.
-                .fetch(0, UUID.class);
-    }
-
-    /**
-     * Retrieves the user's recent search terms and combines them for use in a offunction to_tsquery.
-     *
-     * @param profileID The ID of the user profile.
-     * @return A string of search terms joined with ' | ' for tsquery.
-     */
-    private String getUserSearchKeywords(Integer profileID) {
-        return context.select(arrayAgg(SEARCHHISTORY.SEARCH_TERM))
-                .from(SEARCHHISTORY)
-                .where(SEARCHHISTORY.USER_ID.eq(profileID))
-                .groupBy(SEARCHHISTORY.SEARCH_TIMESTAMP)
-                .orderBy(SEARCHHISTORY.SEARCH_TIMESTAMP.desc())
-                .limit(5)
-                .fetchOne(0, String.class);
     }
 }

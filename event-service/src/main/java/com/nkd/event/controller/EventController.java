@@ -84,7 +84,7 @@ public class EventController {
     }
 
     @GetMapping("/get/suggested")
-    public List<Map<String, Object>> getSuggestedEvents(@RequestParam(value = "limit", defaultValue = "8") Integer limit,
+    public List<Map<String, Object>> getSuggestedEvents(@RequestParam(value = "limit", defaultValue = "12") Integer limit,
                                                         @RequestParam(value = "pid", required = false) Integer profileID,
                                                         @RequestParam(value = "lat", required = false) String lat,
                                                         @RequestParam(value = "lon", required = false) String lon) {
