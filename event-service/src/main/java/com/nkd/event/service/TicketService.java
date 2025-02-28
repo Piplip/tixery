@@ -209,7 +209,7 @@ public class TicketService {
 
     public List<Map<String, Object>> getOrderTicket(Integer orderID) {
         return context.select(TICKETTYPES.NAME, ORDERITEMS.PRICE, ORDERITEMS.QUANTITY, TICKETS.TICKET_ID, TICKETS.PURCHASE_DATE, EVENTS.ORGANIZER_ID,
-                        EVENTS.REFUND_POLICY, PAYMENTS.CURRENCY)
+                        EVENTS.REFUND_POLICY, PAYMENTS.CURRENCY, EVENTS.END_TIME)
                 .from(ORDERS.join(ORDERITEMS).on(ORDERS.ORDER_ID.eq(ORDERITEMS.ORDER_ID))
                         .join(TICKETTYPES).on(ORDERITEMS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
                         .join(TICKETS).on(ORDERITEMS.ORDER_ITEM_ID.eq(TICKETS.ORDER_ITEM_ID))

@@ -65,7 +65,7 @@ public class EventController {
     @GetMapping("/get")
     public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID, @RequestParam(value = "past",
             required = false, defaultValue = "false") String getPast) {
-        return eventService.getAllEvents(userID,getPast);
+        return eventService.getAllEvents(userID, getPast);
     }
 
     @GetMapping("/get/online")
@@ -106,6 +106,12 @@ public class EventController {
     public List<Map<String, Object>> getSuggestedEventByTime(@RequestParam("lat") String lat, @RequestParam("lon") String lon,
                                                              @RequestParam("val") String timeType) {
         return eventService.getSuggestedEventByTime(lat, lon, timeType);
+    }
+
+    @GetMapping("/events/bounds")
+    public List<Map<String, Object>> getEventsByMapBounds(@RequestParam("northeast_lat") String northEastLat, @RequestParam("northeast_lon") String northEastLon,
+                                                          @RequestParam("southwest_lat") String southWestLat, @RequestParam("southwest_lon") String southWestLon) {
+        return eventService.getEventsByMapBounds(northEastLat, northEastLon, southWestLat, southWestLon);
     }
 
     @GetMapping("/events/type")
@@ -173,4 +179,9 @@ public class EventController {
         return eventService.createEventWithAI(userID, profileID, price, isFree, eventDTO);
     }
 
+    @GetMapping("/organizer/report")
+    public Response getOrganizerReport(@RequestParam("uid") Integer userID, @RequestParam("start") String startDate,
+                                       @RequestParam("end") String endDate) {
+        return eventService.getOrganizerReport(userID, startDate, endDate);
+    }
 }

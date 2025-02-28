@@ -197,6 +197,34 @@ public class PaymentService {
     }
 
     public Response cancelOrder(Integer orderID, String username, String email) {
+        if(orderID == null) {
+            log.error("Order ID is required");
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Unexpected error", null);
+        }
+
+        if(!context.fetchExists(ORDERS, ORDERS.ORDER_ID.eq(orderID))) {
+            log.error("Order does not exist");
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Order does not exist", null);
+        }
+
+        if(context.fetchExists(ORDERS, ORDERS.ORDER_ID.eq(orderID).and(ORDERS.STATUS.eq("cancelled")))) {
+            log.error("Order already cancelled");
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Order already cancelled", null);
+        }
+
+        OffsetDateTime eventDate = context.select(EVENTS.END_TIME)
+                .from(EVENTS)
+                .where(EVENTS.EVENT_ID.eq(context.select(ORDERS.EVENT_ID)
+                        .from(ORDERS)
+                        .where(ORDERS.ORDER_ID.eq(orderID))
+                        .fetchOneInto(UUID.class)))
+                .fetchOneInto(OffsetDateTime.class);
+
+        if(eventDate != null && eventDate.isBefore(OffsetDateTime.now())) {
+            log.error("Event has already passed");
+            return new Response(HttpStatus.BAD_REQUEST.name(), "Event has already passed", null);
+        }
+
         var paymentID = context.update(PAYMENTS)
                 .set(PAYMENTS.PAYMENT_STATUS, PaymentStatus.USER_CANCELLED.name())
                 .where(PAYMENTS.ORDER_ID.eq(orderID))
