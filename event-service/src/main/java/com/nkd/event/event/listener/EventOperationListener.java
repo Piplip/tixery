@@ -10,9 +10,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
-import static com.nkd.event.Tables.*;
+import static com.nkd.event.Tables.EVENTS;
+import static com.nkd.event.Tables.EVENTVIEWS;
 
 @Component
 @RequiredArgsConstructor
@@ -27,8 +29,9 @@ public class EventOperationListener {
         switch (operation.getType()){
             case EventOperationType.VIEW -> {
                 var data = operation.getData();
+                Integer timezone = (Integer) data.get("timezone");
                 context.insertInto(EVENTVIEWS).set(EVENTVIEWS.EVENT_ID, UUID.fromString(String.valueOf(data.get("eventID"))))
-                        .set(EVENTVIEWS.VIEW_DATE, OffsetDateTime.now())
+                        .set(EVENTVIEWS.VIEW_DATE, OffsetDateTime.now(ZoneOffset.ofHours(timezone)))
                         .set(EVENTVIEWS.PROFILE_ID, (Integer) data.get("profileID"))
                         .execute();
             }

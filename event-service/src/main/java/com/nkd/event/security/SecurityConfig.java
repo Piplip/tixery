@@ -43,7 +43,7 @@ public class SecurityConfig {
                     });
                 })
                 .authorizeHttpRequests(request ->
-                        request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested"
+                        request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested", "/event/report"
                                         , "/search/suggestions", "/search", "/search/trends", "/event/trends", "/events/**").permitAll()
                                 .requestMatchers("/create/**", "/delete", "/tickets/**").hasRole("HOST")
                                 .requestMatchers("/order/tickets").hasRole("ATTENDEE")

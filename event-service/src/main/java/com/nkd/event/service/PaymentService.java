@@ -251,8 +251,6 @@ public class PaymentService {
         return new Response(HttpStatus.OK.name(), "Order cancelled successfully", null);
     }
 
-    // TODO: Implement promo code handling
-
     private void handleReserveTicket(List<TicketDTO> tickets, Integer profileID){
         tickets.forEach(ticket -> {
             Integer availableQuantity = context.select(TICKETTYPES.AVAILABLE_QUANTITY)

@@ -1,9 +1,6 @@
 package com.nkd.event.controller;
 
-import com.nkd.event.dto.EventDTO;
-import com.nkd.event.dto.OnlineEventDTO;
-import com.nkd.event.dto.RecurrenceDTO;
-import com.nkd.event.dto.Response;
+import com.nkd.event.dto.*;
 import com.nkd.event.service.EventService;
 import com.nkd.event.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,13 +55,14 @@ public class EventController {
 
     @GetMapping("/get/specific")
     public Map<String, Object> getEventById(@RequestParam("eid") String eventID, @RequestParam(value = "pid", required = false) Integer profileID,
-                                            @RequestParam(value = "is_organizer", required = false) Boolean isOrganizer) {
-        return eventService.getEvent(eventID, profileID, isOrganizer);
+                                            @RequestParam(value = "is_organizer", required = false) Boolean isOrganizer,
+                                            @RequestParam(value = "tz", required = false) Integer timezone) {
+        return eventService.getEvent(eventID, profileID, isOrganizer, timezone);
     }
     
     @GetMapping("/get")
-    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID, @RequestParam(value = "past",
-            required = false, defaultValue = "false") String getPast) {
+    public List<Map<String, Object>> getAllEvents(@RequestParam("uid") Integer userID,
+                                                  @RequestParam(value = "past", required = false, defaultValue = "false") String getPast) {
         return eventService.getAllEvents(userID, getPast);
     }
 
@@ -85,7 +83,7 @@ public class EventController {
 
     @GetMapping("/get/suggested")
     public List<Map<String, Object>> getSuggestedEvents(@RequestParam(value = "limit", defaultValue = "12") Integer limit,
-                                                        @RequestParam(value = "pid", required = false) Integer profileID,
+                                                        @RequestParam(value = "pid", defaultValue = "") Integer profileID,
                                                         @RequestParam(value = "lat", required = false) String lat,
                                                         @RequestParam(value = "lon", required = false) String lon) {
         return eventService.getSuggestedEvents(limit, profileID, lat, lon);
@@ -180,8 +178,14 @@ public class EventController {
     }
 
     @GetMapping("/organizer/report")
-    public Response getOrganizerReport(@RequestParam("uid") Integer userID, @RequestParam("start") String startDate,
-                                       @RequestParam("end") String endDate) {
-        return eventService.getOrganizerReport(userID, startDate, endDate);
+    public Response getOrganizerReport(@RequestParam("uid") Integer userID, @RequestParam(value = "pid", required = false) Integer profileID,
+                                       @RequestParam("start") String startDate, @RequestParam("end") String endDate) {
+        return eventService.getOrganizerReport(userID, profileID, startDate, endDate);
+    }
+
+    @PostMapping("/event/report")
+    public Response handleReportEvent(@RequestBody ReportDTO report, @RequestParam("tz") Integer timezone) {
+        return eventService.handleReportEvent(report, timezone);
+
     }
 }

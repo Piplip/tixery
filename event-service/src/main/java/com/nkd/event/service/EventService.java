@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.*;
 import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -217,10 +218,10 @@ public class EventService {
         return eventData;
     }
 
-    public Map<String, Object> getEvent(String eventID, Integer profileID, Boolean isOrganizer) {
+    public Map<String, Object> getEvent(String eventID, Integer profileID, Boolean isOrganizer, Integer timezone) {
         if(!Optional.ofNullable(isOrganizer).orElse(false) && profileID != null){
             EventOperation viewOperation = EventOperation.builder()
-                    .data(Map.of("eventID", eventID, "profileID", profileID))
+                    .data(Map.of("eventID", eventID, "profileID", profileID, "timezone", timezone))
                     .type(EventOperationType.VIEW)
                     .build();
             publisher.publishEvent(viewOperation);
@@ -353,12 +354,23 @@ public class EventService {
     }
 
     public List<Map<String, Object>> getSuggestedEvents(Integer limit, Integer profileID, String lat, String lon) {
-        List<String> suggested;
-        try{
-            suggested = suggestionClient.getEventSuggestions(profileID);
-        } catch (Exception e){
-            log.error("Error while connecting to suggestion service: {}", e.getMessage());
-            return List.of();
+        Optional<List<String>> suggested = Optional.empty();
+        if(profileID != null && !profileID.toString().isEmpty()){
+            try{
+                suggested = Optional.ofNullable(suggestionClient.getEventSuggestions(profileID));
+            } catch (Exception e){
+                log.error("Error while connecting to suggestion service: {}", e.getMessage());
+            }
+        }
+
+        Condition condition = trueCondition();
+
+        if(suggested.isPresent() && !suggested.get().isEmpty()){
+            condition = condition.and(EVENTS.EVENT_ID.in(suggested.get()));
+        }
+        else {
+            condition = condition.and(EVENTS.STATUS.eq("published"))
+                    .and(EVENTS.END_TIME.gt(OffsetDateTime.now()));
         }
 
         String userLocationPoint = "POINT(" + lon + " " + lat + ")";
@@ -366,8 +378,7 @@ public class EventService {
         var eventRecord = context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
                         EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
                 .from(EVENTS)
-                .where(EVENTS.EVENT_ID.in(suggested)
-                        .and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 30000))
+                .where(condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 30000))
                 .limit(limit)
                 .fetchMaps();
 
@@ -507,7 +518,7 @@ public class EventService {
             condition = condition.and(EVENTS.START_TIME.gt(OffsetDateTime.now()));
         }
 
-        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.START_TIME, EVENTS.IMAGES, EVENTS.LOCATION,
+        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.START_TIME, EVENTS.IMAGES, EVENTS.LOCATION, EVENTS.END_TIME,
                         ORDERS.ORDER_ID, ORDERS.CREATED_AT)
                 .from(ORDERS)
                 .join(EVENTS).on(ORDERS.EVENT_ID.eq(EVENTS.EVENT_ID))
@@ -541,7 +552,7 @@ public class EventService {
 
     public List<Map<String, Object>> getOnlineEvents(String lat, String lon) {
         var eventRecord = getEventRecord(
-                DSL.trueCondition().and(DSL.trueCondition()), lat, lon, EVENTS, true);
+                trueCondition().and(trueCondition()), lat, lon, EVENTS, true);
 
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
@@ -563,7 +574,7 @@ public class EventService {
     }
 
     public List<Map<String, Object>> getSuggestedEventsByCost(String lat, String lon, Double cost) {
-        Condition condition = DSL.trueCondition();
+        Condition condition = trueCondition();
 
         condition = condition.and(TICKETTYPES.STATUS.eq("visible")
             .or(TICKETTYPES.STATUS.eq("hid-on-sales").and(TICKETTYPES.SALE_START_TIME.lt(OffsetDateTime.now()))
@@ -717,12 +728,17 @@ public class EventService {
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
 
-    public Response getOrganizerReport(Integer userID, String startDate, String endDate) {
+    public Response getOrganizerReport(Integer userID, Integer profileID, String startDate, String endDate) {
         Map<String, Object> report = new HashMap<>();
+
+        Condition condition = EVENTS.ORGANIZER_ID.eq(userID);
+        if (profileID != null) {
+            condition = condition.and(EVENTS.PROFILE_ID.eq(profileID));
+        }
 
         var userEvent = context.select(EVENTS.EVENT_ID)
                 .from(EVENTS)
-                .where(EVENTS.ORGANIZER_ID.eq(userID))
+                .where(condition)
                 .fetchInto(UUID.class);
 
         if (userEvent.isEmpty()) {
@@ -732,47 +748,63 @@ public class EventService {
         OffsetDateTime startTime = OffsetDateTime.parse(startDate);
         OffsetDateTime endTime = OffsetDateTime.parse(endDate);
 
-        var grossRevenueData = context.select(ORDERS.CREATED_AT.cast(Date.class).as("date"), sum(PAYMENTS.AMOUNT).as("revenue"))
+        var grossRevenueData = context.select(
+                        ORDERS.CREATED_AT.cast(SQLDataType.DATE).as("date"),
+                        sum(PAYMENTS.AMOUNT).as("revenue"))
                 .from(ORDERS)
                 .join(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID))
                 .where(ORDERS.EVENT_ID.in(userEvent)
                         .and(ORDERS.CREATED_AT.between(startTime, endTime)))
-                .groupBy(ORDERS.CREATED_AT.cast(Date.class))
+                .groupBy(ORDERS.CREATED_AT.cast(SQLDataType.DATE))
                 .fetchMaps();
-
         report.put("grossRevenueData", grossRevenueData);
 
-        var ticketsAndBuyersData = context.select(ORDERS.CREATED_AT.cast(Date.class).as("date"),
-                        sum(ORDERITEMS.QUANTITY).as("tickets"), countDistinct(ORDERS.PROFILE_ID).as("buyers"))
+        var ticketsAndBuyersData = context.select(
+                        ORDERS.CREATED_AT.cast(SQLDataType.DATE).as("date"),
+                        sum(ORDERITEMS.QUANTITY).as("tickets"),
+                        countDistinct(ORDERS.PROFILE_ID).as("buyers"))
                 .from(ORDERS)
                 .join(ORDERITEMS).on(ORDERS.ORDER_ID.eq(ORDERITEMS.ORDER_ID))
                 .where(ORDERS.EVENT_ID.in(userEvent)
                         .and(ORDERS.CREATED_AT.between(startTime, endTime)))
-                .groupBy(ORDERS.CREATED_AT.cast(Date.class))
+                .groupBy(ORDERS.CREATED_AT.cast(SQLDataType.DATE))
                 .fetchMaps();
 
         report.put("ticketsAndBuyersData", ticketsAndBuyersData);
 
-        List<Map<String, Object>> viewsByEvent = context.select(EVENTVIEWS.EVENT_ID,
+        List<Map<String, Object>> viewsByEvent = context.select(EVENTVIEWS.EVENT_ID, EVENTS.NAME,
                         count(EVENTVIEWS.VIEW_ID).as("views"))
-                .from(EVENTVIEWS)
+                .from(EVENTVIEWS).join(EVENTS).on(EVENTVIEWS.EVENT_ID.eq(EVENTS.EVENT_ID))
                 .where(EVENTVIEWS.EVENT_ID.in(userEvent)
                         .and(EVENTVIEWS.VIEW_DATE.between(startTime, endTime)))
-                .groupBy(EVENTVIEWS.EVENT_ID)
+                .groupBy(EVENTVIEWS.EVENT_ID, EVENTS.NAME)
                 .fetchMaps();
 
         report.put("viewsByEvent", viewsByEvent);
 
-        List<Map<String, Object>> likedByEvent = context.select(LIKEDEVENTS.EVENT_ID,
+        List<Map<String, Object>> likedByEvent = context.select(LIKEDEVENTS.EVENT_ID, EVENTS.NAME,
                         count(LIKEDEVENTS.LIKED_AT).as("likes"))
-                .from(LIKEDEVENTS)
+                .from(LIKEDEVENTS).join(EVENTS).on(LIKEDEVENTS.EVENT_ID.eq(EVENTS.EVENT_ID))
                 .where(LIKEDEVENTS.EVENT_ID.in(userEvent)
                         .and(LIKEDEVENTS.LIKED_AT.between(startTime, endTime)))
-                .groupBy(LIKEDEVENTS.EVENT_ID)
+                .groupBy(LIKEDEVENTS.EVENT_ID, EVENTS.NAME)
                 .fetchMaps();
 
         report.put("likedByEvent", likedByEvent);
 
         return new Response(HttpStatus.OK.name(), "OK", report);
+    }
+
+    public Response handleReportEvent(ReportDTO report, Integer timezone) {
+        context.insertInto(EVENTREPORTS)
+                .set(EVENTREPORTS.EVENT_ID, UUID.fromString(report.getEventID()))
+                .set(EVENTREPORTS.REPORTER_EMAIL, report.getReporterEmail())
+                .set(EVENTREPORTS.REPORTER_PROFILE_ID, report.getReporterProfileID())
+                .set(EVENTREPORTS.REPORT_DETAILS, report.getDetail())
+                .set(EVENTREPORTS.REPORT_REASON, report.getReason())
+                .set(EVENTREPORTS.REPORT_DATE, OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.ofHours(timezone)))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "OK", null);
     }
 }
