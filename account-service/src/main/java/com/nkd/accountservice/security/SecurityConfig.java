@@ -48,7 +48,7 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(request ->
                     request
-                        .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup"
+                        .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup", "/get/jwt"
                                 , "/profile/create", "/oauth2/authorization/**", "/forgot-password/**", "/organizer/profile/get").permitAll()
                         .requestMatchers("/organizer/profile", "/organizer/profile/create").hasRole("HOST")
                         .requestMatchers("/internal//**").hasRole("INTERNAL")

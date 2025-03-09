@@ -327,41 +327,58 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Response handleFollowOrganizer(Integer profileID, Integer organizerID, Boolean follow) {
-        if(follow){
-            var isExist = context.fetchExists(context.selectFrom(FOLLOWERS)
-                    .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
-                        .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))
-                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 1)))));
+        var existingFollow = context.selectFrom(FOLLOWERS)
+                .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                        .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))))
+                .fetchOne();
 
-            if(isExist){
-                context.update(FOLLOWERS)
-                        .set(FOLLOWERS.IS_UNFOLLOW, (byte) 0)
-                        .set(FOLLOWERS.FOLLOW_DATE, LocalDateTime.now())
-                        .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
-                                .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))))
-                        .execute();
-            }
-            else {
+        if (follow) {
+            if (existingFollow == null) {
                 context.insertInto(FOLLOWERS)
                         .set(FOLLOWERS.FOLLOWER_PROFILE_ID, UInteger.valueOf(profileID))
                         .set(FOLLOWERS.PROFILE_ID, UInteger.valueOf(organizerID))
                         .set(FOLLOWERS.FOLLOW_DATE, LocalDateTime.now())
                         .execute();
+
+                context.update(PROFILE)
+                        .set(PROFILE.TOTAL_FOLLOWERS, PROFILE.TOTAL_FOLLOWERS.plus(1))
+                        .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(organizerID)))
+                        .execute();
+            } else {
+                if (existingFollow.getUnfollowDate() != null) {
+                    context.update(FOLLOWERS)
+                            .set(FOLLOWERS.FOLLOW_DATE, LocalDateTime.now())
+                            .set(FOLLOWERS.UNFOLLOW_DATE, (LocalDateTime) null)
+                            .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                                    .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))))
+                            .execute();
+
+                    context.update(PROFILE)
+                            .set(PROFILE.TOTAL_FOLLOWERS, PROFILE.TOTAL_FOLLOWERS.plus(1))
+                            .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(organizerID)))
+                            .execute();
+                } else {
+                    context.update(FOLLOWERS)
+                            .set(FOLLOWERS.FOLLOW_DATE, LocalDateTime.now())
+                            .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                                    .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))))
+                            .execute();
+                }
+            }
+        } else {
+            if (existingFollow != null && existingFollow.getUnfollowDate() == null) {
+                context.update(FOLLOWERS)
+                        .set(FOLLOWERS.UNFOLLOW_DATE, LocalDateTime.now())
+                        .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+                                .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))))
+                        .execute();
+
+                context.update(PROFILE)
+                        .set(PROFILE.TOTAL_FOLLOWERS, PROFILE.TOTAL_FOLLOWERS.minus(1))
+                        .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(organizerID)))
+                        .execute();
             }
         }
-        else{
-            context.update(FOLLOWERS)
-                    .set(FOLLOWERS.IS_UNFOLLOW, (byte) 1)
-                    .set(FOLLOWERS.UNFOLLOW_DATE, LocalDateTime.now())
-                    .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
-                            .and(FOLLOWERS.PROFILE_ID.eq(UInteger.valueOf(organizerID))))
-                    .execute();
-        }
-
-        context.update(PROFILE)
-                .set(PROFILE.TOTAL_FOLLOWERS, follow ? PROFILE.TOTAL_FOLLOWERS.plus(1) : PROFILE.TOTAL_FOLLOWERS.minus(1))
-                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(organizerID)))
-                .execute();
 
         return new Response(HttpStatus.OK.name(), "Success", null);
     }
@@ -371,7 +388,7 @@ public class AccountServiceImpl implements AccountService {
         return context.select(FOLLOWERS.PROFILE_ID)
                 .from(FOLLOWERS)
                 .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
-                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 0).or(FOLLOWERS.IS_UNFOLLOW.isNull())))
+                        .and(FOLLOWERS.UNFOLLOW_DATE.isNull()))
                 .limit(10)
                 .fetchInto(Integer.class);
     }
@@ -390,7 +407,7 @@ public class AccountServiceImpl implements AccountService {
         stats.put("total_saved", eventClient.getTotalFavouriteEvent(Integer.parseInt(profileID)));
         stats.put("total_followed", context.selectCount().from(FOLLOWERS)
                         .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
-                        .and(FOLLOWERS.IS_UNFOLLOW.eq((byte) 0).or(FOLLOWERS.IS_UNFOLLOW.isNull())))
+                        .and(FOLLOWERS.FOLLOW_DATE.isNotNull()))
                 .fetchSingleInto(Integer.class));
 
         return stats;
@@ -445,7 +462,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Map<String, Object> getAttendeeProfile(String profileID) {
         return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, PROFILE.PROFILE_IMAGE_URL, PROFILE.DESCRIPTION, USER_ACCOUNT.ACCOUNT_CREATED_AT,
-                        USER_DATA.FULL_NAME, USER_DATA.NICKNAME, USER_DATA.DATE_OF_BIRTH, USER_DATA.PHONE_NUMBER, USER_DATA.NATIONALITY, USER_DATA.GENDER,
+                        USER_DATA.FULL_NAME, USER_DATA.DATE_OF_BIRTH, USER_DATA.PHONE_NUMBER, USER_DATA.NATIONALITY, USER_DATA.GENDER,
                         USER_DATA.INTERESTS, USER_DATA.USER_DATA_ID
                 )
                 .from(PROFILE.join(USER_ACCOUNT).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID))
@@ -465,7 +482,6 @@ public class AccountServiceImpl implements AccountService {
 
         context.update(USER_DATA)
                 .set(USER_DATA.FULL_NAME, profile.getFullName())
-                .set(USER_DATA.NICKNAME, profile.getNickname())
                 .set(USER_DATA.DATE_OF_BIRTH, LocalDate.parse(profile.getDob(), DateTimeFormatter.ofPattern("dd/MM/yyyy")))
                 .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
                 .set(USER_DATA.NATIONALITY, profile.getNationality())
@@ -636,7 +652,6 @@ public class AccountServiceImpl implements AccountService {
         if(pid == null){
             UInteger userDataID = context.insertInto(USER_DATA)
                     .set(USER_DATA.FULL_NAME, profile.getFullName())
-                    .set(USER_DATA.NICKNAME, profile.getNickname())
                     .set(USER_DATA.DATE_OF_BIRTH, LocalDate.from(DateTimeFormatter.ofPattern("dd/MM/yyyy").parse(profile.getDob())))
                     .set(USER_DATA.GENDER, profile.getGender())
                     .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
@@ -658,7 +673,6 @@ public class AccountServiceImpl implements AccountService {
                     .fetchSingleInto(UInteger.class);
             context.update(USER_DATA)
                     .set(USER_DATA.FULL_NAME, profile.getFullName())
-                    .set(USER_DATA.NICKNAME, profile.getNickname())
                     .set(USER_DATA.DATE_OF_BIRTH, LocalDate.from(DateTimeFormatter.ofPattern("dd/MM/yyyy").parse(profile.getDob())))
                     .set(USER_DATA.GENDER, profile.getGender())
                     .set(USER_DATA.PHONE_NUMBER, profile.getPhone())
