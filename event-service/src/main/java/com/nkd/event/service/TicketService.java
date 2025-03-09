@@ -91,12 +91,10 @@ public class TicketService {
                 .fetchOneInto(Integer.class);
 
         if(isRecurring){
-            ticket.getOccurrence().forEach(item -> {
-                context.insertInto(TICKETTYPEOCCURRENCES)
-                        .set(TICKETTYPEOCCURRENCES.TICKET_TYPE_ID, ticketID)
-                        .set(TICKETTYPEOCCURRENCES.OCCURRENCE_ID, item)
-                        .execute();
-            });
+            ticket.getOccurrence().forEach(item -> context.insertInto(TICKETTYPEOCCURRENCES)
+                    .set(TICKETTYPEOCCURRENCES.TICKET_TYPE_ID, ticketID)
+                    .set(TICKETTYPEOCCURRENCES.OCCURRENCE_ID, item)
+                    .execute());
         }
 
         return new Response(HttpStatus.OK.name(), "OK", ticketID);
@@ -180,13 +178,13 @@ public class TicketService {
         tickets.forEach(ticket -> {
             var orderItemID = context.insertInto(ORDERITEMS)
                     .set(ORDERITEMS.ORDER_ID, orderID)
-                    .set(ORDERITEMS.TICKET_TYPE_ID, ticket.getTicketTypeID())
                     .set(ORDERITEMS.QUANTITY, ticket.getQuantity())
                     .set(ORDERITEMS.PRICE, new BigDecimal(ticket.getPrice()))
                     .returningResult(ORDERITEMS.ORDER_ITEM_ID)
                     .fetchOneInto(Integer.class);
             var ticketID = context.insertInto(TICKETS)
                     .set(TICKETS.EVENT_ID, UUID.fromString(eventID))
+                    .set(TICKETS.TICKET_TYPE_ID, ticket.getTicketTypeID())
                     .set(TICKETS.ORDER_ITEM_ID, orderItemID)
                     .set(TICKETS.USER_ID, userID)
                     .set(TICKETS.PROFILE_ID, profileID)
@@ -211,8 +209,8 @@ public class TicketService {
         return context.select(TICKETTYPES.NAME, ORDERITEMS.PRICE, ORDERITEMS.QUANTITY, TICKETS.TICKET_ID, TICKETS.PURCHASE_DATE, EVENTS.ORGANIZER_ID,
                         EVENTS.REFUND_POLICY, PAYMENTS.CURRENCY, EVENTS.END_TIME)
                 .from(ORDERS.join(ORDERITEMS).on(ORDERS.ORDER_ID.eq(ORDERITEMS.ORDER_ID))
-                        .join(TICKETTYPES).on(ORDERITEMS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
                         .join(TICKETS).on(ORDERITEMS.ORDER_ITEM_ID.eq(TICKETS.ORDER_ITEM_ID))
+                        .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
                         .join(EVENTS).on(TICKETS.EVENT_ID.eq(EVENTS.EVENT_ID))
                         .leftJoin(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID)))
                 .where(ORDERS.ORDER_ID.eq(orderID))
@@ -221,21 +219,11 @@ public class TicketService {
 
     @Async("taskExecutor")
     protected void cleanUpOnDeleteOrder(Integer orderID) {
-//        context.deleteFrom(TICKETS)
-//                .where(TICKETS.ORDER_ITEM_ID.in(
-//                        context.select(ORDERITEMS.ORDER_ITEM_ID)
-//                                .from(ORDERITEMS)
-//                                .where(ORDERITEMS.ORDER_ID.eq(orderID))
-//                ))
-//                .execute();
-//        context.deleteFrom(ORDERITEMS)
-//                .where(ORDERITEMS.ORDER_ID.eq(orderID))
-//                .execute();
         context.update(TICKETTYPES)
                 .set(TICKETTYPES.AVAILABLE_QUANTITY, TICKETTYPES.QUANTITY)
                 .where(TICKETTYPES.TICKET_TYPE_ID.in(
-                        context.select(ORDERITEMS.TICKET_TYPE_ID)
-                                .from(ORDERITEMS)
+                        context.select(TICKETS.TICKET_TYPE_ID)
+                                .from(TICKETS).join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
                                 .where(ORDERITEMS.ORDER_ID.eq(orderID))
                 ))
                 .execute();
@@ -272,17 +260,17 @@ public class TicketService {
         }
     }
 
-    public Response activateCoupon(List<CouponDTO> coupon) {
-        coupon.forEach(item -> {
-            context.insertInto(DISCOUNTCODES)
-                    .set(DISCOUNTCODES.CODE, item.getCode())
-                    .set(DISCOUNTCODES.DISCOUNT_TYPE, item.getType())
-                    .set(DISCOUNTCODES.DISCOUNT_AMOUNT, BigDecimal.valueOf(item.getDiscount()))
-                    .set(DISCOUNTCODES.QUANTITY, item.getQuantity())
-                    .set(DISCOUNTCODES.VALID_FROM, OffsetDateTime.parse(item.getValidFrom()))
-                    .set(DISCOUNTCODES.VALID_TO, OffsetDateTime.parse(item.getValidTo()))
-                    .execute();
-        });
+    public Response activateCoupon(Integer profileID, List<CouponDTO> coupon) {
+        coupon.forEach(item -> context.insertInto(DISCOUNTCODES)
+                .set(DISCOUNTCODES.ORGANIZER_PROFILE_ID, profileID)
+                .set(DISCOUNTCODES.CODE, item.getCode())
+                .set(DISCOUNTCODES.DISCOUNT_TYPE, item.getType())
+                .set(DISCOUNTCODES.DISCOUNT_AMOUNT, BigDecimal.valueOf(item.getDiscount()))
+                .set(DISCOUNTCODES.QUANTITY, item.getQuantity())
+                .set(DISCOUNTCODES.VALID_FROM, OffsetDateTime.parse(item.getValidFrom()))
+                .set(DISCOUNTCODES.VALID_TO, OffsetDateTime.parse(item.getValidTo()))
+                .execute());
+
         return new Response(HttpStatus.OK.name(), ResponseCode.COUPON_ACTIVATED, null);
     }
 

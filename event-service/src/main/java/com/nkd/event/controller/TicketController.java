@@ -54,8 +54,8 @@ public class TicketController {
     }
 
     @PostMapping("/coupon/activate")
-    public Response activateCoupon(@RequestBody List<CouponDTO> coupon) {
-        return ticketService.activateCoupon(coupon);
+    public Response activateCoupon(@RequestParam("pid") Integer profileID, @RequestBody List<CouponDTO> coupon) {
+        return ticketService.activateCoupon(profileID, coupon);
     }
 
 }

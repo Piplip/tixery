@@ -5,7 +5,9 @@ import com.nkd.event.dto.UserInteraction;
 import com.nkd.event.utils.EventUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jooq.*;
+import org.jooq.Condition;
+import org.jooq.DSLContext;
+import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,7 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.nkd.event.Tables.*;
-import static org.jooq.impl.DSL.*;
+import static org.jooq.impl.DSL.jsonbGetAttribute;
 
 @Service
 @RequiredArgsConstructor
@@ -168,9 +170,9 @@ public class SearchService {
         return orders.stream()
                 .peek(order -> order.put("tickets", context.select(TICKETS.TICKET_ID, TICKETTYPES.NAME, ORDERITEMS.QUANTITY
                                 , TICKETTYPES.PRICE, TICKETTYPES.CURRENCY, TICKETTYPES.TICKET_TYPE_ID)
-                        .from(TICKETS)
-                        .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
-                        .rightJoin(TICKETTYPES).on(ORDERITEMS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                        .from(ORDERITEMS)
+                                .join(TICKETS).on(ORDERITEMS.ORDER_ITEM_ID.eq(TICKETS.ORDER_ITEM_ID))
+                                .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
                         .where(ORDERITEMS.ORDER_ID.eq((Integer) order.get("order_id")))
                         .fetchMaps()))
                 .collect(Collectors.toList());

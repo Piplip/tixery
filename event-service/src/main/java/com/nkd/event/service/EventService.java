@@ -675,7 +675,8 @@ public class EventService {
         final JSONB locationJsonb = EventUtils.constructLocation(eventDTO.getLocationType(), eventDTO.getLatitude(), eventDTO.getLongitude()
                 , eventDTO.getLocation(), eventDTO.getLocationName());
 
-        var createdID = context.insertInto(EVENTS)
+        context.insertInto(EVENTS)
+                .set(EVENTS.EVENT_ID, eventDTO.getEventID())
                 .set(EVENTS.NAME, eventDTO.getTitle())
                 .set(EVENTS.SHORT_DESCRIPTION, eventDTO.getSummary())
                 .set(EVENTS.FULL_DESCRIPTION, eventDTO.getAdditionalInfo())
@@ -708,10 +709,9 @@ public class EventService {
                 .visibility("visible")
                 .build();
 
-        assert createdID != null;
-        ticketService.addTicket(createdID.toString(), ticket, profileID, false);
+        ticketService.addTicket(eventDTO.getEventID().toString(), ticket, profileID, false);
 
-        return new Response(HttpStatus.OK.name(), "OK", createdID);
+        return new Response(HttpStatus.OK.name(), "OK", eventDTO.getEventID());
     }
 
     public List<Map<String, Object>> getEventsByMapBounds(String northEastLat, String northEastLon, String southWestLat, String southWestLon) {
