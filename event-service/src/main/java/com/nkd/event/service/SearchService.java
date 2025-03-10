@@ -103,7 +103,7 @@ public class SearchService {
             condition = condition.and(EVENTS.PROFILE_ID.in(followList));
         }
 
-        var eventRecord = eventService.getEventRecord(condition, lat, lon, view, Optional.ofNullable(online).orElse(false));
+        var eventRecord = eventService.getEventRecord(condition, lat, lon, view, Optional.ofNullable(online).orElse(false), query);
 
         return eventService.getEventTickets(eventService.getListOrganizerEvent(eventRecord));
     }
@@ -146,7 +146,7 @@ public class SearchService {
         return new Response(HttpStatus.OK.name(), "Search history deleted successfully", null);
     }
 
-    public List<Map<String, Object>> loadOrders(String query, Integer range, Integer organizerID) {
+    public List<Map<String, Object>> loadOrders(String query, Integer range, Integer organizerID, String eventID) {
         Condition condition = DSL.trueCondition();
 
         if(!query.isEmpty()){
@@ -158,13 +158,20 @@ public class SearchService {
             }
         }
 
+        if(organizerID != null){
+            condition = condition.and(EVENTS.ORGANIZER_ID.eq(organizerID));
+        }
+
+        if(eventID != null){
+            condition = condition.and(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)));
+        }
+
         var orders = context.select(ORDERS.ORDER_ID, ORDERS.CREATED_AT, ORDERS.STATUS, PAYMENTS.CURRENCY, PAYMENTS.AMOUNT, PAYMENTS.PAYMENT_METHOD,
                         ORDERS.PROFILE_ID, EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.START_TIME, EVENTS.LOCATION)
                 .from(ORDERS)
                 .leftJoin(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID))
                 .rightJoin(EVENTS).on(ORDERS.EVENT_ID.eq(EVENTS.EVENT_ID))
-                .where(condition.and(EVENTS.ORGANIZER_ID.eq(organizerID))
-                        .and(ORDERS.CREATED_AT.gt(OffsetDateTime.now().minusMonths(range))))
+                .where(condition.and(ORDERS.CREATED_AT.gt(OffsetDateTime.now().minusMonths(range))))
                 .fetchMaps();
 
         return orders.stream()

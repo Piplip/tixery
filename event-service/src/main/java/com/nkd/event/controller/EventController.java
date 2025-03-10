@@ -188,4 +188,9 @@ public class EventController {
         return eventService.handleReportEvent(report, timezone);
 
     }
+
+    @GetMapping("/event/dashboard")
+    public Map<String, Object> loadEventInfo(@RequestParam("eid") String eventID) {
+        return eventService.loadEventInfo(eventID);
+    }
 }

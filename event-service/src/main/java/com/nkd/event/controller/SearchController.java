@@ -58,8 +58,9 @@ public class SearchController {
     @GetMapping("/search/orders")
     public List<Map<String, Object>> loadOrders(@RequestParam(value = "q", defaultValue = "") String query,
                                                 @RequestParam(value = "range", defaultValue = "3") Integer range,
-                                                @RequestParam("pid") Integer organizerID) {
-        return searchService.loadOrders(query, range, organizerID);
+                                                @RequestParam(value = "pid", required = false) Integer organizerID,
+                                                @RequestParam(value = "eid", required = false) String eventID) {
+        return searchService.loadOrders(query, range, organizerID, eventID);
     }
 
     @PostMapping("/attendee/interaction")

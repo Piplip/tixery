@@ -528,7 +528,7 @@ public class EventService {
                 .fetchMaps();
     }
 
-    public List<Map<String, Object>> getEventRecord(Condition condition, String lat, String lon, Table<?> view, Boolean isOnline){
+    public List<Map<String, Object>> getEventRecord(Condition condition, String lat, String lon, Table<?> view, Boolean isOnline, String query){
         String userLocationPoint = "POINT(" + lon + " " + lat + ")";
 
         condition = condition.and(EVENTS.STATUS.eq("published"))
@@ -536,23 +536,36 @@ public class EventService {
 
         if(isOnline){
             condition = condition.and(jsonbGetAttribute(EVENTS.LOCATION, "locationType").equalIgnoreCase("online"));
-        }
-        else {
+        } else {
             condition = condition.and("st_dwithin(coordinates, st_geographyfromtext(?), ?)", userLocationPoint, 30000);
         }
 
-        return context.select(EVENTS.EVENT_ID, EVENTS.NAME, EVENTS.IMAGES, EVENTS.START_TIME, EVENTS.PROFILE_ID,
-                        EVENTS.LOCATION, EVENTS.REFUND_POLICY, EVENTS.FAQ)
+        Field<Double> rankField = DSL.val(0.0);
+        if(query != null && !query.isEmpty()){
+            rankField = DSL.field("ts_rank(search_vector, plainto_tsquery(?))", Double.class, query);
+        }
+
+        return context.select(
+                        EVENTS.EVENT_ID,
+                        EVENTS.NAME,
+                        EVENTS.IMAGES,
+                        EVENTS.START_TIME,
+                        EVENTS.PROFILE_ID,
+                        EVENTS.LOCATION,
+                        EVENTS.REFUND_POLICY,
+                        EVENTS.FAQ,
+                        rankField.as("rank")
+                )
                 .from(view)
                 .where(condition)
-                .orderBy(EVENTS.START_TIME)
+                .orderBy(rankField.desc(), EVENTS.START_TIME)
                 .limit(12)
                 .fetchMaps();
     }
 
     public List<Map<String, Object>> getOnlineEvents(String lat, String lon) {
         var eventRecord = getEventRecord(
-                trueCondition().and(trueCondition()), lat, lon, EVENTS, true);
+                trueCondition().and(trueCondition()), lat, lon, EVENTS, true, null);
 
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
@@ -560,7 +573,7 @@ public class EventService {
     public List<Map<String, Object>> getSuggestedEventByTime(String lat, String lon, String timeType) {
         Condition condition = EventUtils.constructTimeCondition(timeType);
 
-        var eventRecord = getEventRecord(condition, lat, lon, EVENTS, false);
+        var eventRecord = getEventRecord(condition, lat, lon, EVENTS, false, null);
 
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
@@ -569,7 +582,7 @@ public class EventService {
         var eventRecord = getEventRecord(EVENTTYPES.NAME.equalIgnoreCase(eventType), lat, lon
                 , EVENTS.join(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
                         .join(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
-                        .join(EVENTTYPES).on(EVENTS.EVENT_TYPE_ID.eq(EVENTTYPES.EVENT_TYPE_ID)), false);
+                        .join(EVENTTYPES).on(EVENTS.EVENT_TYPE_ID.eq(EVENTTYPES.EVENT_TYPE_ID)), false, null);
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
 
@@ -591,7 +604,7 @@ public class EventService {
         }
 
         var eventRecord = getEventRecord(condition, lat, lon,
-                EVENTS.join(TICKETTYPES).on(EVENTS.EVENT_ID.eq(TICKETTYPES.EVENT_ID)), false);
+                EVENTS.join(TICKETTYPES).on(EVENTS.EVENT_ID.eq(TICKETTYPES.EVENT_ID)), false, null);
 
         return getEventTickets(getListOrganizerEvent(eventRecord));
     }
@@ -678,6 +691,10 @@ public class EventService {
         context.insertInto(EVENTS)
                 .set(EVENTS.EVENT_ID, eventDTO.getEventID())
                 .set(EVENTS.NAME, eventDTO.getTitle())
+                .set(EVENTS.EVENT_TYPE_ID, context.select(EVENTTYPES.EVENT_TYPE_ID).from(EVENTTYPES)
+                        .where(EVENTTYPES.NAME.equalIgnoreCase(eventDTO.getType())).fetchOneInto(Integer.class))
+                .set(EVENTS.SUB_CATEGORY_ID, context.select(SUBCATEGORIES.SUB_CATEGORY_ID).from(SUBCATEGORIES)
+                        .where(SUBCATEGORIES.NAME.eq(eventDTO.getSubCategory())).fetchOneInto(Integer.class))
                 .set(EVENTS.SHORT_DESCRIPTION, eventDTO.getSummary())
                 .set(EVENTS.FULL_DESCRIPTION, eventDTO.getAdditionalInfo())
                 .set(EVENTS.START_TIME, eventStartTime)
@@ -806,5 +823,38 @@ public class EventService {
                 .execute();
 
         return new Response(HttpStatus.OK.name(), "OK", null);
+    }
+
+    public Map<String, Object> loadEventInfo(String eventID) {
+        Map<String, Object> data = new HashMap<>();
+
+        var ticketSales = context.select(
+                        TICKETTYPES.TICKET_TYPE_ID,
+                        TICKETTYPES.TICKET_TYPE,
+                        TICKETTYPES.NAME,
+                        TICKETTYPES.QUANTITY.as("total_quantity"),
+                        TICKETTYPES.PRICE,
+                        TICKETTYPES.CURRENCY,
+                        TICKETTYPES.SALE_START_TIME,
+                        TICKETTYPES.SALE_END_TIME,
+                        sum(ORDERITEMS.QUANTITY).as("sold_quantity"),
+                        sum(ORDERITEMS.QUANTITY.mul(TICKETTYPES.PRICE)).as("total"))
+                .from(TICKETTYPES)
+                .leftJoin(TICKETS).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                .leftJoin(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
+                .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)))
+                .groupBy(TICKETTYPES.TICKET_TYPE_ID, TICKETTYPES.TICKET_TYPE, TICKETTYPES.PRICE, TICKETTYPES.CURRENCY)
+                .fetchMaps();
+
+        // load total views of event
+        var totalViews = context.select(count(EVENTVIEWS.VIEW_ID))
+                .from(EVENTVIEWS)
+                .where(EVENTVIEWS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchOneInto(Integer.class);
+
+        data.put("ticketSales", ticketSales);
+        data.put("totalViews", totalViews);
+
+        return data;
     }
 }

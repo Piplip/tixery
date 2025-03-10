@@ -189,7 +189,7 @@ public class TicketService {
                     .set(TICKETS.USER_ID, userID)
                     .set(TICKETS.PROFILE_ID, profileID)
                     .set(TICKETS.PURCHASE_DATE, OffsetDateTime.now())
-                    .set(TICKETS.STATUS, "active")
+                    .set(TICKETS.STATUS, "sold")
                     .returningResult(TICKETS.TICKET_ID)
                     .fetchOneInto(Integer.class);
             context.insertInto(ATTENDEES)
