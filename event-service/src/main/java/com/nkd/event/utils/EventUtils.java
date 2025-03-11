@@ -81,15 +81,15 @@ public class EventUtils {
                 startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusDays(7).withHour(23).withMinute(59).withSecond(59);
             }
-            case "next-week" -> {
+            case "nextWeek" -> {
                 startTime = currentTime.plusDays(7).withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusDays(14).withHour(23).withMinute(59).withSecond(59);
             }
-            case "month" -> {
+            case "thisMonth" -> {
                 startTime = currentTime.withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusMonths(1).withHour(23).withMinute(59).withSecond(59);
             }
-            case "next-month" -> {
+            case "nextMonth" -> {
                 startTime = currentTime.plusMonths(1).withHour(0).withMinute(0).withSecond(0);
                 endTime = currentTime.plusMonths(2).withHour(23).withMinute(59).withSecond(59);
             }

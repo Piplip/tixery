@@ -531,8 +531,7 @@ public class EventService {
     public List<Map<String, Object>> getEventRecord(Condition condition, String lat, String lon, Table<?> view, Boolean isOnline, String query){
         String userLocationPoint = "POINT(" + lon + " " + lat + ")";
 
-        condition = condition.and(EVENTS.STATUS.eq("published"))
-                .and(EVENTS.START_TIME.gt(OffsetDateTime.now()));
+        condition = condition.and(EVENTS.STATUS.eq("published")).and(EVENTS.START_TIME.gt(OffsetDateTime.now()));
 
         if(isOnline){
             condition = condition.and(jsonbGetAttribute(EVENTS.LOCATION, "locationType").equalIgnoreCase("online"));
@@ -726,7 +725,7 @@ public class EventService {
                 .visibility("visible")
                 .build();
 
-        ticketService.addTicket(eventDTO.getEventID().toString(), ticket, profileID, false);
+        ticketService.addTicket(eventDTO.getEventID().toString(), ticket, Integer.parseInt(eventDTO.getTimezone()), false);
 
         return new Response(HttpStatus.OK.name(), "OK", eventDTO.getEventID());
     }
