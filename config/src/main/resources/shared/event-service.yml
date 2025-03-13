@@ -2,6 +2,7 @@ server:
   servlet:
     context-path: /events
   port: 9999
+
 client:
   port: 5173
 

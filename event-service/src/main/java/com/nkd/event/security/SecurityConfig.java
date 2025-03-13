@@ -43,8 +43,8 @@ public class SecurityConfig {
                     });
                 })
                 .authorizeHttpRequests(request ->
-                        request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested", "/event/report"
-                                        , "/search/suggestions", "/search", "/search/trends", "/event/trends", "/events/**").permitAll()
+                        request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested", "/event/report",
+                                        "/actuator/**", "/search/suggestions", "/search", "/search/trends", "/event/trends", "/events/**").permitAll()
                                 .requestMatchers("/create/**", "/delete", "/tickets/**").hasRole("HOST")
                                 .requestMatchers("/order/tickets").hasRole("ATTENDEE")
                                 .anyRequest().authenticated()
@@ -60,7 +60,7 @@ public class SecurityConfig {
     @Bean(name = "corsConfigurationSource")
     public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4001"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4001", "http://localhost:9090"));
         configuration.setAllowedMethods(List.of("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowCredentials(true);
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));

@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request ->
                     request
                         .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup", "/get/jwt"
-                                , "/profile/create", "/oauth2/authorization/**", "/forgot-password/**", "/organizer/profile/get").permitAll()
+                                , "/actuator/**", "/profile/create", "/oauth2/authorization/**", "/forgot-password/**", "/organizer/profile/get").permitAll()
                         .requestMatchers("/organizer/profile", "/organizer/profile/create").hasRole("HOST")
                         .requestMatchers("/internal//**").hasRole("INTERNAL")
                         .anyRequest().authenticated()
@@ -70,7 +70,7 @@ public class SecurityConfig {
     @Bean(name = "corsConfigurationSource")
     public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4001"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4001", "http://localhost:9090"));
         configuration.setAllowedMethods(List.of("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH"));
         configuration.setAllowCredentials(true);
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
