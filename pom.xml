@@ -13,9 +13,9 @@
     <groupId>com.nkd</groupId>
     <artifactId>tixery</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>microservice-01</name>
+    <name>tixery</name>
     <packaging>pom</packaging>
-    <description>microservice-01</description>
+    <description>tixery</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

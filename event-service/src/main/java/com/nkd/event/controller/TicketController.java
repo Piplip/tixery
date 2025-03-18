@@ -34,7 +34,7 @@ public class TicketController {
     }
 
     @PostMapping("/tickets/remove")
-    public Response deleteTicket(@RequestParam(name = "tid") Integer ticketID, @RequestParam(value = "is_recurring", required = false) Boolean isRecurring) {
+    public Response deleteTicket(@RequestParam(name = "tid") Integer ticketID, @RequestParam(value = "is_recurring", defaultValue = "false") Boolean isRecurring) {
         return ticketService.deleteTicket(ticketID, isRecurring);
     }
 

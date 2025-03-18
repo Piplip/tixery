@@ -1,7 +1,7 @@
 server:
   servlet:
     context-path: /accounts
-  port: 10000
+  port: 10001
 
 VERIFY_EMAIL_HOST: http://localhost:4001
 
