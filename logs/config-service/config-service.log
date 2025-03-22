@@ -1,2 +1,33 @@
-2025-01-15 00:14:03.639 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
-2025-01-15 00:14:04.114 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-03-13 00:06:10.078 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-03-13 00:06:10.178 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-03-13 13:52:47.901 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
+2025-03-13 13:52:47.970 [main] INFO  com.nkd.config.ConfigApplication - Starting ConfigApplication using Java 21.0.1 with PID 1364 (D:\Web projects\microservices\tixery-be\config\target\classes started by 84852 in D:\Web projects\microservices\tixery-be)
+2025-03-13 13:52:47.970 [main] INFO  com.nkd.config.ConfigApplication - The following 1 profile is active: "native"
+2025-03-13 13:52:49.093 [main] INFO  o.s.cloud.context.scope.GenericScope - BeanFactory id=931881fd-4719-3356-831c-ce76f26987a0
+2025-03-13 13:52:49.386 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8888 (http)
+2025-03-13 13:52:49.399 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8888"]
+2025-03-13 13:52:49.401 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-03-13 13:52:49.401 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2025-03-13 13:52:49.468 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-03-13 13:52:49.469 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1446 ms
+2025-03-13 13:52:49.751 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: f6f08d68-b94d-4b0a-b34a-e146b12c87cf
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-03-13 13:52:49.776 [main] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2025-03-13 13:52:50.192 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2025-03-13 13:52:50.669 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8888"]
+2025-03-13 13:52:50.683 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8888 (http) with context path '/'
+2025-03-13 13:52:50.709 [main] INFO  com.nkd.config.ConfigApplication - Started ConfigApplication in 3.434 seconds (process running for 4.805)
+2025-03-13 13:52:51.164 [RMI TCP Connection(4)-10.2.67.178] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-03-13 13:52:51.165 [RMI TCP Connection(4)-10.2.67.178] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-03-13 13:52:51.168 [RMI TCP Connection(4)-10.2.67.178] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-03-13 13:53:13.143 [http-nio-8888-exec-3] INFO  o.s.c.c.s.e.NativeEnvironmentRepository - Adding property source: Config resource 'class path resource [shared/gateway-service.yml]' via location 'classpath:/shared/'
+2025-03-13 13:53:24.423 [http-nio-8888-exec-9] INFO  o.s.c.c.s.e.NativeEnvironmentRepository - Adding property source: Config resource 'class path resource [shared/account-service.yml]' via location 'classpath:/shared/'
+2025-03-13 13:53:24.533 [http-nio-8888-exec-5] INFO  o.s.c.c.s.e.NativeEnvironmentRepository - Adding property source: Config resource 'class path resource [shared/account-service.yml]' via location 'classpath:/shared/'
+2025-03-13 13:53:39.039 [http-nio-8888-exec-6] INFO  o.s.c.c.s.e.NativeEnvironmentRepository - Adding property source: Config resource 'class path resource [shared/event-service.yml]' via location 'classpath:/shared/'
+2025-03-13 13:53:39.183 [http-nio-8888-exec-8] INFO  o.s.c.c.s.e.NativeEnvironmentRepository - Adding property source: Config resource 'class path resource [shared/event-service.yml]' via location 'classpath:/shared/'
+2025-03-13 17:01:38.958 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-03-13 17:01:39.388 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete

@@ -1,9 +1,6 @@
 package com.nkd.event.controller;
 
-import com.nkd.event.dto.CouponDTO;
-import com.nkd.event.dto.PrintTicketDTO;
-import com.nkd.event.dto.Response;
-import com.nkd.event.dto.TicketDTO;
+import com.nkd.event.dto.*;
 import com.nkd.event.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +23,16 @@ public class TicketController {
     public Response addTicket(@RequestParam(name = "eid") String eventID, @RequestBody TicketDTO ticketDTO, @RequestParam("timezone") Integer timezone,
                               @RequestParam(value = "is_recurring", defaultValue = "false") Boolean isRecurring) {
         return ticketService.addTicket(eventID, ticketDTO, timezone, isRecurring);
+    }
+
+    @PostMapping("/tickets/tier/add")
+    public Response addTierTicket(@RequestParam(name = "eid") String eventID, @RequestBody TicketDTO ticketDTO, @RequestParam("timezone") Integer timezone) {
+        return ticketService.addTierTicket(eventID, ticketDTO, timezone);
+    }
+
+    @PostMapping("/tickets/tier/update")
+    public Response updateTierTicket(@RequestParam(name = "eid") String eventID, @RequestBody TicketTier ticketTier, @RequestParam("timezone") Integer timezone) {
+        return ticketService.updateTierTicket(eventID, ticketTier, timezone);
     }
 
     @PutMapping("/tickets/update")

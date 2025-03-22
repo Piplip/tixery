@@ -17,6 +17,7 @@ import java.util.List;
 public class TicketDTO {
 
     private Integer ticketTypeID;
+    private String tierID;
     private String ticketType;
     private String ticketName;
     private Integer quantity;
@@ -39,4 +40,5 @@ public class TicketDTO {
     private String currencyFullForm;
     private List<Integer> occurrence;
     private Boolean enabled;
+    private List<Tier> tierData;
 }

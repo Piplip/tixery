@@ -56,7 +56,8 @@ public class EventDTO {
     private String publishDate;
     private String publishTime;
     private Integer capacity;
-    public String status;
-    public String additionalInfo;
+    private String status;
+    private String additionalInfo;
+    private List<Tier> tierData;
 }
 

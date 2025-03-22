@@ -137,9 +137,50 @@ public class EventService {
                         .set(EVENTS.UPDATED_AT, OffsetDateTime.now().withOffsetSameLocal(offset))
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
+
+                if(eventDTO.getReserveSeating()){
+                    createTierTicket(eid, eventDTO.getTierData());
+                }
             }
         }
         return new Response(HttpStatus.OK.name(), "OK", null);
+    }
+
+    private void createTierTicket(String eventID, List<Tier> tierData){
+        tierData.forEach(tier -> System.out.println(tier.toString()));
+        // TODO: Implement this function
+    }
+
+    public Response saveSeatMap(String eventID, SeatMapDTO data) {
+        String coords = context.select(EVENTS.COORDINATES).from(EVENTS)
+                .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchOneInto(String.class);
+
+        var seatMapID = context.insertInto(SEATMAP)
+                .set(SEATMAP.OWNER_ID, data.getOwnerID())
+                .set(SEATMAP.NAME, data.getName())
+                .set(SEATMAP.MAP_URL, data.getMapURL())
+                .set(SEATMAP.EVENT_ID, UUID.fromString(eventID))
+                .set(SEATMAP.COORDINATES, coords != null ? field("?::geography", String.class, coords) : null)
+                .set(SEATMAP.IS_PUBLIC, data.getIsPublic())
+                .set(SEATMAP.CAPACITY, data.getCapacity())
+                .set(SEATMAP.CREATED_AT, OffsetDateTime.now())
+                .returningResult(SEATMAP.MAP_ID)
+                .fetchOneInto(Integer.class);
+
+        List<Integer> tierIDs = data.getTiers().stream()
+                .map(tier -> context.insertInto(SEATTIERS)
+                        .set(SEATTIERS.MAP_ID, seatMapID)
+                        .set(SEATTIERS.NAME, tier.getName())
+                        .set(SEATTIERS.PERKS, tier.getPerks())
+                        .set(SEATTIERS.TIER_COLOR, tier.getColor())
+                        .set(SEATTIERS.CREATED_AT, OffsetDateTime.now())
+                        .set(SEATTIERS.ASSIGNEDSEATS, tier.getTotalAssignedSeats())
+                        .returningResult(SEATTIERS.SEAT_TIER_ID)
+                        .fetchOneInto(Integer.class))
+                .toList();
+
+        return new Response(HttpStatus.OK.name(), "OK", tierIDs);
     }
 
     public Response createEventRequest(String pid, String u) {
@@ -229,11 +270,12 @@ public class EventService {
 
         var eventData = context.select(
                         EVENTS.EVENT_ID, EVENTS.NAME, EVENTTYPES.NAME.as("event_type"), EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
-                        EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION, EVENTS.CREATED_AT,
+                        EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION, EVENTS.CREATED_AT, SEATMAP.MAP_ID,
                         CATEGORIES.NAME.as("category"), SUBCATEGORIES.NAME.as("sub_category"), EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY,
                         EVENTS.FAQ, EVENTS.FULL_DESCRIPTION, EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.PROFILE_ID
                 )
                 .from(EVENTS).leftJoin(SUBCATEGORIES).on(EVENTS.SUB_CATEGORY_ID.eq(SUBCATEGORIES.SUB_CATEGORY_ID))
+                .leftJoin(SEATMAP).on(SEATMAP.EVENT_ID.eq(EVENTS.EVENT_ID))
                 .leftJoin(CATEGORIES).on(SUBCATEGORIES.CATEGORY_ID.eq(CATEGORIES.CATEGORY_ID))
                 .leftJoin(EVENTTYPES).on(EVENTTYPES.EVENT_TYPE_ID.eq(EVENTS.EVENT_TYPE_ID))
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
@@ -241,6 +283,10 @@ public class EventService {
 
         if (eventData == null) {
             return null;
+        }
+
+        if(eventData.get("map_id") != null){
+            eventData.put("reserveSeating", true);
         }
 
         if(eventData.get("is_recurring").equals(true)){
@@ -272,12 +318,11 @@ public class EventService {
         eventData.put("tickets", tickets);
         
         return eventData;
-        
     }
 
     @Transactional
     public Response deleteEvent(String eventID) {
-        int rowsDeleted = context.deleteFrom(EVENTS)
+        int rowsDeleted = context.delete(EVENTS)
                 .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
                 .execute();
 
@@ -855,5 +900,96 @@ public class EventService {
         data.put("totalViews", totalViews);
 
         return data;
+    }
+
+    public List<Map<String, Object>> getVenueSeatMap(String eventID, Integer profileID) {
+        var eventCoords = context.select(EVENTS.COORDINATES).from(EVENTS)
+                .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchOneInto(String.class);
+
+        if (eventCoords == null || profileID == null) {
+            return List.of();
+        }
+
+        return context.select(SEATMAP.MAP_ID, SEATMAP.NAME, SEATMAP.MAP_URL, SEATMAP.CAPACITY,
+                        SEATMAP.OWNER_ID, SEATMAP.CREATED_AT, SEATMAP.UPDATED_AT).from(SEATMAP)
+                .where(SEATMAP.OWNER_ID.eq(profileID).and(SEATMAP.EVENT_ID.eq(UUID.fromString(eventID)))
+                        .or(SEATMAP.IS_PUBLIC.isTrue().and(field("ST_DWithin(SEATMAP.COORDINATES::geography, ?::geography, 10)", Boolean.class, eventCoords)))
+                )
+                .fetchMaps();
+    }
+
+    public List<Map<String, Object>> getSeatMapTiers(Integer seatMapID) {
+        return context.select(SEATTIERS.SEAT_TIER_ID, SEATTIERS.NAME, SEATTIERS.TIER_COLOR,
+                        SEATTIERS.ASSIGNEDSEATS, SEATTIERS.PERKS)
+                .from(SEATTIERS)
+                .where(SEATTIERS.MAP_ID.eq(seatMapID))
+                .fetchMaps();
+    }
+
+    public Response getSeatMapInfo(Integer mapID){
+        var data = context.select(SEATMAP.EVENT_ID, SEATMAP.MAP_ID, SEATMAP.NAME, SEATMAP.MAP_URL, SEATMAP.CAPACITY, SEATMAP.IS_PUBLIC, SEATMAP.UPDATED_AT)
+                .from(SEATMAP)
+                .where(SEATMAP.MAP_ID.eq(mapID))
+                .fetchOneMap();
+
+        assert data != null;
+        String eventName = context.select(EVENTS.NAME).from(EVENTS)
+                .where(EVENTS.EVENT_ID.eq((UUID) data.get("event_id")))
+                .fetchOneInto(String.class);
+
+        List<Integer> tierIDs = context.select(SEATTIERS.SEAT_TIER_ID).from(SEATTIERS)
+                .where(SEATTIERS.MAP_ID.eq(mapID))
+                .fetchInto(Integer.class);
+
+        data.put("eventName", eventName);
+        data.put("tierIDs", tierIDs);
+
+        return new Response(HttpStatus.OK.name(), "OK", data);
+    }
+
+    public Response updateSeatMap(String mapID, SeatMapDTO data) {
+        context.update(SEATMAP)
+                .set(SEATMAP.NAME, data.getName())
+                .set(SEATMAP.MAP_URL, data.getMapURL())
+                .set(SEATMAP.CAPACITY, data.getCapacity())
+                .set(SEATMAP.IS_PUBLIC, data.getIsPublic())
+                .set(SEATMAP.UPDATED_AT, OffsetDateTime.now())
+                .where(SEATMAP.MAP_ID.eq(Integer.parseInt(mapID)))
+                .execute();
+
+        List<Integer> tierIDs = data.getTiers().stream()
+                .map(tierData -> {
+                    if (tierData.getTierID() == null) {
+                        return context.insertInto(SEATTIERS)
+                                .set(SEATTIERS.MAP_ID, Integer.parseInt(mapID))
+                                .set(SEATTIERS.NAME, tierData.getName())
+                                .set(SEATTIERS.TIER_COLOR, tierData.getColor())
+                                .set(SEATTIERS.ASSIGNEDSEATS, tierData.getTotalAssignedSeats())
+                                .set(SEATTIERS.PERKS, tierData.getPerks())
+                                .returningResult(SEATTIERS.SEAT_TIER_ID)
+                                .fetchOneInto(Integer.class);
+                    } else {
+                        context.update(SEATTIERS)
+                                .set(SEATTIERS.NAME, tierData.getName())
+                                .set(SEATTIERS.TIER_COLOR, tierData.getColor())
+                                .set(SEATTIERS.ASSIGNEDSEATS, tierData.getTotalAssignedSeats())
+                                .set(SEATTIERS.PERKS, tierData.getPerks())
+                                .where(SEATTIERS.SEAT_TIER_ID.eq(Integer.parseInt(tierData.getTierID())))
+                                .execute();
+                        return Integer.parseInt(tierData.getTierID());
+                    }
+                })
+                .collect(Collectors.toList());
+
+        return new Response(HttpStatus.OK.name(), "OK", tierIDs);
+    }
+
+    public Response deleteTier(Integer seatMapID, Integer tierID) {
+        context.deleteFrom(SEATTIERS)
+                .where(SEATTIERS.MAP_ID.eq(seatMapID).and(SEATTIERS.SEAT_TIER_ID.eq(tierID)))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "OK", null);
     }
 }

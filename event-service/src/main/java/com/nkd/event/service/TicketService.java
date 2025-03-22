@@ -1,9 +1,6 @@
 package com.nkd.event.service;
 
-import com.nkd.event.dto.CouponDTO;
-import com.nkd.event.dto.PrintTicketDTO;
-import com.nkd.event.dto.Response;
-import com.nkd.event.dto.TicketDTO;
+import com.nkd.event.dto.*;
 import com.nkd.event.tables.records.DiscountcodesRecord;
 import com.nkd.event.utils.CommonUtils;
 import com.nkd.event.utils.EventUtils;
@@ -45,6 +42,11 @@ public class TicketService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     public Response addTicket(String eventID, TicketDTO ticket, Integer timezone, Boolean isRecurring) {
+        Integer ticketID = saveTicket(eventID, ticket, timezone, isRecurring);
+        return new Response(HttpStatus.OK.name(), "OK", ticketID);
+    }
+
+    private Integer saveTicket(String eventID, TicketDTO ticket, Integer timezone, Boolean isRecurring){
         var salesTime = EventUtils.transformDate(ticket.getStartDate(), ticket.getEndDate(),
                 ticket.getStartTime(), ticket.getEndTime(), timezone);
 
@@ -86,6 +88,7 @@ public class TicketService {
                 .set(TICKETTYPES.ABSORB_FEE, ticket.getTicketType().equalsIgnoreCase("donation") ? ticket.getAbsorbFee() : null)
                 .set(TICKETTYPES.MIN_PER_ORDER, ticket.getMinPerOrder())
                 .set(TICKETTYPES.MAX_PER_ORDER, ticket.getMaxPerOrder())
+                .set(TICKETTYPES.SEAT_TIER_ID, Integer.parseInt(ticket.getTierID()))
                 .set(TICKETTYPES.CURRENCY, currencyData)
                 .returningResult(TICKETTYPES.TICKET_TYPE_ID)
                 .fetchOneInto(Integer.class);
@@ -97,7 +100,7 @@ public class TicketService {
                     .execute());
         }
 
-        return new Response(HttpStatus.OK.name(), "OK", ticketID);
+        return ticketID;
     }
 
     public Response updateTicket(Integer ticketID, TicketDTO ticketDTO, Integer timezone) {
@@ -295,4 +298,43 @@ public class TicketService {
         var data = Map.of("type", record.getDiscountType(), "amount", record.getDiscountAmount());
         return new Response(HttpStatus.OK.name(), "Coupon applied successfully", data);
     }
+
+    public Response addTierTicket(String eventID, TicketDTO ticketDTO, Integer timezone) {
+        List<TicketDTO> tierTickets = ticketDTO.getTierData().stream().map(tier -> {
+            TicketDTO ticket = new TicketDTO();
+            ticket.setTierID(tier.getTierID());
+            ticket.setTicketName(ticketDTO.getTicketName());
+            ticket.setPrice(tier.getPrice());
+            ticket.setTicketType("paid");
+            ticket.setStartDate(ticketDTO.getStartDate());
+            ticket.setStartTime(ticketDTO.getStartTime());
+            ticket.setEndDate(ticketDTO.getEndDate());
+            ticket.setEndTime(ticketDTO.getEndTime());
+            ticket.setDescription(ticketDTO.getDescription());
+            ticket.setVisibility(ticketDTO.getVisibility());
+            ticket.setVisibleEndDate(ticketDTO.getVisibleEndDate());
+            ticket.setVisibleEndTime(ticketDTO.getVisibleEndTime());
+            ticket.setVisibleStartDate(ticketDTO.getVisibleStartDate());
+            ticket.setVisibleStartTime(ticketDTO.getVisibleStartTime());
+            ticket.setMinPerOrder(ticketDTO.getMinPerOrder());
+            ticket.setMaxPerOrder(ticketDTO.getMaxPerOrder());
+            ticket.setCurrency(tier.getCurrency());
+            ticket.setCurrencySymbol(tier.getCurrencySymbol());
+            ticket.setCurrencyFullForm(tier.getCurrencyFullForm());
+            return ticket;
+        }).toList();
+
+        List<Integer> ticketIDs = tierTickets.stream().map(ticket -> saveTicket(eventID, ticket, timezone, false)).toList();
+
+        return new Response(HttpStatus.OK.name(), "OK", ticketIDs);
+    }
+
+    public Response updateTierTicket(String eventID, TicketTier ticketTier, Integer timezone){
+        context.deleteFrom(TICKETTYPES)
+                .where(TICKETTYPES.SEAT_TIER_ID.in(ticketTier.getTicketIDs()))
+                .execute();
+
+        return addTierTicket(eventID, ticketTier.getTicketData(), timezone);
+    }
+
 }

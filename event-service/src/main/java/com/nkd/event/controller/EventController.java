@@ -37,6 +37,36 @@ public class EventController {
         return eventService.saveOnlineEventInfo(eventID, data);
     }
 
+    @PostMapping("/create/seatmap")
+    public Response saveSeatMap(@RequestParam("eid") String eventID, @RequestBody SeatMapDTO data) {
+        return eventService.saveSeatMap(eventID, data);
+    }
+
+    @PutMapping("/create/seatmap")
+    public Response updateSeatMap(@RequestParam("mid") String mapID, @RequestBody SeatMapDTO data) {
+        return eventService.updateSeatMap(mapID, data);
+    }
+
+    @GetMapping("/seat-map")
+    public List<Map<String, Object>> getVenueSeatMap(@RequestParam("eid") String eventID, @RequestParam("pid") Integer profileID) {
+        return eventService.getVenueSeatMap(eventID, profileID);
+    }
+
+    @GetMapping("/seat-map/data")
+    public Response getVenueSeatMap(@RequestParam("mid") Integer mapID) {
+        return eventService.getSeatMapInfo(mapID);
+    }
+
+    @GetMapping("/seat-map/tiers")
+    public List<Map<String, Object>> getSeatMapTiers(@RequestParam("smid") Integer seatMapID) {
+        return eventService.getSeatMapTiers(seatMapID);
+    }
+
+    @DeleteMapping("/seat-map/tier")
+    public Response deleteTier(@RequestParam("mid") Integer seatMapID, @RequestParam("tid") Integer tierID) {
+        return eventService.deleteTier(seatMapID, tierID);
+    }
+
     @PostMapping("/update/recurrence")
     public Response updateRecurrenceEvent(@RequestParam("eid") String eventID, @RequestParam("tz") Integer timezone,
                                         @RequestBody List<RecurrenceDTO> data) {

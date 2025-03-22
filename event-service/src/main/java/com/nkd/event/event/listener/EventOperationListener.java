@@ -3,6 +3,7 @@ package com.nkd.event.event.listener;
 import com.nkd.event.enumeration.EventOperationType;
 import com.nkd.event.event.EventOperation;
 import com.nkd.event.service.EmailService;
+import com.nkd.event.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.context.event.EventListener;
@@ -13,8 +14,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
-import static com.nkd.event.Tables.EVENTS;
-import static com.nkd.event.Tables.EVENTVIEWS;
+import static com.nkd.event.Tables.*;
 
 @Component
 @RequiredArgsConstructor
@@ -22,6 +22,7 @@ public class EventOperationListener {
 
     private final DSLContext context;
     private final EmailService emailService;
+    private final TicketService ticketService;
 
     @Async("taskExecutor")
     @EventListener
