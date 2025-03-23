@@ -22,14 +22,15 @@ public class PaymentController {
     }
 
     @PostMapping("/stripe/checkout")
-    public ResponseEntity<StripeResponse> checkout(@RequestBody PaymentDTO paymentDTO) {
-        StripeResponse response = paymentService.handleStripeCheckout(paymentDTO);
+    public ResponseEntity<StripeResponse> checkout(@RequestParam(value = "reserve", defaultValue = "false") Boolean isReserve, @RequestBody PaymentDTO paymentDTO) {
+        StripeResponse response = paymentService.handleStripeCheckout(isReserve, paymentDTO);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PostMapping("/stripe/success")
-    public ResponseEntity<StripeResponse> handleSuccessfulStripePayment(@RequestParam("order-id") Integer orderID, @RequestParam("pid") Integer profileID) {
-        return ResponseEntity.status(HttpStatus.OK).body(paymentService.handleSuccessfulStripePayment(orderID, profileID));
+    public ResponseEntity<StripeResponse> handleSuccessfulStripePayment(@RequestParam("order-id") Integer orderID, @RequestParam("pid") Integer profileID,
+                                                                        @RequestParam(value = "reserve", defaultValue = "false") Boolean isReserve) {
+        return ResponseEntity.status(HttpStatus.OK).body(paymentService.handleSuccessfulStripePayment(orderID, profileID, isReserve));
     }
 
     @PostMapping("/stripe/failure")

@@ -21,6 +21,7 @@ public class Tier {
     private String name;
     private String perks;
     private String price;
+    private String type;
     private Integer totalAssignedSeats;
     private List<String> assignedSeats;
     private String color;

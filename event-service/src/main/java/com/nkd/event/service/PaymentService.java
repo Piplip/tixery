@@ -7,8 +7,6 @@ import com.nkd.event.dto.TicketDTO;
 import com.nkd.event.enumeration.EventOperationType;
 import com.nkd.event.enumeration.PaymentStatus;
 import com.nkd.event.event.EventOperation;
-import com.nkd.event.tables.records.DiscountcodesRecord;
-import com.nkd.event.utils.ResponseCode;
 import com.stripe.Stripe;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -47,15 +45,17 @@ public class PaymentService {
     private final ApplicationEventPublisher publisher;
 
     @Transactional
-    public StripeResponse handleStripeCheckout(PaymentDTO paymentDTO) {
+    public StripeResponse handleStripeCheckout(Boolean isReserve, PaymentDTO paymentDTO) {
         Stripe.apiKey = secretKey;
 
-        try {
-            handleReserveTicket(paymentDTO.getTickets(), paymentDTO.getProfileID());
-        } catch (Exception e) {
-            log.error("Error checking ticket availability: {}", e.getMessage());
-            return StripeResponse.builder().status("failed").message(e.getMessage()).build();
-        }
+       if(!isReserve){
+           try {
+               handleReserveTicket(paymentDTO.getTickets(), paymentDTO.getProfileID());
+           } catch (Exception e) {
+               log.error("Error checking ticket availability: {}", e.getMessage());
+               return StripeResponse.builder().status("failed").message(e.getMessage()).build();
+           }
+       }
 
         var orderID = context.insertInto(ORDERS)
                 .set(ORDERS.USER_ID, paymentDTO.getUserID())
@@ -65,12 +65,13 @@ public class PaymentService {
                 .returningResult(ORDERS.ORDER_ID)
                 .fetchOneInto(Integer.class);
 
-        redisTemplate.opsForValue().set("stripe-order-" + orderID, Map.of("eventID", paymentDTO.getEventID(),
-                    "userID", paymentDTO.getUserID(), "profileID", paymentDTO.getProfileID(), "amount", paymentDTO.getAmount(),
-                    "currency", paymentDTO.getCurrency(), "email", paymentDTO.getEmail(), "username", paymentDTO.getUsername()), 10, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set("stripe-order-" + orderID, Map.of("eventID", paymentDTO.getEventID(), "reserve", isReserve,
+                "tierTicketIDs", paymentDTO.getTierTicketIDs(),"userID", paymentDTO.getUserID(), "profileID",
+                paymentDTO.getProfileID(), "amount", paymentDTO.getAmount(), "currency", paymentDTO.getCurrency(),
+                "email", paymentDTO.getEmail(), "username", paymentDTO.getUsername()), 10, TimeUnit.MINUTES);
         cache.put("stripe-order-" + orderID, paymentDTO.getTickets());
 
-        SessionCreateParams params = createStripeParams(paymentDTO, orderID);
+        SessionCreateParams params = createStripeParams(paymentDTO, orderID, isReserve);
         var response = createStripeResponse(params);
 
         context.insertInto(PAYMENTS)
@@ -87,7 +88,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public StripeResponse handleSuccessfulStripePayment(Integer orderID, Integer profileID) {
+    public StripeResponse handleSuccessfulStripePayment(Integer orderID, Integer profileID, Boolean isReserve) {
         Object value = redisTemplate.opsForValue().get("stripe-order-" + orderID);
         StripeResponse response = new StripeResponse();
 
@@ -128,9 +129,15 @@ public class PaymentService {
                 Map<String, Object> outerMap = (Map<String, Object>) value;
                 response.setAmount(Long.parseLong(outerMap.get("amount").toString()));
 
+                @SuppressWarnings("unchecked")
+                List<String> ticketTierIDs = (List<String>) outerMap.get("tierTicketIDs");
                 List<TicketDTO> tickets = cache.get("stripe-order-" + orderID);
                 ticketService.generateTickets(orderID, tickets, outerMap.get("eventID").toString(), ((Integer) outerMap.get("userID")),
-                        ((Integer) outerMap.get("profileID")));
+                        ((Integer) outerMap.get("profileID")), isReserve, ticketTierIDs);
+
+                if(!isReserve){
+                    cleanUpOnSuccessPayment(orderID, profileID);
+                }
 
                 response.setStatus("success");
                 response.setMessage("Payment successful");
@@ -148,7 +155,6 @@ public class PaymentService {
                         .build();
 
                 publisher.publishEvent(payment);
-                cleanUpOnSuccessPayment(orderID, profileID);
             } catch (Exception e) {
                 response.setStatus("failed");
                 response.setMessage("Internal server error");
@@ -170,7 +176,6 @@ public class PaymentService {
             return StripeResponse.builder().status("failed").message("Order does not exist").build();
         }
 
-        // check already paid payment
         if(context.fetchExists(ORDERS, ORDERS.ORDER_ID.eq(orderID).and(ORDERS.STATUS.eq("paid")))) {
             return StripeResponse.builder().status("failed").message("Order already paid").build();
         }
@@ -294,7 +299,7 @@ public class PaymentService {
                 .build();
     }
 
-    private SessionCreateParams createStripeParams(PaymentDTO paymentDTO, Integer orderID) {
+    private SessionCreateParams createStripeParams(PaymentDTO paymentDTO, Integer orderID, Boolean isReserve) {
         SessionCreateParams.LineItem.PriceData.ProductData productData = SessionCreateParams.LineItem.PriceData.ProductData.builder()
                 .setName(paymentDTO.getName())
                 .build();
@@ -309,11 +314,21 @@ public class PaymentService {
                 .setQuantity(paymentDTO.getQuantity())
                 .setPriceData(priceData)
                 .build();
-        
+
+        String clientURL = "http://localhost:" + clientPort;
+
+        String successURL = clientURL + "/payment/success" + "?orderID=" + orderID;
+        String cancelURL = clientURL + "/payment/error" + "?orderID=" + orderID;
+
+        if(isReserve){
+            successURL = successURL + "&reserve=true";
+            cancelURL = cancelURL + "&reserve=true";
+        }
+
         return SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl("http://localhost:" + clientPort + "/payment/success" + "?orderID=" + orderID)
-                .setCancelUrl("http://localhost:" + clientPort + "/payment/error" + "?orderID=" + orderID)
+                .setSuccessUrl(successURL)
+                .setCancelUrl(cancelURL)
                 .addLineItem(lineItem)
                 .build();
     }
@@ -360,7 +375,7 @@ public class PaymentService {
                 .fetchOneInto(Integer.class);
 
         try {
-            ticketService.generateTickets(orderID, paymentDTO.getTickets(), paymentDTO.getEventID(), paymentDTO.getUserID(), paymentDTO.getProfileID());
+            ticketService.generateTickets(orderID, paymentDTO.getTickets(), paymentDTO.getEventID(), paymentDTO.getUserID(), paymentDTO.getProfileID(), false, null);
         } catch (Exception e) {
             log.error("Error generating tickets: {}", e.getMessage());
             return new Response(HttpStatus.INTERNAL_SERVER_ERROR.name(), e.getMessage(), null);

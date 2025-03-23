@@ -65,4 +65,9 @@ public class TicketController {
         return ticketService.activateCoupon(profileID, coupon);
     }
 
+    @GetMapping("/tier-tickets")
+    public List<Map<String, Object>> getTierTicket(@RequestParam("eid") String eventID) {
+        return ticketService.getTierTicket(eventID);
+    }
+
 }

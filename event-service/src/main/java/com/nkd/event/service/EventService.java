@@ -138,7 +138,7 @@ public class EventService {
                         .where(EVENTS.EVENT_ID.eq(UUID.fromString(eid)))
                         .execute();
 
-                if(eventDTO.getReserveSeating()){
+                if(eventDTO.getReserveSeating() != null && eventDTO.getReserveSeating()){
                     createTierTicket(eid, eventDTO.getTierData());
                 }
             }
@@ -147,8 +147,24 @@ public class EventService {
     }
 
     private void createTierTicket(String eventID, List<Tier> tierData){
-        tierData.forEach(tier -> System.out.println(tier.toString()));
-        // TODO: Implement this function
+        if(tierData.isEmpty()){
+            return;
+        }
+
+        tierData.forEach(tier -> {
+            if(tier.getAssignedSeats() == null || tier.getAssignedSeats().isEmpty()){
+                return;
+            }
+            Integer ticketTypeID = context.select(TICKETTYPES.TICKET_TYPE_ID).from(TICKETTYPES)
+                            .where(TICKETTYPES.SEAT_TIER_ID.eq(Integer.parseInt(tier.getDbTierID())))
+                                    .fetchOneInto(Integer.class);
+            tier.getAssignedSeats().forEach(seat -> context.insertInto(TICKETS)
+                    .set(TICKETS.EVENT_ID, UUID.fromString(eventID))
+                    .set(TICKETS.TICKET_TYPE_ID, ticketTypeID)
+                    .set(TICKETS.STATUS, "available")
+                    .set(TICKETS.SEAT_IDENTIFIER, seat)
+                    .execute());
+        });
     }
 
     public Response saveSeatMap(String eventID, SeatMapDTO data) {
@@ -163,7 +179,6 @@ public class EventService {
                 .set(SEATMAP.EVENT_ID, UUID.fromString(eventID))
                 .set(SEATMAP.COORDINATES, coords != null ? field("?::geography", String.class, coords) : null)
                 .set(SEATMAP.IS_PUBLIC, data.getIsPublic())
-                .set(SEATMAP.CAPACITY, data.getCapacity())
                 .set(SEATMAP.CREATED_AT, OffsetDateTime.now())
                 .returningResult(SEATMAP.MAP_ID)
                 .fetchOneInto(Integer.class);
@@ -179,6 +194,11 @@ public class EventService {
                         .returningResult(SEATTIERS.SEAT_TIER_ID)
                         .fetchOneInto(Integer.class))
                 .toList();
+
+        context.update(EVENTS)
+                .set(EVENTS.CAPACITY, data.getCapacity())
+                .where(EVENTS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .execute();
 
         return new Response(HttpStatus.OK.name(), "OK", tierIDs);
     }
@@ -228,21 +248,58 @@ public class EventService {
                         .and(TICKETTYPES.VIS_START_TIME.lt(OffsetDateTime.now()))
                         .and(TICKETTYPES.VIS_END_TIME.gt(OffsetDateTime.now())));
 
+        Map<UUID, List<Map<String, Object>>> ticketsByEvent = new HashMap<>();
+
+        context.select(
+                        TICKETTYPES.EVENT_ID,
+                        TICKETTYPES.TICKET_TYPE_ID,
+                        TICKETTYPES.NAME,
+                        TICKETTYPES.PRICE,
+                        TICKETTYPES.CURRENCY,
+                        TICKETTYPES.TICKET_TYPE,
+                        coalesce(TICKETTYPES.QUANTITY, 0).as("quantity"),
+                        coalesce(TICKETTYPES.AVAILABLE_QUANTITY, 0).as("available_quantity"),
+                        TICKETTYPES.SALE_START_TIME,
+                        TICKETTYPES.SALE_END_TIME,
+                        TICKETTYPES.STATUS
+                )
+                .from(TICKETTYPES)
+                .where(TICKETTYPES.EVENT_ID.in(eventIds).and(ticketCondition))
+                .fetch()
+                .forEach(record -> {
+                    UUID eventId = record.get(TICKETTYPES.EVENT_ID);
+                    Map<String, Object> ticketInfo = new HashMap<>();
+                    ticketInfo.put("ticket_type_id", record.get(TICKETTYPES.TICKET_TYPE_ID));
+                    ticketInfo.put("name", record.get(TICKETTYPES.NAME));
+                    ticketInfo.put("price", record.get(TICKETTYPES.PRICE));
+                    ticketInfo.put("currency", record.get(TICKETTYPES.CURRENCY));
+                    ticketInfo.put("ticket_type", record.get(TICKETTYPES.TICKET_TYPE));
+                    ticketInfo.put("quantity", record.get("quantity"));
+                    ticketInfo.put("available_quantity", record.get("available_quantity"));
+                    ticketInfo.put("sale_start_time", record.get(TICKETTYPES.SALE_START_TIME));
+                    ticketInfo.put("sale_end_time", record.get(TICKETTYPES.SALE_END_TIME));
+                    ticketInfo.put("status", record.get(TICKETTYPES.STATUS));
+
+                    ticketsByEvent.computeIfAbsent(eventId, k -> new ArrayList<>()).add(ticketInfo);
+                });
+
         eventData.forEach(event -> {
-            Optional<Integer> ticketCount = context.select(sum(TICKETTYPES.QUANTITY))
-                    .from(TICKETTYPES)
-                    .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")).and(ticketCondition))
-                    .fetchOptionalInto(Integer.class);
-            Optional<Integer> remainingTicket = context.select(sum(TICKETTYPES.AVAILABLE_QUANTITY))
-                    .from(TICKETTYPES)
-                    .where(TICKETTYPES.EVENT_ID.eq((UUID) event.get("event_id")).and(ticketCondition))
-                    .fetchOptionalInto(Integer.class);
+            UUID eventId = (UUID) event.get("event_id");
+            List<Map<String, Object>> tickets = ticketsByEvent.getOrDefault(eventId, List.of());
+
+            int ticketCount = tickets.stream()
+                    .mapToInt(t -> ((Number)t.get("quantity")).intValue())
+                    .sum();
+
+            int remainingTicket = tickets.stream()
+                    .mapToInt(t -> ((Number)t.get("available_quantity")).intValue())
+                    .sum();
+
             Object images = event.get("images");
             if (images != null) {
                 event.put("images", images);
             }
 
-            UUID eventId = (UUID) event.get("event_id");
             Record3<UUID, String, BigDecimal> record = grossData.get(eventId);
             if (record != null) {
                 event.put("gross", record.get("gross", BigDecimal.class));
@@ -252,8 +309,9 @@ public class EventService {
                 event.put("currency", "USD");
             }
 
-            event.put("ticketCount", ticketCount.orElse(0));
-            event.put("remainingTicket", remainingTicket.orElse(0));
+            event.put("ticketCount", ticketCount);
+            event.put("remainingTicket", remainingTicket);
+            event.put("tickets", tickets);
         });
 
         return eventData;
@@ -270,7 +328,7 @@ public class EventService {
 
         var eventData = context.select(
                         EVENTS.EVENT_ID, EVENTS.NAME, EVENTTYPES.NAME.as("event_type"), EVENTS.SHOW_END_TIME, EVENTS.SHORT_DESCRIPTION,
-                        EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION, EVENTS.CREATED_AT, SEATMAP.MAP_ID,
+                        EVENTS.IMAGES, EVENTS.VIDEOS, EVENTS.START_TIME, EVENTS.END_TIME, EVENTS.LOCATION, EVENTS.CREATED_AT, SEATMAP.MAP_ID, SEATMAP.MAP_URL,
                         CATEGORIES.NAME.as("category"), SUBCATEGORIES.NAME.as("sub_category"), EVENTS.TAGS, EVENTS.STATUS, EVENTS.REFUND_POLICY,
                         EVENTS.FAQ, EVENTS.FULL_DESCRIPTION, EVENTS.CAPACITY, EVENTS.UPDATED_AT, EVENTS.LANGUAGE, EVENTS.IS_RECURRING, EVENTS.TIMEZONE, EVENTS.PROFILE_ID
                 )
@@ -303,7 +361,8 @@ public class EventService {
             eventData.put("ticketOccurrences", ticketOccurrenceData);
         }
 
-        var tickets = context.selectFrom(TICKETTYPES)
+        var tickets = context.select(TICKETTYPES.asterisk(), SEATTIERS.SEAT_TIER_ID.as("tier_id"))
+                .from(TICKETTYPES).leftJoin(SEATTIERS).on(TICKETTYPES.SEAT_TIER_ID.eq(SEATTIERS.SEAT_TIER_ID))
                 .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID))
                         .and(Boolean.TRUE.equals(isOrganizer) ? trueCondition() : TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now()))
                         .and(TICKETTYPES.STATUS.eq("visible")

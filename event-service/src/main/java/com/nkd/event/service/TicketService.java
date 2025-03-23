@@ -24,10 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.nkd.event.Tables.*;
@@ -93,11 +90,18 @@ public class TicketService {
                 .returningResult(TICKETTYPES.TICKET_TYPE_ID)
                 .fetchOneInto(Integer.class);
 
-        if(isRecurring){
-            ticket.getOccurrence().forEach(item -> context.insertInto(TICKETTYPEOCCURRENCES)
-                    .set(TICKETTYPEOCCURRENCES.TICKET_TYPE_ID, ticketID)
-                    .set(TICKETTYPEOCCURRENCES.OCCURRENCE_ID, item)
-                    .execute());
+        if (isRecurring && ticket.getOccurrence() != null && !ticket.getOccurrence().isEmpty()) {
+            var bulkInsert = context.insertInto(
+                    TICKETTYPEOCCURRENCES,
+                    TICKETTYPEOCCURRENCES.TICKET_TYPE_ID,
+                    TICKETTYPEOCCURRENCES.OCCURRENCE_ID
+            );
+
+            for (Integer occurrenceId : ticket.getOccurrence()) {
+                bulkInsert = bulkInsert.values(ticketID, occurrenceId);
+            }
+
+            bulkInsert.execute();
         }
 
         return ticketID;
@@ -177,35 +181,73 @@ public class TicketService {
 
     @Async("taskExecutor")
     @Transactional
-    protected void generateTickets(Integer orderID, List<TicketDTO> tickets, String eventID, Integer userID, Integer profileID) {
-        tickets.forEach(ticket -> {
-            var orderItemID = context.insertInto(ORDERITEMS)
-                    .set(ORDERITEMS.ORDER_ID, orderID)
-                    .set(ORDERITEMS.QUANTITY, ticket.getQuantity())
-                    .set(ORDERITEMS.PRICE, new BigDecimal(ticket.getPrice()))
-                    .returningResult(ORDERITEMS.ORDER_ITEM_ID)
-                    .fetchOneInto(Integer.class);
-            var ticketID = context.insertInto(TICKETS)
-                    .set(TICKETS.EVENT_ID, UUID.fromString(eventID))
-                    .set(TICKETS.TICKET_TYPE_ID, ticket.getTicketTypeID())
-                    .set(TICKETS.ORDER_ITEM_ID, orderItemID)
-                    .set(TICKETS.USER_ID, userID)
-                    .set(TICKETS.PROFILE_ID, profileID)
-                    .set(TICKETS.PURCHASE_DATE, OffsetDateTime.now())
-                    .set(TICKETS.STATUS, "sold")
-                    .returningResult(TICKETS.TICKET_ID)
-                    .fetchOneInto(Integer.class);
-            context.insertInto(ATTENDEES)
-                    .set(ATTENDEES.EVENT_ID, UUID.fromString(eventID))
-                    .set(ATTENDEES.USER_ID, userID)
-                    .set(ATTENDEES.PROFILE_ID, profileID)
-                    .set(ATTENDEES.TICKET_ID, ticketID)
-                    .execute();
+    protected void generateTickets(Integer orderID, List<TicketDTO> tickets, String eventID, Integer userID, Integer profileID,
+                                   Boolean isReserve, List<String> ticketTierIDs) {
+        var insertOrderItems = context.insertInto(ORDERITEMS, ORDERITEMS.ORDER_ID, ORDERITEMS.QUANTITY, ORDERITEMS.PRICE);
+
+        for (TicketDTO ticket : tickets) {
+            insertOrderItems = insertOrderItems.values(orderID, ticket.getQuantity(), new BigDecimal(ticket.getPrice()));
+        }
+
+        List<Integer> orderItemIDs = insertOrderItems
+                .returningResult(ORDERITEMS.ORDER_ITEM_ID)
+                .fetch()
+                .getValues(ORDERITEMS.ORDER_ITEM_ID);
+
+        List<Integer> generatedTicketIDs;
+        UUID eventUUID = UUID.fromString(eventID);
+
+        if (!isReserve) {
+            var insertTickets = context.insertInto(
+                    TICKETS, TICKETS.EVENT_ID, TICKETS.TICKET_TYPE_ID, TICKETS.ORDER_ITEM_ID,
+                    TICKETS.USER_ID, TICKETS.PROFILE_ID, TICKETS.PURCHASE_DATE, TICKETS.STATUS);
+
+            for (int i = 0; i < tickets.size(); i++) {
+                TicketDTO ticket = tickets.get(i);
+                Integer orderItemID = orderItemIDs.get(i);
+
+                insertTickets = insertTickets.values(eventUUID, ticket.getTicketTypeID(), orderItemID, userID, profileID, OffsetDateTime.now(), "sold");
+            }
+
+            generatedTicketIDs = insertTickets.returningResult(TICKETS.TICKET_ID).fetch().getValues(TICKETS.TICKET_ID);
+        }
+        else {
+            generatedTicketIDs = new ArrayList<>();
+            for (int i = 0; i < ticketTierIDs.size(); i++) {
+                String ticketTierID = ticketTierIDs.get(i);
+                Integer orderItemID = orderItemIDs.get(i);
+                TicketDTO ticket = tickets.get(i);
+
+                Integer ticketId = context.update(TICKETS)
+                        .set(TICKETS.ORDER_ITEM_ID, orderItemID)
+                        .set(TICKETS.EVENT_ID, eventUUID)
+                        .set(TICKETS.USER_ID, userID)
+                        .set(TICKETS.PROFILE_ID, profileID)
+                        .set(TICKETS.PURCHASE_DATE, OffsetDateTime.now())
+                        .set(TICKETS.TICKET_TYPE_ID, ticket.getTicketTypeID())
+                        .set(TICKETS.STATUS, "reserved")
+                        .where(TICKETS.SEAT_IDENTIFIER.eq(ticketTierID))
+                        .returningResult(TICKETS.TICKET_ID)
+                        .fetchOneInto(Integer.class);
+
+                generatedTicketIDs.add(ticketId);
+            }
+        }
+
+        var insertAttendees = context.insertInto(ATTENDEES, ATTENDEES.EVENT_ID, ATTENDEES.USER_ID, ATTENDEES.PROFILE_ID, ATTENDEES.TICKET_ID);
+
+        for (int i = 0; i < tickets.size(); i++) {
+            insertAttendees = insertAttendees.values(eventUUID, userID, profileID, generatedTicketIDs.get(i));
+        }
+
+        insertAttendees.execute();
+
+        for (TicketDTO ticket : tickets) {
             context.update(TICKETTYPES)
                     .set(TICKETTYPES.AVAILABLE_QUANTITY, TICKETTYPES.AVAILABLE_QUANTITY.minus(ticket.getQuantity()))
                     .where(TICKETTYPES.TICKET_TYPE_ID.eq(ticket.getTicketTypeID()))
                     .execute();
-        });
+        }
     }
 
     public List<Map<String, Object>> getOrderTicket(Integer orderID) {
@@ -300,12 +342,17 @@ public class TicketService {
     }
 
     public Response addTierTicket(String eventID, TicketDTO ticketDTO, Integer timezone) {
+        context.deleteFrom(TICKETTYPES)
+                .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)))
+                .execute();
+
         List<TicketDTO> tierTickets = ticketDTO.getTierData().stream().map(tier -> {
             TicketDTO ticket = new TicketDTO();
             ticket.setTierID(tier.getTierID());
             ticket.setTicketName(ticketDTO.getTicketName());
             ticket.setPrice(tier.getPrice());
             ticket.setTicketType("paid");
+            ticket.setQuantity(tier.getTotalAssignedSeats());
             ticket.setStartDate(ticketDTO.getStartDate());
             ticket.setStartTime(ticketDTO.getStartTime());
             ticket.setEndDate(ticketDTO.getEndDate());
@@ -337,4 +384,10 @@ public class TicketService {
         return addTierTicket(eventID, ticketTier.getTicketData(), timezone);
     }
 
+    public List<Map<String, Object>> getTierTicket(String eventID) {
+        return context.select(TICKETS.STATUS, TICKETS.SEAT_IDENTIFIER)
+                .from(TICKETS)
+                .where(TICKETS.EVENT_ID.eq(UUID.fromString(eventID)))
+                .fetchMaps();
+    }
 }

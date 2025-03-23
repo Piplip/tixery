@@ -26,4 +26,5 @@ public class PaymentDTO {
     private String name;
     private String currency;
     private String username;
+    private List<String> tierTicketIDs;
 }
