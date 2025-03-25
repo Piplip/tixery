@@ -250,12 +250,15 @@ public class TicketService {
         }
     }
 
+    // TODO: Adjust this function for reserve seating events
     public List<Map<String, Object>> getOrderTicket(Integer orderID) {
         return context.select(TICKETTYPES.NAME, ORDERITEMS.PRICE, ORDERITEMS.QUANTITY, TICKETS.TICKET_ID, TICKETS.PURCHASE_DATE, EVENTS.ORGANIZER_ID,
-                        EVENTS.REFUND_POLICY, PAYMENTS.CURRENCY, EVENTS.END_TIME)
+                        SEATTIERS.NAME.as("tier_name"), SEATTIERS.PERKS, SEATMAP.MAP_URL, SEATTIERS.TIER_COLOR, TICKETS.SEAT_IDENTIFIER, EVENTS.REFUND_POLICY, PAYMENTS.CURRENCY, EVENTS.END_TIME)
                 .from(ORDERS.join(ORDERITEMS).on(ORDERS.ORDER_ID.eq(ORDERITEMS.ORDER_ID))
                         .join(TICKETS).on(ORDERITEMS.ORDER_ITEM_ID.eq(TICKETS.ORDER_ITEM_ID))
                         .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                        .leftJoin(SEATTIERS).on(SEATTIERS.SEAT_TIER_ID.eq(TICKETTYPES.SEAT_TIER_ID))
+                        .leftJoin(SEATMAP).on(SEATTIERS.MAP_ID.eq(SEATMAP.MAP_ID))
                         .join(EVENTS).on(TICKETS.EVENT_ID.eq(EVENTS.EVENT_ID))
                         .leftJoin(PAYMENTS).on(ORDERS.PAYMENT_ID.eq(PAYMENTS.PAYMENT_ID)))
                 .where(ORDERS.ORDER_ID.eq(orderID))

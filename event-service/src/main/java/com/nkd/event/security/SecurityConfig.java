@@ -44,10 +44,11 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(request ->
                         request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested", "/event/report",
-                                        "/actuator/**", "/search/suggestions", "/search", "/search/trends", "/event/trends", "/events/**").permitAll()
+                                        "/ws/**", "/actuator/**", "/search/suggestions", "/search", "/search/trends", "/seat-map/state/update",
+                                        "/event/trends", "/events/**").permitAll()
                                 .requestMatchers("/create/**", "/delete", "/tickets/**").hasRole("HOST")
                                 .requestMatchers("/order/tickets").hasRole("ATTENDEE")
-                                .anyRequest().authenticated()
+                                .anyRequest().permitAll()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(Customizer.withDefaults())

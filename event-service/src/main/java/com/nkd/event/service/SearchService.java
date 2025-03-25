@@ -146,6 +146,7 @@ public class SearchService {
         return new Response(HttpStatus.OK.name(), "Search history deleted successfully", null);
     }
 
+    // TODO: Adjust this function for reserver seating events
     public List<Map<String, Object>> loadOrders(String query, Integer range, Integer organizerID, String eventID) {
         Condition condition = DSL.trueCondition();
 

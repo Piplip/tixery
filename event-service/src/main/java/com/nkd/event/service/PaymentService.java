@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class PaymentService {
 
     private final DSLContext context;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
     private final Map<String, List<TicketDTO>> cache = new HashMap<>();
 
     private final TicketService ticketService;
@@ -56,6 +58,23 @@ public class PaymentService {
                return StripeResponse.builder().status("failed").message(e.getMessage()).build();
            }
        }
+       else{
+           Optional<String> unavailableTicket = paymentDTO.getTierTicketIDs().stream()
+                   .filter(ticketID -> !context.fetchExists(
+                           context.selectFrom(TICKETS)
+                                   .where(TICKETS.SEAT_IDENTIFIER.eq(ticketID))
+                                   .and(TICKETS.EVENT_ID.eq(UUID.fromString(paymentDTO.getEventID())))
+                                   .and(TICKETS.STATUS.eq("available"))
+                   ))
+                   .findFirst();
+
+           if (unavailableTicket.isPresent()) {
+               return StripeResponse.builder()
+                       .status("failed")
+                       .message("Ticket not available for " + unavailableTicket.get())
+                       .build();
+           }
+       }
 
         var orderID = context.insertInto(ORDERS)
                 .set(ORDERS.USER_ID, paymentDTO.getUserID())
@@ -66,9 +85,9 @@ public class PaymentService {
                 .fetchOneInto(Integer.class);
 
         redisTemplate.opsForValue().set("stripe-order-" + orderID, Map.of("eventID", paymentDTO.getEventID(), "reserve", isReserve,
-                "tierTicketIDs", paymentDTO.getTierTicketIDs(),"userID", paymentDTO.getUserID(), "profileID",
-                paymentDTO.getProfileID(), "amount", paymentDTO.getAmount(), "currency", paymentDTO.getCurrency(),
-                "email", paymentDTO.getEmail(), "username", paymentDTO.getUsername()), 10, TimeUnit.MINUTES);
+                "tierTicketIDs", paymentDTO.getTierTicketIDs(),"userID", paymentDTO.getUserID(), "profileID", paymentDTO.getProfileID(),
+                "amount", paymentDTO.getAmount(), "currency", paymentDTO.getCurrency(), "email", paymentDTO.getEmail(),
+                "username", paymentDTO.getUsername()), 10, TimeUnit.MINUTES);
         cache.put("stripe-order-" + orderID, paymentDTO.getTickets());
 
         SessionCreateParams params = createStripeParams(paymentDTO, orderID, isReserve);
@@ -138,6 +157,16 @@ public class PaymentService {
                 if(!isReserve){
                     cleanUpOnSuccessPayment(orderID, profileID);
                 }
+                else{
+                    Integer mapID = context.select(SEATMAP.MAP_ID).from(SEATMAP)
+                            .where(SEATMAP.EVENT_ID.eq(UUID.fromString(outerMap.get("eventID").toString())))
+                            .fetchOneInto(Integer.class);
+                    if(mapID == null) {
+                        log.error("Seat map not found for event ID: {}", outerMap.get("eventID").toString());
+                    }
+                    String destination = "/seat-map/" + mapID;
+                    messagingTemplate.convertAndSend(destination, ticketTierIDs);
+                }
 
                 response.setStatus("success");
                 response.setMessage("Payment successful");
@@ -155,7 +184,8 @@ public class PaymentService {
                         .build();
 
                 publisher.publishEvent(payment);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 response.setStatus("failed");
                 response.setMessage("Internal server error");
                 log.error("Error getting tickets: {}", e.getMessage());
