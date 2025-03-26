@@ -146,7 +146,6 @@ public class SearchService {
         return new Response(HttpStatus.OK.name(), "Search history deleted successfully", null);
     }
 
-    // TODO: Adjust this function for reserver seating events
     public List<Map<String, Object>> loadOrders(String query, Integer range, Integer organizerID, String eventID) {
         Condition condition = DSL.trueCondition();
 
@@ -177,10 +176,12 @@ public class SearchService {
 
         return orders.stream()
                 .peek(order -> order.put("tickets", context.select(TICKETS.TICKET_ID, TICKETTYPES.NAME, ORDERITEMS.QUANTITY
-                                , TICKETTYPES.PRICE, TICKETTYPES.CURRENCY, TICKETTYPES.TICKET_TYPE_ID)
+                        , SEATTIERS.NAME.as("seat_tier_name"), SEATTIERS.TIER_COLOR, TICKETTYPES.PRICE, TICKETTYPES.CURRENCY,
+                                TICKETTYPES.TICKET_TYPE_ID)
                         .from(ORDERITEMS)
                                 .join(TICKETS).on(ORDERITEMS.ORDER_ITEM_ID.eq(TICKETS.ORDER_ITEM_ID))
                                 .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                                .leftJoin(SEATTIERS).on(TICKETTYPES.SEAT_TIER_ID.eq(SEATTIERS.SEAT_TIER_ID))
                         .where(ORDERITEMS.ORDER_ID.eq((Integer) order.get("order_id")))
                         .fetchMaps()))
                 .collect(Collectors.toList());

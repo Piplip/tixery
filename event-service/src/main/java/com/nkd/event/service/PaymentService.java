@@ -275,6 +275,12 @@ public class PaymentService {
 
         assert paymentID != null;
         assert eventID != null;
+
+        context.update(TICKETS)
+                .set(TICKETS.STATUS, "available")
+                .where(TICKETS.ORDER_ID.eq(orderID))
+                .execute();
+
         ticketService.cleanUpOnDeleteOrder(orderID);
 
         EventOperation cancelEvent = EventOperation.builder()

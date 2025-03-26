@@ -254,6 +254,9 @@ public class EventService {
                         TICKETTYPES.EVENT_ID,
                         TICKETTYPES.TICKET_TYPE_ID,
                         TICKETTYPES.NAME,
+                        SEATTIERS.NAME.as("tier_name"),
+                        SEATTIERS.TIER_COLOR,
+                        SEATTIERS.PERKS,
                         TICKETTYPES.PRICE,
                         TICKETTYPES.CURRENCY,
                         TICKETTYPES.TICKET_TYPE,
@@ -263,7 +266,7 @@ public class EventService {
                         TICKETTYPES.SALE_END_TIME,
                         TICKETTYPES.STATUS
                 )
-                .from(TICKETTYPES)
+                .from(TICKETTYPES).leftJoin(SEATTIERS).on(TICKETTYPES.SEAT_TIER_ID.eq(SEATTIERS.SEAT_TIER_ID))
                 .where(TICKETTYPES.EVENT_ID.in(eventIds).and(ticketCondition))
                 .fetch()
                 .forEach(record -> {
@@ -271,6 +274,9 @@ public class EventService {
                     Map<String, Object> ticketInfo = new HashMap<>();
                     ticketInfo.put("ticket_type_id", record.get(TICKETTYPES.TICKET_TYPE_ID));
                     ticketInfo.put("name", record.get(TICKETTYPES.NAME));
+                    ticketInfo.put("tier_name", record.get("tier_name"));
+                    ticketInfo.put("tier_color", record.get("tier_color"));
+                    ticketInfo.put("perks", record.get("perks"));
                     ticketInfo.put("price", record.get(TICKETTYPES.PRICE));
                     ticketInfo.put("currency", record.get(TICKETTYPES.CURRENCY));
                     ticketInfo.put("ticket_type", record.get(TICKETTYPES.TICKET_TYPE));
@@ -361,7 +367,7 @@ public class EventService {
             eventData.put("ticketOccurrences", ticketOccurrenceData);
         }
 
-        var tickets = context.select(TICKETTYPES.asterisk(), SEATTIERS.SEAT_TIER_ID.as("tier_id"))
+        var tickets = context.select(TICKETTYPES.asterisk(), SEATTIERS.SEAT_TIER_ID.as("tier_id"), SEATTIERS.TIER_COLOR, SEATTIERS.PERKS)
                 .from(TICKETTYPES).leftJoin(SEATTIERS).on(TICKETTYPES.SEAT_TIER_ID.eq(SEATTIERS.SEAT_TIER_ID))
                 .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID))
                         .and(Boolean.TRUE.equals(isOrganizer) ? trueCondition() : TICKETTYPES.SALE_END_TIME.gt(OffsetDateTime.now()))
@@ -935,6 +941,7 @@ public class EventService {
                         TICKETTYPES.TICKET_TYPE_ID,
                         TICKETTYPES.TICKET_TYPE,
                         TICKETTYPES.NAME,
+                        SEATTIERS.NAME.as("tier_name"), SEATTIERS.TIER_COLOR, SEATTIERS.PERKS,
                         TICKETTYPES.QUANTITY.as("total_quantity"),
                         TICKETTYPES.PRICE,
                         TICKETTYPES.CURRENCY,
@@ -943,13 +950,13 @@ public class EventService {
                         sum(ORDERITEMS.QUANTITY).as("sold_quantity"),
                         sum(ORDERITEMS.QUANTITY.mul(TICKETTYPES.PRICE)).as("total"))
                 .from(TICKETTYPES)
+                .leftJoin(SEATTIERS).on(TICKETTYPES.SEAT_TIER_ID.eq(SEATTIERS.SEAT_TIER_ID))
                 .leftJoin(TICKETS).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
                 .leftJoin(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
                 .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)))
-                .groupBy(TICKETTYPES.TICKET_TYPE_ID, TICKETTYPES.TICKET_TYPE, TICKETTYPES.PRICE, TICKETTYPES.CURRENCY)
+                .groupBy(TICKETTYPES.TICKET_TYPE_ID, SEATTIERS.NAME, SEATTIERS.TIER_COLOR, SEATTIERS.PERKS, TICKETTYPES.TICKET_TYPE, TICKETTYPES.PRICE, TICKETTYPES.CURRENCY)
                 .fetchMaps();
 
-        // load total views of event
         var totalViews = context.select(count(EVENTVIEWS.VIEW_ID))
                 .from(EVENTVIEWS)
                 .where(EVENTVIEWS.EVENT_ID.eq(UUID.fromString(eventID)))

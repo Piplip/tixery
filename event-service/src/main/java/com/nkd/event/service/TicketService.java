@@ -250,7 +250,6 @@ public class TicketService {
         }
     }
 
-    // TODO: Adjust this function for reserve seating events
     public List<Map<String, Object>> getOrderTicket(Integer orderID) {
         return context.select(TICKETTYPES.NAME, ORDERITEMS.PRICE, ORDERITEMS.QUANTITY, TICKETS.TICKET_ID, TICKETS.PURCHASE_DATE, EVENTS.ORGANIZER_ID,
                         SEATTIERS.NAME.as("tier_name"), SEATTIERS.PERKS, SEATMAP.MAP_URL, SEATTIERS.TIER_COLOR, TICKETS.SEAT_IDENTIFIER, EVENTS.REFUND_POLICY, PAYMENTS.CURRENCY, EVENTS.END_TIME)
