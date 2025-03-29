@@ -1,27 +1,3 @@
-<!--<configuration>-->
-<!--    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">-->
-<!--        <encoder>-->
-<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread{20}] %highlight(%-5level) %cyan(%logger{30}) : %msg%n</pattern>-->
-<!--        </encoder>-->
-<!--    </appender>-->
-
-<!--    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
-<!--        <file>logs/account-service/account-service.log</file>-->
-<!--        <encoder>-->
-<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
-<!--        </encoder>-->
-<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
-<!--            <fileNamePattern>logs/account-service/account-service.%d{yyyy-MM-dd}.log</fileNamePattern>-->
-<!--            <maxHistory>30</maxHistory>-->
-<!--        </rollingPolicy>-->
-<!--    </appender>-->
-
-<!--    <root level="INFO">-->
-<!--        <appender-ref ref="FILE" />-->
-<!--        <appender-ref ref="CONSOLE" />-->
-<!--    </root>-->
-<!--</configuration>-->
-
 <configuration>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -54,4 +30,7 @@
     </root>
 
 </configuration>
+
+
+
 

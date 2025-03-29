@@ -57,8 +57,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 response.getWriter().write("{\"message\": \"Token expired\", \"redirect\": \"http://localhost:5173/login?ref=exp\"}");
                 response.getWriter().flush();
                 return;
-            }
-            catch (SignatureException e){
+            } catch (SignatureException e){
                 log.error(e.getMessage());
             }
         }
