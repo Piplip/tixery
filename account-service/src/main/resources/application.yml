@@ -67,10 +67,11 @@ management:
       export:
         enabled: true
 
-elastic:
-  password: fx7vhRAFrDXJzI4SGHUD
-  kibana: eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTAuMi42Ny4xNzg6OTIwMCJdLCJmZ3IiOiIyNTk5M2Q0NGY5MjAxZmJlNjA1OWIxZGJjZWQ5ZmJiZWUxZGQzNDUwMmMxMjczM2MzYTkwMmY1YTk0MGE3MDQ2Iiwia2V5IjoiLVpXN2pwVUJpUkdPWmdrV3FsVU06c0RpY3haZW9RNDJVRUhpaVR2UTNyZyJ9
-
 eureka:
   instance:
     hostname: localhost
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+

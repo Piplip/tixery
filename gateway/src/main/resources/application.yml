@@ -3,12 +3,72 @@ spring:
     name: gateway-service
   config:
     import: configserver:http://localhost:8888
+  data:
+    redis:
+      host: redis-18796.c294.ap-northeast-1-2.ec2.redns.redis-cloud.com
+      port: 18796
+      password: oN7pR7PlYVYmp12LHGirQrqbMAQMenGY
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin Access-Control-Allow-Methods Access-Control-Allow-Headers
+        - RemoveResponseHeader=Www-Authenticate
 
+      routes:
+        - id: accounts_route
+          uri: lb://account-service
+          predicates:
+            - Path=/accounts/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: '#{@ipKeyResolver}'
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 6
+                redis-rate-limiter.requestTokens: 1
+            - name: CircuitBreaker
+              args:
+                name: accountCircuitBreaker
+                fallbackUri: forward:/fallback
+        - id: events_route
+          uri: lb://event-service
+          predicates:
+            - Path=/events/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: '#{@ipKeyResolver}'
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 6
+                redis-rate-limiter.requestTokens: 1
+            - name: CircuitBreaker
+              args:
+                name: eventCircuitBreaker
+                fallbackUri: forward:/fallback
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
 eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
   instance:
     hostname: localhost
 
 management:
+  health:
+    circuitbreakers:
+      enabled: true
   endpoints:
     web:
       exposure:
@@ -21,6 +81,23 @@ management:
       export:
         enabled: true
 
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 3s
+
 logging:
   level:
     org.springframework.security: DEBUG
+

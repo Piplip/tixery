@@ -1,36 +1,5 @@
 server:
   port: 4001
 
-spring:
-  cloud:
-    gateway:
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin Access-Control-Allow-Methods Access-Control-Allow-Headers
-        - RemoveResponseHeader=Www-Authenticate
-
-      routes:
-        - id: accounts_route
-          uri: lb://account-service
-          predicates:
-            - Path=/accounts/**
-        - id: events_route
-          uri: lb://event-service
-          predicates:
-            - Path=/events/**
-
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: "http://localhost:5173"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-
-
 
 

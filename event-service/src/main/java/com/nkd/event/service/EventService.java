@@ -661,8 +661,6 @@ public class EventService {
                         EVENTS.START_TIME,
                         EVENTS.PROFILE_ID,
                         EVENTS.LOCATION,
-                        EVENTS.REFUND_POLICY,
-                        EVENTS.FAQ,
                         rankField.as("rank")
                 )
                 .from(view)

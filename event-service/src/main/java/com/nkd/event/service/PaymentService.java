@@ -276,9 +276,14 @@ public class PaymentService {
         assert paymentID != null;
         assert eventID != null;
 
+        List<Integer> orderItemIDs = context.select(ORDERITEMS.ORDER_ITEM_ID)
+                .from(ORDERITEMS)
+                .where(ORDERITEMS.ORDER_ID.eq(orderID))
+                .fetchInto(Integer.class);
+
         context.update(TICKETS)
                 .set(TICKETS.STATUS, "available")
-                .where(TICKETS.ORDER_ID.eq(orderID))
+                .where(TICKETS.ORDER_ITEM_ID.in(orderItemIDs))
                 .execute();
 
         ticketService.cleanUpOnDeleteOrder(orderID);
