@@ -41,4 +41,5 @@ public interface AccountService {
     Response handleSaveInterest(Integer userDataID, String interests);
     String getInterest(Integer userDataID);
     Map<String, Object> getOrderAttendeeInfo(Integer profileID);
+    Map<String, Object> getAccountData(Integer profileID);
 }

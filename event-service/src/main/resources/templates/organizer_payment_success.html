@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ticket Purchase Confirmation</title>
+    <title>New Order Notification</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -11,9 +11,7 @@
         .content { padding: 30px; }
         .footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d; border-top: 1px solid #e9ecef; }
         .btn { background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; margin: 15px 0; }
-        .ticket-box { border: 2px dashed #dee2e6; padding: 15px; text-align: center; margin: 20px 0; background-color: #f8f9fa; }
-        .steps { padding-left: 20px; }
-        .steps li { margin-bottom: 10px; }
+        .highlight { padding: 15px; background-color: #f8f9fa; border-left: 4px solid #dc3545; margin: 20px 0; }
         .logo { max-width: 200px; margin: 0 auto; display: block; }
     </style>
 </head>
@@ -21,34 +19,29 @@
 <div class="container">
     <div class="header">
         <img src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png" alt="Tixery Logo" class="logo">
-        <h1 style="color: #dc3545; margin: 15px 0 0 0;">🎟️ Your Tickets Are Confirmed!</h1>
+        <h1 style="color: #dc3545; margin: 15px 0 0 0;">🎉 New Ticket Sale!</h1>
     </div>
     <div class="content">
-        <h2>Congratulations, <span th:text="${username}"></span>!</h2>
-        <p>Your ticket purchase was successful! We're excited to confirm your order.</p>
+        <h2>Congratulations, <span th:text="${organizerName}"></span>!</h2>
 
-        <div class="ticket-box">
-            <h3>Your Tickets Are Ready!</h3>
-            <p><strong>Important:</strong> Your tickets are not in this email</p>
+        <p>You have a new ticket purchase for your event from <strong th:text="${username}"></strong>!</p>
+
+        <div class="highlight">
+            <p>A new customer has just purchased tickets to your event. This order has been added to your dashboard.</p>
         </div>
 
-        <h3>How to Access Your Tickets:</h3>
-        <ol class="steps">
-            <li>Go to your Tixery account</li>
-            <li>Visit the "My Tickets" section</li>
-            <li>View and download your tickets for the event</li>
-        </ol>
+        <p>You can view complete details, manage attendees, and track all your ticket sales through your organizer portal.</p>
 
         <div style="text-align: center; margin: 25px 0;">
-            <a th:href="${clientHost + '/u/' + profileID}" class="btn" style="color: white; text-decoration: none;">
-                View My Tickets
+            <a th:href="${clientHost + '/organizer/order-management'}" class="btn" style="color: white; text-decoration: none;">
+                View Order Details
             </a>
         </div>
 
-        <p><strong>Note:</strong> Access your tickets via the web by going to the Tickets section in your account. From there you can view and download a printable PDF of your tickets.</p>
+        <p><strong>Next steps:</strong> Log in to your dashboard to see the full order details and prepare for your event!</p>
     </div>
     <div class="footer">
-        <p>Thank you for your purchase!</p>
+        <p>Thank you for hosting your events with us!</p>
         <p>This is an automated notification. Please do not reply to this email.</p>
         <p>&copy; 2025 Tixery. All rights reserved.</p>
     </div>

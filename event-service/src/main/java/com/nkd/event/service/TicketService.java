@@ -5,9 +5,11 @@ import com.nkd.event.tables.records.DiscountcodesRecord;
 import com.nkd.event.utils.CommonUtils;
 import com.nkd.event.utils.EventUtils;
 import com.nkd.event.utils.ResponseCode;
+import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.springframework.core.io.ClassPathResource;
@@ -21,6 +23,8 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -287,13 +291,7 @@ public class TicketService {
             context.setVariable("printDate", OffsetDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
             String htmlContent = templateEngine.process("print_ticket", context);
 
-            ByteArrayOutputStream pdfStream = new ByteArrayOutputStream();
-            PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.withHtmlContent(htmlContent, new ClassPathResource("templates/").getURL().toString());
-            builder.toStream(pdfStream);
-            builder.run();
-
-            byte[] pdfBytes = pdfStream.toByteArray();
+            byte[] pdfBytes = getPdfBytes(htmlContent);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
@@ -305,6 +303,17 @@ public class TicketService {
             log.error("Error generating ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+
+    private byte @NotNull [] getPdfBytes(String htmlContent) throws IOException {
+        ByteArrayOutputStream pdfStream = new ByteArrayOutputStream();
+        PdfRendererBuilder builder = new PdfRendererBuilder();
+        builder.withHtmlContent(htmlContent, new ClassPathResource("templates/").getURL().toString());
+        builder.toStream(pdfStream);
+        builder.useFont(new File("D:\\Web projects\\microservices\\tixery-be\\event-service\\src\\main\\resources\\templates\\Nunito-VariableFont_wght.ttf"), "Nunito");
+        builder.run();
+
+        return pdfStream.toByteArray();
     }
 
     public Response activateCoupon(Integer profileID, List<CouponDTO> coupon) {

@@ -2,18 +2,15 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Cancellation</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
             background-color: #f4f4f4;
             margin: 0;
             padding: 0;
-        }
-        img{
-            max-width: 200px;
-            margin: 0 auto;
-            display: block;
+            line-height: 1.6;
         }
         .email-container {
             max-width: 600px;
@@ -22,44 +19,80 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
             text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .logo {
+            max-width: 200px;
+            margin: 0 auto 15px;
+            display: block;
         }
         h1 {
-            color: #2d2d2d;
-            font-size: 22px;
+            color: #dc3545;
+            font-size: 24px;
+            margin-top: 20px;
+            text-align: center;
         }
         .content {
+            padding: 20px 0;
             font-size: 16px;
             color: #444;
-            margin: 20px 0;
         }
         .details {
-            background: #f8f8f8;
+            background: #f8f9fa;
             padding: 15px;
             border-radius: 6px;
-            text-align: left;
-            display: inline-block;
+            margin: 20px 0;
+            border-left: 4px solid #dc3545;
         }
         .details p {
-            margin: 5px 0;
-            font-size: 14px;
+            margin: 10px 0;
+            font-size: 16px;
         }
-        .details span {
+        .details span.label {
             font-weight: bold;
+            width: 100px;
+            display: inline-block;
+        }
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            font-size: 12px;
+            color: #6c757d;
         }
     </style>
 </head>
 <body>
 <div class="email-container">
-    <img src="https://firebasestorage.googleapis.com/v0/b/medicare-10c3b.appspot.com/o/assets%2Flogo.svg?alt=media&token=65847a28-8ce8-4a10-a88a-1a0f16c0b41f"
-         alt="tixery Logo" class="logo">
-    <h1>Hello, <span th:text="${username}">User</span></h1>
-    <p class="content">
-        Your order for the event <b th:text="${eventName}">Event Name</b> was successfully canceled through Tixery.
-    </p>
-    <div class="details">
-        <p><span>Event Name:</span> <span th:text="${eventName}">Event Name</span></p>
-        <p><span>Order Number:</span> <span th:text="${orderID}">123456789</span></p>
+    <div class="header">
+        <img src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png"
+             alt="Tixery Logo" class="logo">
+    </div>
+
+    <h1>Order Cancellation Confirmed</h1>
+
+    <div class="content">
+        <p>Hello <strong th:text="${username}">User</strong>,</p>
+
+        <p>Your order for the event <strong th:text="${eventName}">Event Name</strong> was successfully canceled through Tixery.</p>
+
+        <div class="details">
+            <p><span class="label">Event:</span> <span th:text="${eventName}">Event Name</span></p>
+            <p><span class="label">Order ID:</span> <span th:text="${orderID}">123456789</span></p>
+            <p><span class="label">Date:</span> <span th:text="${#temporals.format(#temporals.createNow(), 'dd MMM yyyy, HH:mm')}">01 Jan 2024</span></p>
+        </div>
+
+        <p>If you did not request this cancellation or have any questions, please contact our customer support team.</p>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for using Tixery!</p>
+        <p>This is an automated notification. Please do not reply to this email.</p>
+        <p>&copy; <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}">2025</span> Tixery. All rights reserved.</p>
     </div>
 </div>
 </body>

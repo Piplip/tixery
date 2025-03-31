@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.util.Map;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -25,16 +27,18 @@ public class EmailService {
     @Value("${client.host}")
     private String clientHost;
 
-    // TODO: Enhanced email content
-    public void sendPaymentSuccessEmail(PaymentDTO paymentDTO){
+    public void sendPaymentSuccessEmail(PaymentDTO paymentDTO, Map<String, Object> organizerData) {
         Context context = new Context();
         context.setVariable("username", paymentDTO.getUsername());
         context.setVariable("clientHost", clientHost);
         context.setVariable("profileID", paymentDTO.getProfileID());
+        context.setVariable("organizerName", organizerData.get("profile_name"));
         String content = templateEngine.process("payment_success", context);
+        String organizerContent = templateEngine.process("organizer_payment_success", context);
 
         try {
             sendEmail(paymentDTO.getEmail(), content, "Payment Success");
+            sendEmail(organizerData.get("account_email").toString(), organizerContent, "WOOHOO! A NEW ORDER FOR YOUR EVENT HAS BEEN PLACED!");
         } catch (Exception e) {
             handleEmailException("Error sending payment success email to " + paymentDTO.getEmail());
         }

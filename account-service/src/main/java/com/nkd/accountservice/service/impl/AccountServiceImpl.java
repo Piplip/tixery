@@ -589,6 +589,14 @@ public class AccountServiceImpl implements AccountService {
                 .fetchOneMap();
     }
 
+    @Override
+    public Map<String, Object> getAccountData(Integer profileID) {
+        return context.select(USER_ACCOUNT.ACCOUNT_EMAIL, PROFILE.PROFILE_NAME)
+                .from(USER_ACCOUNT.join(PROFILE).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID)))
+                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                .fetchOneMap();
+    }
+
     private UInteger saveOrganizerProfile(String accountID, Profile profile){
         UInteger updateProfileID;
         Optional<UInteger> profileID = context.select(PROFILE.PROFILE_ID).from(PROFILE)
@@ -716,8 +724,7 @@ public class AccountServiceImpl implements AccountService {
     private Triple<Integer, String, LocalDateTime> generateConfirmation(UInteger accountID){
         String token = UUID.randomUUID().toString();
 
-        // NOTE: develop purpose only. Change to 1 day later
-        var expirationTime = LocalDateTime.now().plusMinutes(1);
+        var expirationTime = LocalDateTime.now().plusMinutes(5);
         Integer confirmationID = context.insertInto(CONFIRMATION)
                 .set(CONFIRMATION.ACCOUNT_ID, accountID)
                 .set(CONFIRMATION.TOKEN, token)

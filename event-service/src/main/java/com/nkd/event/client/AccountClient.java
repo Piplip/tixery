@@ -18,4 +18,7 @@ public interface AccountClient {
 
     @GetMapping("internal/account/jwt")
     String getAccountJWTToken(@RequestParam("email") String email);
+
+    @GetMapping("info")
+    Map<String, Object> getAccountData(@RequestParam("pid") Integer profileID);
 }

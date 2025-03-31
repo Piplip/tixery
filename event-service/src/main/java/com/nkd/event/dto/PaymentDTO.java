@@ -19,6 +19,7 @@ public class PaymentDTO {
     private String email;
     private Integer userID;
     private Integer profileID;
+    private Integer organizerID;
     private String eventID;
     private List<TicketDTO> tickets;
     private Long amount;

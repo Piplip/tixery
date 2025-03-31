@@ -85,7 +85,8 @@ public class PaymentService {
                 .fetchOneInto(Integer.class);
 
         redisTemplate.opsForValue().set("stripe-order-" + orderID, Map.of("eventID", paymentDTO.getEventID(), "reserve", isReserve,
-                "tierTicketIDs", paymentDTO.getTierTicketIDs(),"userID", paymentDTO.getUserID(), "profileID", paymentDTO.getProfileID(),
+                "tierTicketIDs", Optional.ofNullable(paymentDTO.getTierTicketIDs()).orElse(List.of()),
+                "userID", paymentDTO.getUserID(), "profileID", paymentDTO.getProfileID(),
                 "amount", paymentDTO.getAmount(), "currency", paymentDTO.getCurrency(), "email", paymentDTO.getEmail(),
                 "username", paymentDTO.getUsername()), 10, TimeUnit.MINUTES);
         cache.put("stripe-order-" + orderID, paymentDTO.getTickets());
@@ -176,6 +177,9 @@ public class PaymentService {
                         .tickets(tickets)
                         .eventID(outerMap.get("eventID").toString())
                         .userID((Integer) outerMap.get("userID"))
+                        .organizerID(context.select(EVENTS.ORGANIZER_ID).from(EVENTS)
+                                .where(EVENTS.EVENT_ID.eq(UUID.fromString(outerMap.get("eventID").toString())))
+                                .fetchOneInto(Integer.class))
                         .profileID((Integer) outerMap.get("profileID"))
                         .amount(response.getAmount())
                         .currency(outerMap.get("currency").toString())

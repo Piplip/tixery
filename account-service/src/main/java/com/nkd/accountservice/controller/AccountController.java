@@ -42,6 +42,11 @@ public class AccountController {
                 .build();
     }
 
+    @GetMapping("/info")
+    public Map<String, Object> getAccountData(@RequestParam("pid") Integer profileID){
+        return accountService.getAccountData(profileID);
+    }
+
     @PutMapping("/resend-activation")
     public Response resendActivation(@RequestParam("uid") String accountID){
         return accountService.resendActivation(accountID);
