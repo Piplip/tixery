@@ -193,9 +193,7 @@ public class TicketService {
             insertOrderItems = insertOrderItems.values(orderID, ticket.getQuantity(), new BigDecimal(ticket.getPrice()));
         }
 
-        List<Integer> orderItemIDs = insertOrderItems
-                .returningResult(ORDERITEMS.ORDER_ITEM_ID)
-                .fetch()
+        List<Integer> orderItemIDs = insertOrderItems.returningResult(ORDERITEMS.ORDER_ITEM_ID).fetch()
                 .getValues(ORDERITEMS.ORDER_ITEM_ID);
 
         List<Integer> generatedTicketIDs;
@@ -217,10 +215,13 @@ public class TicketService {
         }
         else {
             generatedTicketIDs = new ArrayList<>();
-            for (int i = 0; i < ticketTierIDs.size(); i++) {
-                String ticketTierID = ticketTierIDs.get(i);
-                Integer orderItemID = orderItemIDs.get(i);
-                TicketDTO ticket = tickets.get(i);
+            for (String ticketTierID : ticketTierIDs) {
+                TicketDTO ticket = tickets.stream()
+                        .filter(t -> t.getTicketTypeID() != null)
+                        .findFirst()
+                        .orElse(tickets.getFirst());
+
+                Integer orderItemID = orderItemIDs.getFirst();
 
                 Integer ticketId = context.update(TICKETS)
                         .set(TICKETS.ORDER_ITEM_ID, orderItemID)
@@ -235,8 +236,7 @@ public class TicketService {
                         .fetchOneInto(Integer.class);
 
                 generatedTicketIDs.add(ticketId);
-            }
-        }
+            }        }
 
         var insertAttendees = context.insertInto(ATTENDEES, ATTENDEES.EVENT_ID, ATTENDEES.USER_ID, ATTENDEES.PROFILE_ID, ATTENDEES.TICKET_ID);
 
@@ -269,7 +269,7 @@ public class TicketService {
     }
 
     @Async("taskExecutor")
-    protected void cleanUpOnDeleteOrder(Integer orderID) {
+    protected void cleanUpOnDeleteOrder(Integer orderID, Integer profileID) {
         context.update(TICKETTYPES)
                 .set(TICKETTYPES.AVAILABLE_QUANTITY, TICKETTYPES.QUANTITY)
                 .where(TICKETTYPES.TICKET_TYPE_ID.in(
@@ -277,6 +277,9 @@ public class TicketService {
                                 .from(TICKETS).join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
                                 .where(ORDERITEMS.ORDER_ID.eq(orderID))
                 ))
+                .execute();
+        context.deleteFrom(ATTENDEES)
+                .where(ATTENDEES.PROFILE_ID.eq(profileID))
                 .execute();
     }
 

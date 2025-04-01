@@ -196,8 +196,9 @@ public class EventController {
     }
 
     @PostMapping("/order/cancel")
-    public Response cancelOrder(@RequestParam("order-id") Integer orderID, @RequestParam("uname") String username, @RequestParam("u") String email) {
-        return paymentService.cancelOrder(orderID, username, email);
+    public Response cancelOrder(@RequestParam("order-id") Integer orderID, @RequestParam("uname") String username,
+                                @RequestParam("pid") Integer profileID, @RequestParam("u") String email) {
+        return paymentService.cancelOrder(orderID, profileID, username, email);
     }
 
     @PostMapping("/create/auto")
@@ -222,5 +223,10 @@ public class EventController {
     @GetMapping("/event/dashboard")
     public Map<String, Object> loadEventInfo(@RequestParam("eid") String eventID) {
         return eventService.loadEventInfo(eventID);
+    }
+
+    @GetMapping("/event/attendees")
+    public List<Map<String, Object>> loadEventAttendees(@RequestParam("eid") String eventID) {
+        return eventService.loadEventAttendees(eventID);
     }
 }

@@ -235,7 +235,7 @@ public class PaymentService {
                 .paymentMethod("Stripe").build();
     }
 
-    public Response cancelOrder(Integer orderID, String username, String email) {
+    public Response cancelOrder(Integer orderID, Integer profileID, String username, String email) {
         if(orderID == null) {
             log.error("Order ID is required");
             return new Response(HttpStatus.BAD_REQUEST.name(), "Unexpected error", null);
@@ -290,7 +290,7 @@ public class PaymentService {
                 .where(TICKETS.ORDER_ITEM_ID.in(orderItemIDs))
                 .execute();
 
-        ticketService.cleanUpOnDeleteOrder(orderID);
+        ticketService.cleanUpOnDeleteOrder(orderID, profileID);
 
         EventOperation cancelEvent = EventOperation.builder()
                 .data(Map.of("orderID", orderID, "username", username, "eventID", eventID, "email", email))

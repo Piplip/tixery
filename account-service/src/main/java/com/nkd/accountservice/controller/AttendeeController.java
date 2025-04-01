@@ -76,4 +76,9 @@ public class AttendeeController {
     public Map<String, Object> getOrderAttendeeInfo(@RequestParam("pid") Integer profileID){
         return accountService.getOrderAttendeeInfo(profileID);
     }
+
+    @PostMapping("/event/attendee/info")
+    public List<Map<String, Object>> getEventAttendeeInfo(@RequestBody List<Integer> profileIDs){
+        return accountService.getEventAttendeeInfo(profileIDs);
+    }
 }

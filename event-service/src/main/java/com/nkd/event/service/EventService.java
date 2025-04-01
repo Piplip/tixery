@@ -945,14 +945,25 @@ public class EventService {
                         TICKETTYPES.CURRENCY,
                         TICKETTYPES.SALE_START_TIME,
                         TICKETTYPES.SALE_END_TIME,
-                        sum(ORDERITEMS.QUANTITY).as("sold_quantity"),
-                        sum(ORDERITEMS.QUANTITY.mul(TICKETTYPES.PRICE)).as("total"))
+                        sum(
+                                case_()
+                                        .when(ORDERS.STATUS.eq("paid"), ORDERITEMS.QUANTITY)
+                                        .otherwise(0)
+                        ).as("sold_quantity"),
+                        sum(
+                                case_()
+                                        .when(ORDERS.STATUS.eq("paid"), ORDERITEMS.QUANTITY.mul(TICKETTYPES.PRICE))
+                                        .otherwise(0)
+                        ).as("total"))
                 .from(TICKETTYPES)
                 .leftJoin(SEATTIERS).on(TICKETTYPES.SEAT_TIER_ID.eq(SEATTIERS.SEAT_TIER_ID))
                 .leftJoin(TICKETS).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
                 .leftJoin(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
+                .leftJoin(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
                 .where(TICKETTYPES.EVENT_ID.eq(UUID.fromString(eventID)))
-                .groupBy(TICKETTYPES.TICKET_TYPE_ID, SEATTIERS.NAME, SEATTIERS.TIER_COLOR, SEATTIERS.PERKS, TICKETTYPES.TICKET_TYPE, TICKETTYPES.PRICE, TICKETTYPES.CURRENCY)
+                .groupBy(TICKETTYPES.TICKET_TYPE_ID, SEATTIERS.NAME, SEATTIERS.TIER_COLOR, SEATTIERS.PERKS,
+                        TICKETTYPES.TICKET_TYPE, TICKETTYPES.NAME, TICKETTYPES.QUANTITY, TICKETTYPES.PRICE,
+                        TICKETTYPES.CURRENCY, TICKETTYPES.SALE_START_TIME, TICKETTYPES.SALE_END_TIME)
                 .fetchMaps();
 
         var totalViews = context.select(count(EVENTVIEWS.VIEW_ID))
@@ -1055,5 +1066,63 @@ public class EventService {
                 .execute();
 
         return new Response(HttpStatus.OK.name(), "OK", null);
+    }
+
+    public List<Map<String, Object>> loadEventAttendees(String eventID) {
+        List<Integer> attendeeIDs = context.selectDistinct(ATTENDEES.PROFILE_ID)
+                .from(ATTENDEES)
+                .join(TICKETS).on(ATTENDEES.TICKET_ID.eq(TICKETS.TICKET_ID))
+                .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
+                .join(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
+                .where(ATTENDEES.EVENT_ID.eq(UUID.fromString(eventID))
+                        .and(ORDERS.STATUS.eq("paid")))
+                .fetchInto(Integer.class);
+
+        if (attendeeIDs.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Map<String, Object>> attendeeInfoList = accountClient.getEventAttendeeInfo(attendeeIDs);
+
+        Map<Integer, Map<String, Object>> attendeeInfoMap = new HashMap<>();
+        for (Map<String, Object> info : attendeeInfoList) {
+            Integer profileId = (Integer) info.get("profile_id");
+            if (profileId != null) {
+                attendeeInfoMap.put(profileId, info);
+            }
+        }
+
+        var attendees = context.select(
+                        ATTENDEES.PROFILE_ID,
+                        TICKETTYPES.TICKET_TYPE_ID,
+                        TICKETTYPES.NAME.as("ticket_name"),
+                        count().as("ticket_count"),
+                        max(ATTENDEES.REGISTRATION_DATE).as("registration_date"))
+                .from(ATTENDEES)
+                .join(TICKETS).on(ATTENDEES.TICKET_ID.eq(TICKETS.TICKET_ID))
+                .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
+                .join(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
+                .where(ATTENDEES.EVENT_ID.eq(UUID.fromString(eventID))
+                        .and(ORDERS.STATUS.eq("paid")))
+                .groupBy(ATTENDEES.PROFILE_ID, TICKETTYPES.TICKET_TYPE_ID, TICKETTYPES.NAME)
+                .fetchMaps();
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> attendee : attendees) {
+            Integer profileID = (Integer) attendee.get("profile_id");
+            Map<String, Object> attendeeInfo = attendeeInfoMap.get(profileID);
+
+            if (attendeeInfo != null) {
+                Map<String, Object> combined = new HashMap<>(attendee);
+                combined.put("profileName", attendeeInfo.get("profile_name"));
+                combined.put("fullName", attendeeInfo.get("full_name"));
+                combined.put("phoneNumber", attendeeInfo.get("phone_number"));
+                combined.put("email", attendeeInfo.get("account_email"));
+                result.add(combined);
+            }
+        }
+
+        return result;
     }
 }

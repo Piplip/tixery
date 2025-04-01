@@ -53,7 +53,6 @@ public class AccountServiceImpl implements AccountService {
     private final PasswordEncoder encoder;
     private final ApplicationEventPublisher publisher;
     private final AuthenticationManager authenticationManager;
-    private final MessageSource messageSource;
     private final RedisTemplate<String, String> redisTemplate;
     private final JwtService jwtService;
     private final CustomUserDetailService userDetailService;
@@ -595,6 +594,15 @@ public class AccountServiceImpl implements AccountService {
                 .from(USER_ACCOUNT.join(PROFILE).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID)))
                 .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
                 .fetchOneMap();
+    }
+
+    @Override
+    public List<Map<String, Object>> getEventAttendeeInfo(List<Integer> profileIDs) {
+        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, USER_DATA.FULL_NAME, USER_DATA.PHONE_NUMBER, USER_ACCOUNT.ACCOUNT_EMAIL)
+                .from(PROFILE.join(USER_ACCOUNT).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID))
+                        .join(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID)))
+                .where(PROFILE.PROFILE_ID.in(profileIDs))
+                .fetchMaps();
     }
 
     private UInteger saveOrganizerProfile(String accountID, Profile profile){
