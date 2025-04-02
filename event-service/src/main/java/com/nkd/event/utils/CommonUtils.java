@@ -8,6 +8,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Base64;
+import java.util.Random;
 
 @Slf4j
 public class CommonUtils {
@@ -41,4 +42,28 @@ public class CommonUtils {
             return imageUrl;
         }
     }
+
+    public static String generateRandomString(Boolean numberOnly, Integer length) {
+        if (length == null || length <= 0) {
+            return "";
+        }
+
+        String characters;
+        if (numberOnly != null && numberOnly) {
+            characters = "0123456789";
+        } else {
+            characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        }
+
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder(length);
+
+        for (int i = 0; i < length; i++) {
+            int randomIndex = random.nextInt(characters.length());
+            sb.append(characters.charAt(randomIndex));
+        }
+
+        return sb.toString();
+    }
+
 }

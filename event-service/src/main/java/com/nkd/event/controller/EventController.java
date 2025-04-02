@@ -4,6 +4,7 @@ import com.nkd.event.dto.*;
 import com.nkd.event.service.EventService;
 import com.nkd.event.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -217,7 +218,6 @@ public class EventController {
     @PostMapping("/event/report")
     public Response handleReportEvent(@RequestBody ReportDTO report, @RequestParam("tz") Integer timezone) {
         return eventService.handleReportEvent(report, timezone);
-
     }
 
     @GetMapping("/event/dashboard")
@@ -229,4 +229,10 @@ public class EventController {
     public List<Map<String, Object>> loadEventAttendees(@RequestParam("eid") String eventID) {
         return eventService.loadEventAttendees(eventID);
     }
+
+    @PostMapping("/attendees/email")
+    public Response sendAttendeesEmail(@RequestBody AttendeeEmailDTO emailDTO) {
+        return eventService.sendAttendeesEmail(emailDTO);
+    }
+
 }

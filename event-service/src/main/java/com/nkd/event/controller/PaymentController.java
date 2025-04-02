@@ -22,9 +22,14 @@ public class PaymentController {
     }
 
     @PostMapping("/stripe/checkout")
-    public ResponseEntity<StripeResponse> checkout(@RequestParam(value = "reserve", defaultValue = "false") Boolean isReserve, @RequestBody PaymentDTO paymentDTO) {
+    public ResponseEntity<StripeResponse> stripeCheckout(@RequestParam(value = "reserve", defaultValue = "false") Boolean isReserve, @RequestBody PaymentDTO paymentDTO) {
         StripeResponse response = paymentService.handleStripeCheckout(isReserve, paymentDTO);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/google-pay/checkout")
+    public Response googlePayCheckout(@RequestParam(value = "reserve", defaultValue = "false") Boolean isReserve, @RequestBody PaymentDTO paymentDTO) {
+        return paymentService.handleGooglePayCheckout(isReserve, paymentDTO);
     }
 
     @PostMapping("/stripe/success")

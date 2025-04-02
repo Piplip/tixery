@@ -26,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.nkd.event.Tables.*;
@@ -40,6 +41,7 @@ public class EventService {
     private final AccountClient accountClient;
     private final SuggestionClient suggestionClient;
     private final TicketService ticketService;
+    private final EmailService emailService;
     private final ApplicationEventPublisher publisher;
 
     public Response createEvent(EventDTO eventDTO, String eid, String step) {
@@ -1124,5 +1126,21 @@ public class EventService {
         }
 
         return result;
+    }
+
+    public Response sendAttendeesEmail(AttendeeEmailDTO emailDTO) {
+        List<CompletableFuture<Void>> futures = emailDTO.getRecipients().stream()
+                .map(recipient -> CompletableFuture.runAsync(() -> {
+                    try {
+                        emailService.sendEmail(recipient, emailDTO.getContent(), emailDTO.getSubject());
+                    } catch (Exception e) {
+                        log.error("Error sending to {}: {}", recipient, e.getMessage());
+                    }
+                }))
+                .toList();
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        return new Response(HttpStatus.OK.name(), "Email sent successfully", null);
     }
 }

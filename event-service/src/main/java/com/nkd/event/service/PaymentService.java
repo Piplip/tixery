@@ -7,6 +7,7 @@ import com.nkd.event.dto.TicketDTO;
 import com.nkd.event.enumeration.EventOperationType;
 import com.nkd.event.enumeration.PaymentStatus;
 import com.nkd.event.event.EventOperation;
+import com.nkd.event.utils.CommonUtils;
 import com.stripe.Stripe;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -427,5 +428,86 @@ public class PaymentService {
         }
 
         return new Response(HttpStatus.OK.name(), "Order successfully! Enjoy the event!!", null);
+    }
+
+    @Transactional
+    public Response handleGooglePayCheckout(Boolean isReserve, PaymentDTO paymentDTO) {
+        var orderID = context.insertInto(ORDERS)
+                .set(ORDERS.USER_ID, paymentDTO.getUserID())
+                .set(ORDERS.PROFILE_ID, paymentDTO.getProfileID())
+                .set(ORDERS.EVENT_ID, UUID.fromString(paymentDTO.getEventID()))
+                .set(ORDERS.STATUS, "paid")
+                .returningResult(ORDERS.ORDER_ID)
+                .fetchOneInto(Integer.class);
+
+        UUID paymentID = UUID.randomUUID();
+        context.insertInto(PAYMENTS)
+                .set(PAYMENTS.PAYMENT_ID, paymentID)
+                .set(PAYMENTS.ORDER_ID, orderID)
+                .set(PAYMENTS.PAYMENT_METHOD, "google-pay")
+                .set(PAYMENTS.AMOUNT, BigDecimal.valueOf(paymentDTO.getAmount()))
+                .set(PAYMENTS.CURRENCY, paymentDTO.getCurrency())
+                .set(PAYMENTS.PAYMENT_STATUS, "success")
+                .set(PAYMENTS.TRANSACTION_ID, CommonUtils.generateRandomString(false, 200))
+                .execute();
+
+        context.update(ORDERS)
+                .set(ORDERS.PAYMENT_ID, paymentID)
+                .where(ORDERS.ORDER_ID.eq(orderID))
+                .execute();
+
+        try {
+            ticketService.generateTickets(
+                    orderID,
+                    paymentDTO.getTickets(),
+                    paymentDTO.getEventID(),
+                    paymentDTO.getUserID(),
+                    paymentDTO.getProfileID(),
+                    isReserve,
+                    paymentDTO.getTierTicketIDs()
+            );
+
+            if (isReserve) {
+                Integer mapID = context.select(SEATMAP.MAP_ID)
+                        .from(SEATMAP)
+                        .where(SEATMAP.EVENT_ID.eq(UUID.fromString(paymentDTO.getEventID())))
+                        .fetchOneInto(Integer.class);
+
+                if (mapID != null) {
+                    String destination = "/seat-map/" + mapID;
+                    messagingTemplate.convertAndSend(destination, paymentDTO.getTierTicketIDs());
+                }
+            } else {
+                String coupon = (String) redisTemplate.opsForValue().get("coupon-" + paymentDTO.getProfileID());
+                if (coupon != null) {
+                    context.update(DISCOUNTCODES)
+                            .set(DISCOUNTCODES.QUANTITY, DISCOUNTCODES.QUANTITY.minus(1))
+                            .where(DISCOUNTCODES.CODE.eq(coupon))
+                            .execute();
+
+                    context.insertInto(APPLIEDDISCOUNTS)
+                            .set(APPLIEDDISCOUNTS.ORDER_ID, orderID)
+                            .set(APPLIEDDISCOUNTS.CODE, coupon)
+                            .execute();
+
+                    redisTemplate.delete("coupon-" + paymentDTO.getProfileID());
+                }
+            }
+
+            paymentDTO.setOrganizerID(context.select(EVENTS.ORGANIZER_ID)
+                    .from(EVENTS)
+                    .where(EVENTS.EVENT_ID.eq(UUID.fromString(paymentDTO.getEventID())))
+                    .fetchOneInto(Integer.class));
+
+            publisher.publishEvent(paymentDTO);
+
+            return new Response(HttpStatus.OK.name(), "Payment successful", Map.of(
+                    "orderID", orderID,
+                    "paymentID", paymentID.toString()
+            ));
+        } catch (Exception e) {
+            log.error("Error processing Google Pay payment: {}", e.getMessage());
+            return new Response(HttpStatus.INTERNAL_SERVER_ERROR.name(), "Payment failed: " + e.getMessage(), null);
+        }
     }
 }
