@@ -37,7 +37,7 @@ public class EmailService {
         String organizerContent = templateEngine.process("organizer_payment_success", context);
 
         try {
-            sendEmail(paymentDTO.getEmail(), content, "Payment Success");
+            sendEmail(paymentDTO.getEmail(), content, "ORDER TICKETS SUCCESSFUL");
             sendEmail(organizerData.get("account_email").toString(), organizerContent, "WOOHOO! A NEW ORDER FOR YOUR EVENT HAS BEEN PLACED!");
         } catch (Exception e) {
             handleEmailException("Error sending payment success email to " + paymentDTO.getEmail());

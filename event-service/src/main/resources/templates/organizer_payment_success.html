@@ -18,32 +18,32 @@
 <body>
 <div class="container">
     <div class="header">
-        <img src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png" alt="Tixery Logo" class="logo">
-        <h1 style="color: #dc3545; margin: 15px 0 0 0;">🎉 New Ticket Sale!</h1>
+        <img src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png" alt="Logo Tixery" class="logo">
+        <h1 style="color: #dc3545; margin: 15px 0 0 0;">🎉 Đơn Đặt Vé Mới!</h1>
     </div>
     <div class="content">
-        <h2>Congratulations, <span th:text="${organizerName}"></span>!</h2>
+        <h2>Chúc mừng, <span th:text="${organizerName}"></span>!</h2>
 
-        <p>You have a new ticket purchase for your event from <strong th:text="${username}"></strong>!</p>
+        <p>Bạn vừa có một đơn mua vé mới cho sự kiện của mình từ <strong th:text="${username}"></strong>!</p>
 
         <div class="highlight">
-            <p>A new customer has just purchased tickets to your event. This order has been added to your dashboard.</p>
+            <p>Một khách hàng mới vừa mua vé cho sự kiện của bạn. Đơn hàng này đã được thêm vào bảng điều khiển của bạn.</p>
         </div>
 
-        <p>You can view complete details, manage attendees, and track all your ticket sales through your organizer portal.</p>
+        <p>Bạn có thể xem chi tiết đầy đủ, quản lý người tham dự và theo dõi tất cả doanh số bán vé của mình thông qua cổng thông tin dành cho nhà tổ chức.</p>
 
         <div style="text-align: center; margin: 25px 0;">
             <a th:href="${clientHost + '/organizer/order-management'}" class="btn" style="color: white; text-decoration: none;">
-                View Order Details
+                Xem Chi Tiết Đơn Hàng
             </a>
         </div>
 
-        <p><strong>Next steps:</strong> Log in to your dashboard to see the full order details and prepare for your event!</p>
+        <p><strong>Các bước tiếp theo:</strong> Đăng nhập vào bảng điều khiển của bạn để xem chi tiết đơn hàng đầy đủ và chuẩn bị cho sự kiện của bạn!</p>
     </div>
     <div class="footer">
-        <p>Thank you for hosting your events with us!</p>
-        <p>This is an automated notification. Please do not reply to this email.</p>
-        <p>&copy; 2025 Tixery. All rights reserved.</p>
+        <p>Cảm ơn bạn đã tổ chức sự kiện của mình với chúng tôi!</p>
+        <p>Đây là thông báo tự động. Vui lòng không trả lời email này.</p>
+        <p>&copy; 2025 Tixery. Mọi quyền được bảo lưu.</p>
     </div>
 </div>
 </body>

@@ -20,37 +20,37 @@
 <body>
 <div class="container">
     <div class="header">
-        <img src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png" alt="Tixery Logo" class="logo">
-        <h1 style="color: #dc3545; margin: 15px 0 0 0;">🎟️ Your Tickets Are Confirmed!</h1>
+        <img src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png" alt="Logo Tixery" class="logo">
+        <h1 style="color: #dc3545; margin: 15px 0 0 0;">🎟️ Vé Của Bạn Đã Được Xác Nhận!</h1>
     </div>
     <div class="content">
-        <h2>Congratulations, <span th:text="${username}"></span>!</h2>
-        <p>Your ticket purchase was successful! We're excited to confirm your order.</p>
+        <h2>Chúc mừng, <span th:text="${username}"></span>!</h2>
+        <p>Giao dịch mua vé của bạn đã thành công!</p>
 
         <div class="ticket-box">
-            <h3>Your Tickets Are Ready!</h3>
-            <p><strong>Important:</strong> Your tickets are not in this email</p>
+            <h3>Vé Của Bạn Đã Sẵn Sàng!</h3>
+            <p><strong>Lưu ý:</strong> Vé của bạn không có trong email này</p>
         </div>
 
-        <h3>How to Access Your Tickets:</h3>
+        <h3>Cách Truy Cập Vé Của Bạn:</h3>
         <ol class="steps">
-            <li>Go to your Tixery account</li>
-            <li>Visit the "My Tickets" section</li>
-            <li>View and download your tickets for the event</li>
+            <li>Truy cập tài khoản Tixery của bạn</li>
+            <li>Vào mục "Vé" trên thanh điều hướng</li>
+            <li>Xem và tải xuống vé của bạn cho sự kiện</li>
         </ol>
 
         <div style="text-align: center; margin: 25px 0;">
             <a th:href="${clientHost + '/u/' + profileID}" class="btn" style="color: white; text-decoration: none;">
-                View My Tickets
+                Xem Vé Của Tôi
             </a>
         </div>
 
-        <p><strong>Note:</strong> Access your tickets via the web by going to the Tickets section in your account. From there you can view and download a printable PDF of your tickets.</p>
+        <p><strong>Lưu ý:</strong> Truy cập vé của bạn qua trang web bằng cách vào mục Vé trong tài khoản của bạn. Từ đó, bạn có thể xem và tải xuống bản PDF có thể in được của vé.</p>
     </div>
     <div class="footer">
-        <p>Thank you for your purchase!</p>
-        <p>This is an automated notification. Please do not reply to this email.</p>
-        <p>&copy; 2025 Tixery. All rights reserved.</p>
+        <p>Cảm ơn bạn đã mua hàng!</p>
+        <p>Đây là thông báo tự động. Vui lòng không trả lời email này.</p>
+        <p>&copy; 2025 Tixery. Mọi quyền được bảo lưu.</p>
     </div>
 </div>
 </body>

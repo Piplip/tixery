@@ -42,13 +42,44 @@ public class SecurityConfig {
                         response.getWriter().write("Forbidden");
                     });
                 })
-                .authorizeHttpRequests(request ->
-                        request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested", "/event/report",
-                                        "/ws/**", "/actuator/**", "/search/suggestions", "/search", "/search/trends", "/seat-map/state/update",
-                                        "/event/trends", "/events/**").permitAll()
-                                .requestMatchers("/create/**", "/delete", "/tickets/**").hasRole("HOST")
-                                .requestMatchers("/order/tickets").hasRole("ATTENDEE")
-                                .anyRequest().permitAll()
+//                .authorizeHttpRequests(request ->
+//                        request.requestMatchers("/error/**", "/get/specific", "/get/related", "/get/profile", "/get/suggested", "/event/report",
+//                                        "/ws/**", "/actuator/**", "/search/suggestions", "/search", "/search/trends", "/seat-map/state/update",
+//                                        "/event/trends", "/events/**").permitAll()
+//                                .requestMatchers("/create/**", "/delete", "/tickets/**").hasRole("HOST")
+//                                .requestMatchers("/order/tickets").hasRole("ATTENDEE")
+//                                .anyRequest().authenticated()
+//                )
+                .authorizeHttpRequests(request -> request
+                        .requestMatchers(
+                                "/error/**", "/actuator/**", "/ws/**",
+                                "/search", "/search/suggestions", "/search/trends",
+                                "/get/specific", "/get/related", "/get/profile", "/get/suggested",
+                                "/events/**", "/event/trends", "/seat-map/state/update",
+                                "/seat-map/data"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                "/create/**", "/update/**", "/delete/**",
+                                "/tickets/add", "/tickets/update", "/tickets/remove",
+                                "/tickets/tier/**", "/tier-tickets",
+                                "/event/dashboard", "/event/attendees", "/attendees/email",
+                                "/organizer/report", "/event/report"
+                        ).hasRole("HOST")
+
+                        .requestMatchers(
+                                "/payment/**", "/coupon/**",
+                                "/search/orders", "/orders/profile/**",
+                                "/order/cancel"
+                        ).hasAnyRole("ATTENDEE", "HOST")
+
+                        .requestMatchers(
+                                "/order/tickets", "/ticket/download",
+                                "/event/favorite/**", "/attendee/interaction"
+                        ).hasRole("ATTENDEE")
+
+                        .requestMatchers("/search/history/**").authenticated()
+                        .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(Customizer.withDefaults())

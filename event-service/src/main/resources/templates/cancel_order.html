@@ -64,35 +64,38 @@
             font-size: 12px;
             color: #6c757d;
         }
+        .label{
+            min-width: 7.5rem;
+        }
     </style>
 </head>
 <body>
 <div class="email-container">
     <div class="header">
         <img src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png"
-             alt="Tixery Logo" class="logo">
+             alt="Logo Tixery" class="logo">
     </div>
 
-    <h1>Order Cancellation Confirmed</h1>
+    <h1>Xác Nhận Hủy Đơn Hàng</h1>
 
     <div class="content">
-        <p>Hello <strong th:text="${username}">User</strong>,</p>
+        <p>Xin chào <strong th:text="${username}">Người dùng</strong>,</p>
 
-        <p>Your order for the event <strong th:text="${eventName}">Event Name</strong> was successfully canceled through Tixery.</p>
+        <p>Đơn hàng của bạn cho sự kiện <strong th:text="${eventName}">Tên sự kiện</strong> đã được hủy thành công qua Tixery.</p>
 
         <div class="details">
-            <p><span class="label">Event:</span> <span th:text="${eventName}">Event Name</span></p>
-            <p><span class="label">Order ID:</span> <span th:text="${orderID}">123456789</span></p>
-            <p><span class="label">Date:</span> <span th:text="${#temporals.format(#temporals.createNow(), 'dd MMM yyyy, HH:mm')}">01 Jan 2024</span></p>
+            <p><span class="label">Sự kiện:</span> <span th:text="${eventName}">Tên sự kiện</span></p>
+            <p><span class="label">Mã đơn hàng:</span> <span th:text="${orderID}">123456789</span></p>
+            <p><span class="label">Ngày giờ:</span> <span th:text="${#temporals.format(#temporals.createNow(), 'dd MMM yyyy, HH:mm')}">01 Tháng 1 2024, 10:00</span></p>
         </div>
 
-        <p>If you did not request this cancellation or have any questions, please contact our customer support team.</p>
+        <p>Nếu bạn không yêu cầu hủy đơn hàng này hoặc có bất kỳ câu hỏi nào, vui lòng liên hệ với bộ phận hỗ trợ khách hàng của chúng tôi.</p>
     </div>
 
     <div class="footer">
-        <p>Thank you for using Tixery!</p>
-        <p>This is an automated notification. Please do not reply to this email.</p>
-        <p>&copy; <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}">2025</span> Tixery. All rights reserved.</p>
+        <p>Cảm ơn bạn đã sử dụng Tixery!</p>
+        <p>Đây là thông báo tự động. Vui lòng không trả lời email này.</p>
+        <p>&copy; <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}">2025</span> Tixery. Mọi quyền được bảo lưu.</p>
     </div>
 </div>
 </body>
