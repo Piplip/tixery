@@ -47,12 +47,22 @@ public class SecurityConfig {
                     });
                 })
                 .authorizeHttpRequests(request ->
-                    request
-                        .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup", "/get/jwt"
-                                , "/actuator/**", "/profile/create", "/oauth2/authorization/**", "/forgot-password/**", "/organizer/profile/get").permitAll()
-                        .requestMatchers("/organizer/profile", "/organizer/profile/create").hasRole("HOST")
-                        .requestMatchers("/internal//**").hasRole("INTERNAL")
-                        .anyRequest().authenticated()
+//                    request
+//                        .requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation", "/profile/setup", "/get/jwt"
+//                                , "/actuator/**", "/profile/create", "/oauth2/authorization/**", "/forgot-password/**", "/organizer/profile/get").permitAll()
+//                        .requestMatchers("/organizer/profile", "/organizer/profile/create").hasRole("HOST")
+//                        .requestMatchers("/internal//**").hasRole("INTERNAL")
+//                        .anyRequest().authenticated()
+                    request.requestMatchers("/sign-up", "/login", "/check-email", "/activate", "/resend-activation",
+                            "/profile/setup", "/profile/create", "/forgot-password/**",
+                            "/oauth2/authorization/**", "/organizer/profile/get").permitAll()
+                    .requestMatchers("/actuator/**").permitAll()
+                    .requestMatchers("/profile/oauth/create", "/profile/oauth/update", "/oauth2/set-password", "/oauth2/set-password/**").permitAll()
+                    .requestMatchers("/internal/**", "/get/jwt").hasRole("INTERNAL")
+                    .requestMatchers("/organizer/profile", "/organizer/profile/create", "/organizer/profile/update", "/organizer/profile/delete",
+                            "/organizer/profile/custom-url/check", "/organizer/profile/update/total-followers").hasRole("HOST")
+                    .requestMatchers("/attendee/**", "/follow/**").hasRole("ATTENDEE")
+                    .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(Customizer.withDefaults())

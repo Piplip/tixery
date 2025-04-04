@@ -1,17 +1,18 @@
 package com.nkd.accountservice.controller;
 
-import com.nkd.accountservice.domain.*;
+import com.nkd.accountservice.domain.AccountDTO;
+import com.nkd.accountservice.domain.PasswordDTO;
+import com.nkd.accountservice.domain.Profile;
+import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.service.AccountService;
 import com.nkd.accountservice.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.jooq.types.UInteger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController

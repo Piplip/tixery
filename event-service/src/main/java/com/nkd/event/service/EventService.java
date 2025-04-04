@@ -1071,29 +1071,6 @@ public class EventService {
     }
 
     public List<Map<String, Object>> loadEventAttendees(String eventID) {
-        List<Integer> attendeeIDs = context.selectDistinct(ATTENDEES.PROFILE_ID)
-                .from(ATTENDEES)
-                .join(TICKETS).on(ATTENDEES.TICKET_ID.eq(TICKETS.TICKET_ID))
-                .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
-                .join(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
-                .where(ATTENDEES.EVENT_ID.eq(UUID.fromString(eventID))
-                        .and(ORDERS.STATUS.eq("paid")))
-                .fetchInto(Integer.class);
-
-        if (attendeeIDs.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        List<Map<String, Object>> attendeeInfoList = accountClient.getEventAttendeeInfo(attendeeIDs);
-
-        Map<Integer, Map<String, Object>> attendeeInfoMap = new HashMap<>();
-        for (Map<String, Object> info : attendeeInfoList) {
-            Integer profileId = (Integer) info.get("profile_id");
-            if (profileId != null) {
-                attendeeInfoMap.put(profileId, info);
-            }
-        }
-
         var attendees = context.select(
                         ATTENDEES.PROFILE_ID,
                         TICKETTYPES.TICKET_TYPE_ID,
@@ -1110,7 +1087,28 @@ public class EventService {
                 .groupBy(ATTENDEES.PROFILE_ID, TICKETTYPES.TICKET_TYPE_ID, TICKETTYPES.NAME)
                 .fetchMaps();
 
-        List<Map<String, Object>> result = new ArrayList<>();
+        if (attendees.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Set<Integer> profileIDs = new HashSet<>();
+        for (Map<String, Object> attendee : attendees) {
+            profileIDs.add((Integer) attendee.get("profile_id"));
+        }
+
+        List<Map<String, Object>> attendeeInfoList = accountClient.getEventAttendeeInfo(
+                new ArrayList<>(profileIDs)
+        );
+
+        Map<Integer, Map<String, Object>> attendeeInfoMap = new HashMap<>();
+        for (Map<String, Object> info : attendeeInfoList) {
+            Integer profileId = (Integer) info.get("profile_id");
+            if (profileId != null) {
+                attendeeInfoMap.put(profileId, info);
+            }
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>(attendees.size());
         for (Map<String, Object> attendee : attendees) {
             Integer profileID = (Integer) attendee.get("profile_id");
             Map<String, Object> attendeeInfo = attendeeInfoMap.get(profileID);
@@ -1121,6 +1119,10 @@ public class EventService {
                 combined.put("fullName", attendeeInfo.get("full_name"));
                 combined.put("phoneNumber", attendeeInfo.get("phone_number"));
                 combined.put("email", attendeeInfo.get("account_email"));
+                combined.put("nationality", attendeeInfo.get("nationality"));
+                combined.put("dob", attendeeInfo.get("date_of_birth"));
+                combined.put("gender", attendeeInfo.get("gender"));
+                combined.put("interests", attendeeInfo.get("interests"));
                 result.add(combined);
             }
         }

@@ -598,7 +598,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public List<Map<String, Object>> getEventAttendeeInfo(List<Integer> profileIDs) {
-        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, USER_DATA.FULL_NAME, USER_DATA.PHONE_NUMBER, USER_ACCOUNT.ACCOUNT_EMAIL)
+        return context.select(PROFILE.PROFILE_ID, PROFILE.PROFILE_NAME, USER_DATA.FULL_NAME, USER_DATA.PHONE_NUMBER, USER_ACCOUNT.ACCOUNT_EMAIL,
+                        USER_DATA.NATIONALITY, USER_DATA.DATE_OF_BIRTH, USER_DATA.GENDER, USER_DATA.INTERESTS)
                 .from(PROFILE.join(USER_ACCOUNT).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID))
                         .join(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID)))
                 .where(PROFILE.PROFILE_ID.in(profileIDs))
