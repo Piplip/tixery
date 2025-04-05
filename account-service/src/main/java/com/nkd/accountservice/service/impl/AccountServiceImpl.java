@@ -181,7 +181,6 @@ public class AccountServiceImpl implements AccountService {
             return new Response(HttpStatus.BAD_REQUEST.name(), "Account already verified", null);
         }
 
-        // Check if user resend activation email within 1 minute
         String lastResendActivation = redisTemplate.opsForValue().get("resend_activation_" + accountID);
         if(lastResendActivation != null){
             LocalDateTime lastResendActivationTime = LocalDateTime.parse(lastResendActivation, DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
@@ -204,7 +203,6 @@ public class AccountServiceImpl implements AccountService {
                         "expirationTime", confirmation.getRight()));
         publisher.publishEvent(resendActivationEvt);
 
-        // Store new token event to redis to prevent spamming
         redisTemplate.opsForValue().set("resend_activation_" + accountID, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")));
         return new Response(HttpStatus.OK.name(), "Resend activation email! Check your email to continue", null);
     }
@@ -425,29 +423,66 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Response updateNotificationPreferences(Integer profileID, String role, NotifyPreference preferences) {
         ObjectMapper mapper = new ObjectMapper();
-
         var rawPreferences = getNotificationPreferences(profileID);
 
         try {
-            String newPreferences;
+            NotifyPreference effectivePreferences = new NotifyPreference();
             if (rawPreferences != null) {
-                NotifyPreference oldPreferences = mapper.readValue(rawPreferences, NotifyPreference.class);
-                preferences.combinePreferences(oldPreferences);
-
+                effectivePreferences = mapper.readValue(rawPreferences, NotifyPreference.class);
             }
-            newPreferences = role.equals("ATTENDEE") ?
-                    preferences.buildAttendeePreferences() : preferences.buildOrganizerPreferences();
+
+            if (role.equalsIgnoreCase("ATTENDEE")) {
+                if (preferences.getFeatureAnnouncement() != null) {
+                    effectivePreferences.setFeatureAnnouncement(preferences.getFeatureAnnouncement());
+                }
+                if (preferences.getOrganizerAnnounces() != null) {
+                    effectivePreferences.setOrganizerAnnounces(preferences.getOrganizerAnnounces());
+                }
+                if (preferences.getEventOnSales() != null) {
+                    effectivePreferences.setEventOnSales(preferences.getEventOnSales());
+                }
+                if (preferences.getLikedEvents() != null) {
+                    effectivePreferences.setLikedEvents(preferences.getLikedEvents());
+                }
+            } else {
+                if (preferences.getFeatureAnnouncement() != null) {
+                    effectivePreferences.setFeatureAnnouncement(preferences.getFeatureAnnouncement());
+                }
+                if (preferences.getEventSalesRecap() != null) {
+                    effectivePreferences.setEventSalesRecap(preferences.getEventSalesRecap());
+                }
+                if (preferences.getImportantReminders() != null) {
+                    effectivePreferences.setImportantReminders(preferences.getImportantReminders());
+                }
+            }
+
+            String newPreferences = role.equalsIgnoreCase("ATTENDEE") ?
+                    effectivePreferences.buildAttendeePreferences() : effectivePreferences.buildOrganizerPreferences();
 
             context.update(PROFILE)
                     .set(PROFILE.NOTIFY_PREFERENCES, newPreferences)
                     .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
                     .execute();
+
         } catch (Exception e) {
             log.error("Error parsing preferences: {}", e.getMessage());
             return new Response(HttpStatus.BAD_REQUEST.name(), "Internal Server Error", null);
         }
 
         return new Response(HttpStatus.OK.name(), "Success", null);
+    }
+
+    private void initializeNullValues(NotifyPreference preferences) {
+        if (preferences.getFeatureAnnouncement() == null) preferences.setFeatureAnnouncement(false);
+        if (preferences.getAdditionalInfo() == null) preferences.setAdditionalInfo(false);
+        if (preferences.getOrganizerAnnounces() == null) preferences.setOrganizerAnnounces(false);
+        if (preferences.getEventOnSales() == null) preferences.setEventOnSales(false);
+        if (preferences.getLikedEvents() == null) preferences.setLikedEvents(false);
+        if (preferences.getEventSalesRecap() == null) preferences.setEventSalesRecap(false);
+        if (preferences.getImportantReminders() == null) preferences.setImportantReminders(false);
+        if (preferences.getOrderConfirmations() == null) preferences.setOrderConfirmations(false);
+        if (preferences.getOrganizerPayUpdate() == null) preferences.setOrganizerPayUpdate(false);
+        if (preferences.getPopularEvents() == null) preferences.setPopularEvents(false);
     }
 
     @Override

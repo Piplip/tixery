@@ -60,43 +60,19 @@ public class NotifyPreference {
                 """;
     }
 
-    public void combinePreferences(NotifyPreference oldPreferences){
-        if(oldPreferences == null){
-            return;
-        }
-        new NotifyPreference(
-            featureAnnouncement == null ? oldPreferences.featureAnnouncement : featureAnnouncement,
-            additionalInfo == null ? oldPreferences.additionalInfo : additionalInfo,
-            organizerAnnounces == null ? oldPreferences.organizerAnnounces : organizerAnnounces,
-            eventOnSales == null ? oldPreferences.eventOnSales : eventOnSales,
-            likedEvents == null ? oldPreferences.likedEvents : likedEvents,
-            eventSalesRecap == null ? oldPreferences.eventSalesRecap : eventSalesRecap,
-            importantReminders == null ? oldPreferences.importantReminders : importantReminders,
-            orderConfirmations == null ? oldPreferences.orderConfirmations : orderConfirmations,
-            organizerPayUpdate == null ? oldPreferences.organizerPayUpdate : organizerPayUpdate,
-            popularEvents == null ? oldPreferences.popularEvents : popularEvents
-        );
-    }
-
     public String buildAttendeePreferences() {
         return """
             {
                 "feature_announcement": %s,
-                "additional_info": %s,
                 "organizer_announces": %s,
                 "event_on_sales": %s,
-                "liked_events": %s,
-                "organizer_pay_update": %s,
-                "popular_events": %s
+                "liked_events": %s
             }
             """.formatted(
                 Boolean.TRUE.equals(featureAnnouncement),
-                Boolean.TRUE.equals(additionalInfo),
                 Boolean.TRUE.equals(organizerAnnounces),
                 Boolean.TRUE.equals(eventOnSales),
-                Boolean.TRUE.equals(likedEvents),
-                Boolean.TRUE.equals(organizerPayUpdate),
-                Boolean.TRUE.equals(popularEvents)
+                Boolean.TRUE.equals(likedEvents)
         );
     }
 
@@ -105,14 +81,12 @@ public class NotifyPreference {
             {
                 "feature_announcement": %s,
                 "event_sales_recap": %s,
-                "important_reminders": %s,
-                "order_confirmations": %s
+                "important_reminders": %s
             }
             """.formatted(
                 Boolean.TRUE.equals(featureAnnouncement),
                 Boolean.TRUE.equals(eventSalesRecap),
-                Boolean.TRUE.equals(importantReminders),
-                Boolean.TRUE.equals(orderConfirmations)
+                Boolean.TRUE.equals(importantReminders)
         );
     }
 }

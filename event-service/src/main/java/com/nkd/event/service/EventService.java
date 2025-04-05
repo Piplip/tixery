@@ -1075,16 +1075,19 @@ public class EventService {
                         ATTENDEES.PROFILE_ID,
                         TICKETTYPES.TICKET_TYPE_ID,
                         TICKETTYPES.NAME.as("ticket_name"),
+                        SEATTIERS.NAME.as("tier_name"),
+                        SEATTIERS.TIER_COLOR, SEATTIERS.PERKS,
                         count().as("ticket_count"),
                         max(ATTENDEES.REGISTRATION_DATE).as("registration_date"))
                 .from(ATTENDEES)
                 .join(TICKETS).on(ATTENDEES.TICKET_ID.eq(TICKETS.TICKET_ID))
                 .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                .leftJoin(SEATTIERS).on(TICKETTYPES.SEAT_TIER_ID.eq(SEATTIERS.SEAT_TIER_ID))
                 .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
                 .join(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
                 .where(ATTENDEES.EVENT_ID.eq(UUID.fromString(eventID))
                         .and(ORDERS.STATUS.eq("paid")))
-                .groupBy(ATTENDEES.PROFILE_ID, TICKETTYPES.TICKET_TYPE_ID, TICKETTYPES.NAME)
+                .groupBy(ATTENDEES.PROFILE_ID, TICKETTYPES.TICKET_TYPE_ID, TICKETTYPES.NAME, SEATTIERS.NAME, SEATTIERS.TIER_COLOR, SEATTIERS.PERKS)
                 .fetchMaps();
 
         if (attendees.isEmpty()) {
