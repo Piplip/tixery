@@ -78,6 +78,8 @@ public class SecurityConfig {
                                 "/event/favorite/**", "/attendee/interaction"
                         ).hasRole("ATTENDEE")
 
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
                         .requestMatchers("/search/history/**").authenticated()
                         .anyRequest().authenticated()
                 )

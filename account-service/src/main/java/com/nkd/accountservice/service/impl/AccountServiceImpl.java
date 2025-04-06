@@ -25,7 +25,6 @@ import org.jooq.DSLContext;
 import org.jooq.types.UByte;
 import org.jooq.types.UInteger;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.MessageSource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -470,19 +469,6 @@ public class AccountServiceImpl implements AccountService {
         }
 
         return new Response(HttpStatus.OK.name(), "Success", null);
-    }
-
-    private void initializeNullValues(NotifyPreference preferences) {
-        if (preferences.getFeatureAnnouncement() == null) preferences.setFeatureAnnouncement(false);
-        if (preferences.getAdditionalInfo() == null) preferences.setAdditionalInfo(false);
-        if (preferences.getOrganizerAnnounces() == null) preferences.setOrganizerAnnounces(false);
-        if (preferences.getEventOnSales() == null) preferences.setEventOnSales(false);
-        if (preferences.getLikedEvents() == null) preferences.setLikedEvents(false);
-        if (preferences.getEventSalesRecap() == null) preferences.setEventSalesRecap(false);
-        if (preferences.getImportantReminders() == null) preferences.setImportantReminders(false);
-        if (preferences.getOrderConfirmations() == null) preferences.setOrderConfirmations(false);
-        if (preferences.getOrganizerPayUpdate() == null) preferences.setOrganizerPayUpdate(false);
-        if (preferences.getPopularEvents() == null) preferences.setPopularEvents(false);
     }
 
     @Override

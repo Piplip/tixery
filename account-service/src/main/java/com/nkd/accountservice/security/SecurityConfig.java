@@ -62,6 +62,7 @@ public class SecurityConfig {
                     .requestMatchers("/organizer/profile", "/organizer/profile/create", "/organizer/profile/update", "/organizer/profile/delete",
                             "/organizer/profile/custom-url/check", "/organizer/profile/update/total-followers").hasRole("HOST")
                     .requestMatchers("/attendee/**", "/follow/**").hasAnyRole("ATTENDEE", "HOST")
+                    .requestMatchers("/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
