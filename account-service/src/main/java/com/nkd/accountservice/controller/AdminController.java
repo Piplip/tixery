@@ -3,10 +3,8 @@ package com.nkd.accountservice.controller;
 import com.nkd.accountservice.domain.Response;
 import com.nkd.accountservice.service.impl.AdminService;
 import lombok.RequiredArgsConstructor;
-import org.jooq.types.UInteger;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -31,4 +29,10 @@ public class AdminController {
     public Response deleteUser(@RequestParam("uid") String userID) {
         return adminService.deleteUser(userID);
     }
+
+    @GetMapping("/overview")
+    public Map<String, Object> getOverviewMetrics() {
+        return adminService.getOverviewMetrics();
+    }
+
 }

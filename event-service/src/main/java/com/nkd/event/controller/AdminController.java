@@ -27,4 +27,9 @@ public class AdminController {
                                                @RequestParam("page") Integer page, @RequestParam("size") Integer size) {
         return adminService.getEvents(startDate, endDate, page, size);
     }
+
+    @GetMapping("/metrics")
+    public Map<String, Object> getMetrics() {
+        return adminService.getOverviewMetrics();
+    }
 }

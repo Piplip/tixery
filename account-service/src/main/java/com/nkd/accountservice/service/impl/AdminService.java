@@ -4,16 +4,20 @@ import com.nkd.accountservice.domain.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.jooq.types.UInteger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.nkd.accountservice.tables.Profile.PROFILE;
 import static com.nkd.accountservice.tables.Role.ROLE;
 import static com.nkd.accountservice.tables.UserAccount.USER_ACCOUNT;
 import static com.nkd.accountservice.tables.UserData.USER_DATA;
+import static org.jooq.impl.DSL.field;
 
 @Service
 @Slf4j
@@ -68,5 +72,32 @@ public class AdminService {
         }
 
         return new Response(HttpStatus.OK.name(), "User deleted successfully", null);
+    }
+
+    public Map<String, Object> getOverviewMetrics() {
+        Map<String, Object> metrics = new HashMap<>();
+
+        try {
+            List<Map<String, Object>> usersByCountry = context.select(
+                            USER_DATA.NATIONALITY,
+                            DSL.count().as("count")
+                    )
+                    .from(USER_ACCOUNT)
+                    .join(PROFILE).on(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(PROFILE.PROFILE_ID))
+                    .join(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID))
+                    .where(USER_DATA.NATIONALITY.isNotNull())
+                    .groupBy(USER_DATA.NATIONALITY)
+                    .orderBy(field("count").desc())
+                    .limit(10)
+                    .fetchMaps();
+
+            metrics.put("usersByCountry", usersByCountry);
+
+        } catch (Exception e) {
+            log.error("Error retrieving admin overview metrics", e);
+            metrics.put("error", "Failed to retrieve metrics: " + e.getMessage());
+        }
+
+        return metrics;
     }
 }
