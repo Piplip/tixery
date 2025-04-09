@@ -398,15 +398,12 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Map<String, Object> getAttendeeStats(String profileID) {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("total_saved", eventClient.getTotalFavouriteEvent(Integer.parseInt(profileID)));
-        stats.put("total_followed", context.selectCount().from(FOLLOWERS)
-                        .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
+    public Integer getAttendeeStats(String profileID) {
+        Integer totalFollowed = context.selectCount().from(FOLLOWERS)
+                .where(FOLLOWERS.FOLLOWER_PROFILE_ID.eq(UInteger.valueOf(profileID))
                         .and(FOLLOWERS.FOLLOW_DATE.isNotNull()))
-                .fetchSingleInto(Integer.class));
-
-        return stats;
+                .fetchSingleInto(Integer.class);
+        return totalFollowed != null ? totalFollowed : 0;
     }
 
     @Override

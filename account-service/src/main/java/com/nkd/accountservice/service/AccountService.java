@@ -27,7 +27,7 @@ public interface AccountService {
     Response handleFollowOrganizer(Integer profileID, Integer organizerID, Boolean follow);
     List<Integer> getFollow(Integer profileID);
     List<Map<String, Object>> getFollowDetail(List<UInteger> profileIDs);
-    Map<String, Object> getAttendeeStats(String profileID);
+    Integer getAttendeeStats(String profileID);
     String getProfiles(String email);
     Response updateNotificationPreferences(Integer profileID, String role, NotifyPreference preferences);
     String getNotificationPreferences(Integer profileID);

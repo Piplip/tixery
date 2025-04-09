@@ -56,7 +56,7 @@ public class SecurityConfig {
                                 "/search", "/search/suggestions", "/search/trends",
                                 "/get/specific", "/get/related", "/get/profile", "/get/suggested",
                                 "/events/**", "/event/trends", "/seat-map/state/update",
-                                "/seat-map/data"
+                                "/seat-map/data", "/event/report"
                         ).permitAll()
 
                         .requestMatchers(
@@ -77,6 +77,8 @@ public class SecurityConfig {
                                 "/order/tickets", "/ticket/download",
                                 "/event/favorite/**", "/attendee/interaction"
                         ).hasRole("ATTENDEE")
+
+                        .requestMatchers("/event/favorite/total").hasAnyRole("INTERNAL", "ATTENDEE")
 
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 

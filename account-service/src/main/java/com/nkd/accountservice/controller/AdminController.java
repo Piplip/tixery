@@ -30,6 +30,14 @@ public class AdminController {
         return adminService.deleteUser(userID);
     }
 
+    @GetMapping("/analytics")
+    public Map<String, Object> getAnalytics(
+            @RequestParam(required = false) String propertyId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        return adminService.getAnalytics(propertyId, startDate, endDate);
+    }
+
     @GetMapping("/overview")
     public Map<String, Object> getOverviewMetrics() {
         return adminService.getOverviewMetrics();

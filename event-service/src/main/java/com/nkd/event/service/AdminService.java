@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.nkd.event.Tables.ORDERITEMS;
+import static com.nkd.event.tables.Eventreports.EVENTREPORTS;
 import static com.nkd.event.tables.Events.EVENTS;
 import static com.nkd.event.tables.Eventtypes.EVENTTYPES;
 import static com.nkd.event.tables.Orders.ORDERS;
@@ -253,7 +254,6 @@ public class AdminService {
             OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
             OffsetDateTime thirtyDaysAgo = now.minusDays(30);
             OffsetDateTime sixtyDaysAgo = now.minusDays(60);
-            OffsetDateTime sixMonthsAgo = now.minusMonths(6);
 
             List<Map<String, Object>> ticketSoldDaily = context.select(
                             DSL.function("date", SQLDataType.DATE, TICKETS.CREATED_AT).as("date"),
@@ -305,7 +305,6 @@ public class AdminService {
 
             assert eventCounts != null;
             int totalEvents = eventCounts.value1();
-            int activeEvents = eventCounts.value2();
 
             Integer eventsLastMonth = context.selectCount()
                     .from(EVENTS)
@@ -317,33 +316,84 @@ public class AdminService {
                     .where(EVENTS.CREATED_AT.between(sixtyDaysAgo, thirtyDaysAgo))
                     .fetchOneInto(Integer.class);
 
-            String eventTrend = (eventsLastMonth != null && eventsPrevMonth != null &&
-                    eventsLastMonth >= eventsPrevMonth) ? "up" : "down";
+            double eventTrendPercentage = 0;
+            String eventTrendDirection = "stable";
+            if (eventsPrevMonth != null && eventsPrevMonth > 0 && eventsLastMonth != null) {
+                eventTrendPercentage = ((double) eventsLastMonth - eventsPrevMonth) / eventsPrevMonth * 100;
+                eventTrendDirection = eventTrendPercentage >= 0 ? "up" : "down";
+                eventTrendPercentage = Math.abs(eventTrendPercentage);
+            }
 
-            var topEventTypes = context.select(
+            int firstHalfTickets = 0;
+            int secondHalfTickets = 0;
+            for (int i = 0; i < 15; i++) {
+                firstHalfTickets += dailyTicketCounts.get(i);
+            }
+            for (int i = 15; i < 30; i++) {
+                secondHalfTickets += dailyTicketCounts.get(i);
+            }
+            double ticketTrendPercentage = 0;
+            String ticketTrendDirection = "stable";
+            if (firstHalfTickets > 0) {
+                ticketTrendPercentage = ((double) secondHalfTickets - firstHalfTickets) / firstHalfTickets * 100;
+                ticketTrendDirection = ticketTrendPercentage >= 0 ? "up" : "down";
+                ticketTrendPercentage = Math.abs(ticketTrendPercentage);
+            }
+
+            var eventTypes = context.select(
                             EVENTTYPES.EVENT_TYPE_ID,
-                            EVENTTYPES.NAME.as("label"),
-                            DSL.count().as("ticket_count")
+                            EVENTTYPES.NAME.as("label")
                     )
-                    .from(TICKETS)
-                    .join(EVENTS).on(TICKETS.EVENT_ID.eq(EVENTS.EVENT_ID))
-                    .join(EVENTTYPES).on(EVENTS.EVENT_TYPE_ID.eq(EVENTTYPES.EVENT_TYPE_ID))
-                    .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
-                    .join(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
-                    .where(TICKETS.CREATED_AT.greaterOrEqual(sixMonthsAgo))
-                    .and(TICKETS.STATUS.in("reserved", "transferred", "active"))
-                    .and(ORDERS.STATUS.eq("paid"))
-                    .groupBy(EVENTTYPES.EVENT_TYPE_ID, EVENTTYPES.NAME)
-                    .orderBy(field("ticket_count").desc())
-                    .limit(3)
+                    .from(EVENTTYPES)
+                    .orderBy(EVENTTYPES.NAME)
                     .fetchMaps();
 
-            List<Map<String, Object>> formattedTopEventTypes = new ArrayList<>();
-            for (Map<String, Object> eventType : topEventTypes) {
+            OffsetDateTime sixMonthsAgo = now.minusMonths(6);
+            OffsetDateTime twelveMonthsAgo = now.minusMonths(12);
+
+            BigDecimal currentSixMonthRevenue = context.select(DSL.sum(TICKETTYPES.PRICE))
+                    .from(TICKETS)
+                    .join(EVENTS).on(TICKETS.EVENT_ID.eq(EVENTS.EVENT_ID))
+                    .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                    .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
+                    .join(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
+                    .where(TICKETS.CREATED_AT.between(sixMonthsAgo, now))
+                    .and(TICKETS.STATUS.in("reserved", "transferred", "active"))
+                    .and(ORDERS.STATUS.eq("paid"))
+                    .fetchOneInto(BigDecimal.class);
+
+            BigDecimal previousSixMonthRevenue = context.select(DSL.sum(TICKETTYPES.PRICE))
+                    .from(TICKETS)
+                    .join(EVENTS).on(TICKETS.EVENT_ID.eq(EVENTS.EVENT_ID))
+                    .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
+                    .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
+                    .join(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
+                    .where(TICKETS.CREATED_AT.between(twelveMonthsAgo, sixMonthsAgo))
+                    .and(TICKETS.STATUS.in("reserved", "transferred", "active"))
+                    .and(ORDERS.STATUS.eq("paid"))
+                    .fetchOneInto(BigDecimal.class);
+
+            currentSixMonthRevenue = (currentSixMonthRevenue != null) ? currentSixMonthRevenue : BigDecimal.ZERO;
+            previousSixMonthRevenue = (previousSixMonthRevenue != null) ? previousSixMonthRevenue : BigDecimal.ZERO;
+
+            double revenueTrendPercentage = 0;
+            String revenueTrendDirection = "stable";
+
+            if (previousSixMonthRevenue.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal change = currentSixMonthRevenue.subtract(previousSixMonthRevenue);
+                revenueTrendPercentage = change.divide(previousSixMonthRevenue, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal(100))
+                        .doubleValue();
+                revenueTrendDirection = revenueTrendPercentage >= 0 ? "up" : "down";
+                revenueTrendPercentage = Math.abs(revenueTrendPercentage);
+            }
+
+            List<Map<String, Object>> formattedEventTypes = new ArrayList<>();
+            for (Map<String, Object> eventType : eventTypes) {
                 Integer eventTypeId = ((Number) eventType.get("event_type_id")).intValue();
                 String eventTypeName = (String) eventType.get("label");
 
-                List<Integer> monthlySales = new ArrayList<>();
+                List<BigDecimal> monthlyRevenue = new ArrayList<>();
                 for (int i = 5; i >= 0; i--) {
                     OffsetDateTime monthStart = now.minusMonths(i + 1).withDayOfMonth(1).truncatedTo(java.time.temporal.ChronoUnit.DAYS);
                     OffsetDateTime monthEnd;
@@ -355,42 +405,33 @@ public class AdminService {
                         monthEnd = now.minusMonths(i).withDayOfMonth(lastDayOfMonth).withHour(23).withMinute(59).withSecond(59);
                     }
 
-                    Integer monthlySale = context.select(DSL.count())
+                    BigDecimal revenue = context.select(DSL.sum(TICKETTYPES.PRICE))
                             .from(TICKETS)
                             .join(EVENTS).on(TICKETS.EVENT_ID.eq(EVENTS.EVENT_ID))
+                            .join(TICKETTYPES).on(TICKETS.TICKET_TYPE_ID.eq(TICKETTYPES.TICKET_TYPE_ID))
                             .join(ORDERITEMS).on(TICKETS.ORDER_ITEM_ID.eq(ORDERITEMS.ORDER_ITEM_ID))
                             .join(ORDERS).on(ORDERITEMS.ORDER_ID.eq(ORDERS.ORDER_ID))
                             .where(TICKETS.CREATED_AT.between(monthStart, monthEnd))
                             .and(EVENTS.EVENT_TYPE_ID.eq(eventTypeId))
                             .and(TICKETS.STATUS.in("reserved", "transferred", "active"))
                             .and(ORDERS.STATUS.eq("paid"))
-                            .fetchOneInto(Integer.class);
+                            .fetchOneInto(BigDecimal.class);
 
-                    monthlySales.add(monthlySale != null ? monthlySale : 0);
+                    monthlyRevenue.add(revenue != null ? revenue : BigDecimal.ZERO);
                 }
                 Map<String, Object> eventTypeData = new HashMap<>();
                 eventTypeData.put("id", eventTypeName.toLowerCase().replace(" ", "_"));
                 eventTypeData.put("label", eventTypeName);
-                eventTypeData.put("data", monthlySales);
-                eventTypeData.put("stack", "A");
-                formattedTopEventTypes.add(eventTypeData);
+                eventTypeData.put("data", monthlyRevenue);
+                formattedEventTypes.add(eventTypeData);
             }
-
-            int firstHalfTickets = 0;
-            int secondHalfTickets = 0;
-            for (int i = 0; i < 15; i++) {
-                firstHalfTickets += dailyTicketCounts.get(i);
-            }
-            for (int i = 15; i < 30; i++) {
-                secondHalfTickets += dailyTicketCounts.get(i);
-            }
-            String ticketTrend = secondHalfTickets >= firstHalfTickets ? "up" : "down";
 
             Map<String, Object> ticketsSoldData = new HashMap<>();
             ticketsSoldData.put("title", "Tickets Sold");
             ticketsSoldData.put("value", formatLargeNumber(totalTicketsSold));
-            ticketsSoldData.put("interval", "Last 30 days");
-            ticketsSoldData.put("trend", ticketTrend);
+            ticketsSoldData.put("interval", 30);
+            ticketsSoldData.put("trend", ticketTrendDirection);
+            ticketsSoldData.put("trendPercentage", Math.round(ticketTrendPercentage * 10) / 10.0); // Round to 1 decimal place
             ticketsSoldData.put("data", dailyTicketCounts);
 
             List<Map<String, Object>> eventStartDaily = context.select(
@@ -418,12 +459,21 @@ public class AdminService {
             eventsData.put("title", "Total Events");
             eventsData.put("dailyEvents", dailyEventCounts);
             eventsData.put("value", formatLargeNumber(totalEvents));
-            eventsData.put("interval", activeEvents + " active now");
-            eventsData.put("trend", eventTrend);
+            int totalDailyEvents = dailyEventCounts.stream().mapToInt(Integer::intValue).sum();
+            eventsData.put("interval", totalDailyEvents);
+            eventsData.put("trend", eventTrendDirection);
+            eventsData.put("trendPercentage", Math.round(eventTrendPercentage * 10) / 10.0); //
+
+            Map<String, Object> revenueTrendData = new HashMap<>();
+            revenueTrendData.put("currentRevenue", currentSixMonthRevenue);
+            revenueTrendData.put("previousRevenue", previousSixMonthRevenue);
+            revenueTrendData.put("trend", revenueTrendDirection);
+            revenueTrendData.put("trendPercentage", Math.round(revenueTrendPercentage * 10) / 10.0);
 
             metrics.put("ticketsSold", ticketsSoldData);
             metrics.put("totalEvents", eventsData);
-            metrics.put("topEventTypes", formattedTopEventTypes);
+            metrics.put("topEventTypes", formattedEventTypes);
+            metrics.put("revenueTrend", revenueTrendData);
 
         } catch (Exception e) {
             log.error("Error retrieving overview metrics", e);
@@ -431,6 +481,110 @@ public class AdminService {
         }
 
         return metrics;
+    }
+
+    public Map<String, Object> getEventReports(Integer page, Integer size) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            int pageNum = Math.max(1, page == null ? 1 : page);
+            int pageSize = Math.max(10, size == null ? 10 : size);
+            int offset = (pageNum - 1) * pageSize;
+
+            Map<UUID, Integer> reportCountByEvent = context.select(
+                            EVENTREPORTS.EVENT_ID,
+                            DSL.count().as("report_count")
+                    )
+                    .from(EVENTREPORTS)
+                    .groupBy(EVENTREPORTS.EVENT_ID)
+                    .fetchMap(EVENTREPORTS.EVENT_ID, field("report_count", Integer.class));
+
+            var reports = context.select(
+                            EVENTREPORTS.REPORT_ID,
+                            EVENTREPORTS.EVENT_ID,
+                            EVENTS.NAME.as("event_name"),
+                            EVENTREPORTS.REPORTER_PROFILE_ID,
+                            EVENTREPORTS.REPORTER_EMAIL,
+                            EVENTREPORTS.REPORT_REASON,
+                            EVENTREPORTS.REPORT_DETAILS,
+                            EVENTREPORTS.REPORT_DATE,
+                            EVENTREPORTS.STATUS
+                    )
+                    .from(EVENTREPORTS)
+                    .join(EVENTS).on(EVENTREPORTS.EVENT_ID.eq(EVENTS.EVENT_ID))
+                    .orderBy(EVENTREPORTS.REPORT_DATE.desc())
+                    .limit(pageSize)
+                    .offset(offset)
+                    .fetchMaps();
+
+            Integer totalCount = context.selectCount()
+                    .from(EVENTREPORTS)
+                    .fetchOneInto(Integer.class);
+
+            var statusCounts = context.select(
+                            EVENTREPORTS.STATUS,
+                            DSL.count().as("count")
+                    )
+                    .from(EVENTREPORTS)
+                    .groupBy(EVENTREPORTS.STATUS)
+                    .fetchMap(EVENTREPORTS.STATUS, field("count", Integer.class));
+
+            Set<Integer> reporterIds = reports.stream()
+                    .map(r -> (Integer) r.get("reporter_profile_id"))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Map<Integer, String> reporterNames = new HashMap<>();
+            if (!reporterIds.isEmpty()) {
+                String reporterIdsStr = reporterIds.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(","));
+
+                try {
+                    reporterNames = accountClient.getListProfileName(reporterIdsStr);
+                } catch (Exception e) {
+                    log.warn("Failed to retrieve reporter names: {}", e.getMessage());
+                }
+            }
+
+            for (Map<String, Object> report : reports) {
+                Integer reporterId = (Integer) report.get("reporter_profile_id");
+                if (reporterId != null) {
+                    report.put("reporter_name", reporterNames.getOrDefault(reporterId, "Unknown"));
+                }
+
+                UUID eventId = (UUID) report.get("event_id");
+                if (eventId != null) {
+                    int reportCount = reportCountByEvent.getOrDefault(eventId, 1);
+                    String reportLevel;
+
+                    if (reportCount >= 10) {
+                        reportLevel = "CRITICAL";
+                    } else if (reportCount >= 5) {
+                        reportLevel = "HIGH";
+                    } else if (reportCount >= 3) {
+                        reportLevel = "MEDIUM";
+                    } else {
+                        reportLevel = "LOW";
+                    }
+
+                    report.put("report_level", reportLevel);
+                    report.put("report_count", reportCount);
+                }
+            }
+
+            result.put("reports", reports);
+            result.put("total", totalCount != null ? totalCount : 0);
+            result.put("page", pageNum);
+            result.put("size", pageSize);
+            result.put("status_distribution", statusCounts);
+
+        } catch (Exception e) {
+            log.error("Error retrieving event reports", e);
+            result.put("error", "Failed to retrieve event reports: " + e.getMessage());
+        }
+
+        return result;
     }
 
     private String formatLargeNumber(long number) {

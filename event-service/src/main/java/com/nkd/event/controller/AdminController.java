@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -31,5 +30,10 @@ public class AdminController {
     @GetMapping("/metrics")
     public Map<String, Object> getMetrics() {
         return adminService.getOverviewMetrics();
+    }
+
+    @GetMapping("/reports")
+    public Map<String, Object> getReports(@RequestParam("page") Integer page, @RequestParam("size") Integer pageSize) {
+        return adminService.getEventReports(page, pageSize);
     }
 }

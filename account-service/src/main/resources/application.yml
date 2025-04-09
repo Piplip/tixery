@@ -75,3 +75,9 @@ logging:
   level:
     org.springframework.security: DEBUG
 
+google:
+  analytics:
+    property:
+      id: 456648823
+    credentials:
+      path: classpath:credentials/service-account.json

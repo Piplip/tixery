@@ -1,17 +1,25 @@
 package com.nkd.accountservice.service.impl;
 
+import com.google.analytics.data.v1beta.*;
+import com.google.api.gax.core.FixedCredentialsProvider;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.nkd.accountservice.domain.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.types.UInteger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 import static com.nkd.accountservice.tables.Profile.PROFILE;
 import static com.nkd.accountservice.tables.Role.ROLE;
@@ -25,6 +33,13 @@ import static org.jooq.impl.DSL.field;
 public class AdminService {
 
     private final DSLContext context;
+    private final ResourceLoader resourceLoader;
+
+    @Value("${google.analytics.credentials.path:classpath:credentials/service-account.json}")
+    private String credentialsPath;
+
+    @Value("${google.analytics.property.id:456648823}")
+    private String defaultPropertyId;
 
     public Map<String, Object> loadUsers(Integer page, Integer size){
         var users = context.select(USER_ACCOUNT.ACCOUNT_ID, USER_ACCOUNT.ACCOUNT_EMAIL, ROLE.ROLE_NAME, USER_DATA.FULL_NAME, USER_ACCOUNT.ACCOUNT_STATUS)
@@ -99,5 +114,136 @@ public class AdminService {
         }
 
         return metrics;
+    }
+
+    public Map<String, Object> getAnalytics(String propertyId, String startDate, String endDate) {
+        Map<String, Object> result = new HashMap<>();
+        List<Map<String, Object>> trafficData = new ArrayList<>();
+
+        String analyticsPropertyId = propertyId != null ? propertyId : defaultPropertyId;
+
+        try {
+            GoogleCredentials credentials = loadGoogleCredentials();
+
+            BetaAnalyticsDataSettings settings = BetaAnalyticsDataSettings.newBuilder()
+                    .setCredentialsProvider(FixedCredentialsProvider.create(credentials))
+                    .build();
+
+            try (BetaAnalyticsDataClient analyticsData = BetaAnalyticsDataClient.create(settings)) {
+                RunReportRequest request = RunReportRequest.newBuilder()
+                        .setProperty("properties/" + analyticsPropertyId)
+                        .addDimensions(Dimension.newBuilder().setName("sessionSource"))
+                        .addDimensions(Dimension.newBuilder().setName("date"))
+                        .addMetrics(Metric.newBuilder().setName("sessions"))
+                        .addMetrics(Metric.newBuilder().setName("activeUsers"))
+                        .addDateRanges(DateRange.newBuilder()
+                                .setStartDate(startDate != null ? startDate : "30daysAgo")
+                                .setEndDate(endDate != null ? endDate : "today"))
+                        .build();
+
+                RunReportResponse response = analyticsData.runReport(request);
+
+                Map<String, Map<String, Object>> sourceMap = new HashMap<>();
+
+                for (Row row : response.getRowsList()) {
+                    String source = row.getDimensionValues(0).getValue();
+                    String date = row.getDimensionValues(1).getValue();
+                    int sessions = Integer.parseInt(row.getMetricValues(0).getValue());
+                    int users = Integer.parseInt(row.getMetricValues(1).getValue());
+
+                    String category;
+                    if (source.isEmpty() || "direct".equalsIgnoreCase(source) || "(direct)".equals(source)) {
+                        category = "Direct";
+                    } else if ("google".equalsIgnoreCase(source) || source.contains("search") ||
+                            "organic".equalsIgnoreCase(source)) {
+                        category = "Organic";
+                    } else if (source.contains("facebook") || source.contains("instagram") ||
+                            source.contains("twitter") || source.contains("linkedin")) {
+                        category = "Social";
+                    } else if (source.contains("email") || source.contains("newsletter")) {
+                        category = "Email";
+                    } else {
+                        category = "Referral";
+                    }
+
+                    Map<String, Object> sourceData = sourceMap.computeIfAbsent(category, k -> {
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("source", category);
+                        data.put("totalSessions", 0);
+                        data.put("totalUsers", 0);
+                        data.put("dailyData", new TreeMap<String, Map<String, Integer>>());
+                        return data;
+                    });
+
+                    sourceData.put("totalSessions", (int)sourceData.get("totalSessions") + sessions);
+                    sourceData.put("totalUsers", (int)sourceData.get("totalUsers") + users);
+
+                    Map<String, Map<String, Integer>> dailyData = (Map<String, Map<String, Integer>>) sourceData.get("dailyData");
+                    Map<String, Integer> dayMetrics = dailyData.computeIfAbsent(date, k -> new HashMap<>());
+                    dayMetrics.put("sessions", dayMetrics.getOrDefault("sessions", 0) + sessions);
+                    dayMetrics.put("users", dayMetrics.getOrDefault("users", 0) + users);
+                }
+
+                for (Map<String, Object> sourceData : sourceMap.values()) {
+                    Map<String, Map<String, Integer>> dailyDataMap = (Map<String, Map<String, Integer>>) sourceData.get("dailyData");
+
+                    List<String> dates = new ArrayList<>(dailyDataMap.keySet());
+                    List<Integer> sessionsData = new ArrayList<>();
+                    List<Integer> usersData = new ArrayList<>();
+
+                    for (String date : dates) {
+                        Map<String, Integer> metrics = dailyDataMap.get(date);
+                        sessionsData.add(metrics.getOrDefault("sessions", 0));
+                        usersData.add(metrics.getOrDefault("users", 0));
+                    }
+
+                    sourceData.remove("dailyData");
+                    sourceData.put("dates", dates);
+                    sourceData.put("sessions", sessionsData);
+                    sourceData.put("users", usersData);
+
+                    trafficData.add(sourceData);
+                }
+
+                result.put("trafficData", trafficData);
+                result.put("startDate", startDate != null ? startDate : "30daysAgo");
+                result.put("endDate", endDate != null ? endDate : "today");
+                result.put("propertyId", analyticsPropertyId);
+            }
+
+        } catch (IOException e) {
+            log.error("Error loading Google Analytics credentials", e);
+            result.put("error", "Failed to load Google Analytics credentials: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error retrieving Google Analytics data", e);
+            result.put("error", "Failed to retrieve analytics data: " + e.getMessage());
+        }
+
+        return result;
+    }
+
+    private GoogleCredentials loadGoogleCredentials() throws IOException {
+        try {
+            Resource resource = resourceLoader.getResource(credentialsPath);
+            try (InputStream credentialsStream = resource.getInputStream()) {
+                return GoogleCredentials.fromStream(credentialsStream)
+                        .createScoped(Collections.singletonList("https://www.googleapis.com/auth/analytics.readonly"));
+            }
+        } catch (IOException e) {
+            log.warn("Failed to load Google Analytics credentials from path: {}", credentialsPath);
+
+            String credentialsJson = System.getenv("GOOGLE_ANALYTICS_CREDENTIALS");
+            if (credentialsJson != null && !credentialsJson.isEmpty()) {
+                try (InputStream jsonStream = new ByteArrayInputStream(
+                        credentialsJson.getBytes(StandardCharsets.UTF_8))) {
+                    return GoogleCredentials.fromStream(jsonStream)
+                            .createScoped(Collections.singletonList("https://www.googleapis.com/auth/analytics.readonly"));
+                }
+            }
+
+            log.warn("Falling back to Application Default Credentials");
+            return GoogleCredentials.getApplicationDefault()
+                    .createScoped(Collections.singletonList("https://www.googleapis.com/auth/analytics.readonly"));
+        }
     }
 }

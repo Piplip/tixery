@@ -33,7 +33,7 @@ public class AttendeeController {
     }
 
     @GetMapping("/attendee/stats")
-    public Map<String, Object> getAttendeeStats(@RequestParam("pid") String profileID){
+    public Integer getAttendeeStats(@RequestParam("pid") String profileID){
         return accountService.getAttendeeStats(profileID);
     }
 
