@@ -1,7 +1,6 @@
 package com.nkd.accountservice.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nkd.accountservice.client.EventClient;
 import com.nkd.accountservice.domain.*;
 import com.nkd.accountservice.enumeration.EventType;
 import com.nkd.accountservice.enums.RoleRoleName;
@@ -22,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.types.UByte;
 import org.jooq.types.UInteger;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -39,7 +37,10 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static com.nkd.accountservice.Tables.*;
 
@@ -55,7 +56,6 @@ public class AccountServiceImpl implements AccountService {
     private final RedisTemplate<String, String> redisTemplate;
     private final JwtService jwtService;
     private final CustomUserDetailService userDetailService;
-    private final EventClient eventClient;
 
     @Override
     @Transactional
@@ -130,11 +130,16 @@ public class AccountServiceImpl implements AccountService {
             log.error("Email not found : {}", accountDTO.getEmail());
             return new Response(HttpStatus.BAD_REQUEST.name(), ResponseMessageCode.ACCOUNT_NOT_FOUND, null);
         }
+        if(context.fetchExists(context.selectFrom(USER_ACCOUNT)
+                .where(USER_ACCOUNT.ACCOUNT_STATUS.eq(UserAccountAccountStatus.DISABLED)))) {
+            log.error("Account not verified : {}", accountDTO.getEmail());
+            return new Response(HttpStatus.BAD_REQUEST.name(), ResponseMessageCode.ACCOUNT_DISABLED, null);
+        }
         if(checkVerifiedAccount(accountDTO.getEmail())){
             log.error("Account not verified : {}", accountDTO.getEmail());
             return new Response(HttpStatus.BAD_REQUEST.name(), ResponseMessageCode.ACCOUNT_NOT_VERIFIED, null);
         }
-        else if(context.fetchExists(context.selectFrom(USER_ACCOUNT).where(USER_ACCOUNT.CREDENTIAL_ID.isNull()
+        if(context.fetchExists(context.selectFrom(USER_ACCOUNT).where(USER_ACCOUNT.CREDENTIAL_ID.isNull()
                 .and(USER_ACCOUNT.ACCOUNT_EMAIL.eq(accountDTO.getEmail()))))) {
             log.error("Mismatch login method : {}", accountDTO.getEmail());
             return new Response(HttpStatus.BAD_REQUEST.name()
@@ -624,6 +629,14 @@ public class AccountServiceImpl implements AccountService {
                 .fetchMaps();
     }
 
+    @Override
+    public String getProfileEmail(Integer profileID) {
+        return context.select(USER_ACCOUNT.ACCOUNT_EMAIL)
+                .from(USER_ACCOUNT).join(PROFILE).on(PROFILE.ACCOUNT_ID.eq(USER_ACCOUNT.ACCOUNT_ID))
+                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                .fetchOneInto(String.class);
+    }
+
     private UInteger saveOrganizerProfile(String accountID, Profile profile){
         UInteger updateProfileID;
         Optional<UInteger> profileID = context.select(PROFILE.PROFILE_ID).from(PROFILE)
@@ -668,10 +681,10 @@ public class AccountServiceImpl implements AccountService {
                     .fetchSingleInto(UInteger.class);
         }
 
-        UByte roleID = context.select(ROLE.ROLE_ID)
+        UInteger roleID = context.select(ROLE.ROLE_ID)
                 .from(ROLE)
                 .where(ROLE.ROLE_NAME.eq(RoleRoleName.HOST))
-                .fetchSingleInto(UByte.class);
+                .fetchSingleInto(UInteger.class);
 
         context.update(USER_ACCOUNT)
                 .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, updateProfileID)
@@ -730,10 +743,10 @@ public class AccountServiceImpl implements AccountService {
             updateQuery.where(PROFILE.PROFILE_ID.eq(pid)).execute();
         }
 
-        UByte roleID = context.select(ROLE.ROLE_ID)
+        UInteger roleID = context.select(ROLE.ROLE_ID)
                 .from(ROLE)
                 .where(ROLE.ROLE_NAME.eq(RoleRoleName.ATTENDEE))
-                .fetchSingleInto(UByte.class);
+                .fetchSingleInto(UInteger.class);
 
         context.update(USER_ACCOUNT)
             .set(USER_ACCOUNT.DEFAULT_PROFILE_ID, pid == null ? profileID : pid)

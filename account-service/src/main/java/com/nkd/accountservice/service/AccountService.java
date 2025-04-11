@@ -43,4 +43,5 @@ public interface AccountService {
     Map<String, Object> getOrderAttendeeInfo(Integer profileID);
     Map<String, Object> getAccountData(Integer profileID);
     List<Map<String, Object>> getEventAttendeeInfo(List<Integer> profileIDs);
+    String getProfileEmail(Integer profileID);
 }

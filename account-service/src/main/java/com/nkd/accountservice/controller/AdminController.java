@@ -1,6 +1,7 @@
 package com.nkd.accountservice.controller;
 
 import com.nkd.accountservice.domain.Response;
+import com.nkd.accountservice.domain.UserDataDTO;
 import com.nkd.accountservice.service.impl.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,11 @@ public class AdminController {
         return adminService.loadUserDetail(role, userID);
     }
 
+    @PutMapping("/user")
+    public Response updateUser(@RequestBody UserDataDTO userDataDTO) {
+        return adminService.updateUserData(userDataDTO);
+    }
+
     @DeleteMapping("/user")
     public Response deleteUser(@RequestParam("uid") String userID) {
         return adminService.deleteUser(userID);
@@ -41,6 +47,11 @@ public class AdminController {
     @GetMapping("/overview")
     public Map<String, Object> getOverviewMetrics() {
         return adminService.getOverviewMetrics();
+    }
+
+    @GetMapping("/user/suspend")
+    public Response suspendUser(@RequestParam("uid") String userID) {
+        return adminService.suspendUser(userID);
     }
 
 }

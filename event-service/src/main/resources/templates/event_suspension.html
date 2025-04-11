@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Event Has Been Suspended</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: #DC3545;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #777;
+            margin-top: 10px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        .alert {
+            background-color: #ffebee;
+            border-left: 4px solid #DC3545;
+            padding: 10px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>Sự Kiện Bị Đình Chỉ</h1>
+</div>
+<div class="content">
+    <p>Kính gửi <span th:text="${organizerName}">[Tên Nhà Tổ Chức]</span>,</p>
+
+    <div class="alert">
+        <p><strong>Thông Báo Quan Trọng:</strong> Sự kiện "<span th:text="${eventName}">[Tên Sự Kiện]</span>" của bạn đã bị đình chỉ do nhiều báo cáo về hành vi vi phạm chính sách.</p>
+    </div>
+
+    <p>Sau khi xem xét cẩn thận bởi đội ngũ quản trị của chúng tôi, chúng tôi xác định rằng sự kiện của bạn chứa nội dung hoặc quảng bá các hoạt động vi phạm nguyên tắc cộng đồng hoặc điều khoản dịch vụ của chúng tôi.</p>
+
+    <p>Trong thời gian bị đình chỉ:</p>
+    <ul>
+        <li>Sự kiện của bạn sẽ không hiển thị trong các tìm kiếm công khai</li>
+        <li>Người dùng sẽ không thể mua vé</li>
+        <li>Những người đã mua vé sẽ được thông báo về việc đình chỉ</li>
+    </ul>
+
+    <p>Để kháng nghị quyết định này hoặc thảo luận về những thay đổi cần thiết để khôi phục sự kiện của bạn, vui lòng liên hệ với đội ngũ hỗ trợ của chúng tôi trong vòng 7 ngày. Nếu không nhận được kháng nghị nào, các hành động tiếp theo có thể được thực hiện, bao gồm việc xóa vĩnh viễn sự kiện.</p>
+
+    <a th:href="'http://localhost:5173/organizer/events'" class="button">Xem Chi Tiết Sự Kiện</a>
+
+    <p>Chúng tôi xem xét nghiêm túc những vấn đề này để đảm bảo tất cả người dùng có trải nghiệm an toàn và tích cực trên nền tảng của chúng tôi.</p>
+
+    <p>Trân trọng,<br>Tixery</p>
+</div>
+<div class="footer">
+    <img style="height: 30px" src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png" alt="Logo Tixery" class="logo">
+    <p>Đây là tin nhắn tự động từ Tixery. Vui lòng liên hệ trực tiếp bộ phận hỗ trợ nếu có bất kỳ câu hỏi nào.</p>
+</div>
+</body>
+</html>

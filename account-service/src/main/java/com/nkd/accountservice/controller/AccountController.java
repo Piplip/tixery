@@ -58,6 +58,11 @@ public class AccountController {
         return accountService.handleLogin(accountDTO, request, response);
     }
 
+    @GetMapping("/profile/email")
+    public String getProfileEmail(@RequestParam("pid") Integer profileID){
+        return accountService.getProfileEmail(profileID);
+    }
+
     @GetMapping("/logout")
     public Response logout(HttpServletRequest request){
         return accountService.handleLogout(request);

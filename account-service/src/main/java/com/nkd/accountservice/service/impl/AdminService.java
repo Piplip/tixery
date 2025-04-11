@@ -4,6 +4,9 @@ import com.google.analytics.data.v1beta.*;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.nkd.accountservice.domain.Response;
+import com.nkd.accountservice.domain.UserDataDTO;
+import com.nkd.accountservice.enums.RoleRoleName;
+import com.nkd.accountservice.enums.UserAccountAccountStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
@@ -19,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.*;
 
 import static com.nkd.accountservice.tables.Profile.PROFILE;
@@ -60,11 +64,11 @@ public class AdminService {
 
     public Map<String, Object> loadUserDetail(String role, String userID){
         var selectSentence = switch (role) {
-            case "host" -> context.select(USER_ACCOUNT.ACCOUNT_EMAIL, ROLE.ROLE_NAME, PROFILE.asterisk(), USER_DATA.asterisk().except(USER_DATA.USER_DATA_ID))
+            case "host" -> context.select(USER_ACCOUNT.ACCOUNT_EMAIL, ROLE.ROLE_NAME, ROLE.ROLE_PRIVILEGES.as("authorities"), PROFILE.asterisk(), USER_DATA.asterisk().except(USER_DATA.USER_DATA_ID))
                     .from(USER_ACCOUNT.join(ROLE).on(USER_ACCOUNT.ROLE_ID.eq(ROLE.ROLE_ID))
                             .leftJoin(PROFILE).on(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(PROFILE.PROFILE_ID))
                             .leftJoin(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID)));
-            case "attendee", "admin" -> context.select(USER_ACCOUNT.ACCOUNT_ID, USER_ACCOUNT.ACCOUNT_EMAIL, ROLE.ROLE_NAME,
+            case "attendee", "admin" -> context.select(USER_ACCOUNT.ACCOUNT_ID, USER_ACCOUNT.ACCOUNT_EMAIL, ROLE.ROLE_NAME, ROLE.ROLE_PRIVILEGES.as("authorities"),
                             USER_DATA.asterisk(), PROFILE.PROFILE_IMAGE_URL, PROFILE.NOTIFY_PREFERENCES)
                     .from(USER_ACCOUNT.join(ROLE).on(USER_ACCOUNT.ROLE_ID.eq(ROLE.ROLE_ID))
                             .leftJoin(PROFILE).on(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(PROFILE.PROFILE_ID))
@@ -87,6 +91,50 @@ public class AdminService {
         }
 
         return new Response(HttpStatus.OK.name(), "User deleted successfully", null);
+    }
+
+    public Response updateUserData(UserDataDTO userDataDTO){
+        UInteger newRoleID = context.insertInto(ROLE)
+                .set(ROLE.ROLE_NAME, RoleRoleName.valueOf(userDataDTO.getRoleName()))
+                .set(ROLE.ROLE_PRIVILEGES, userDataDTO.getAuthorities())
+                .returningResult(ROLE.ROLE_ID)
+                .fetchOneInto(UInteger.class);
+
+        if(newRoleID == null){
+            return new Response(HttpStatus.INTERNAL_SERVER_ERROR.name(), "Failed to update role", null);
+        }
+
+        context.update(USER_ACCOUNT)
+                .set(USER_ACCOUNT.ACCOUNT_EMAIL, userDataDTO.getAccountEmail())
+                .set(USER_ACCOUNT.ACCOUNT_STATUS, UserAccountAccountStatus.valueOf(userDataDTO.getAccountStatus()))
+                .set(USER_ACCOUNT.ROLE_ID, newRoleID)
+                .where(USER_ACCOUNT.ACCOUNT_ID.eq(userDataDTO.getAccountId()))
+                .execute();
+
+        context.update(PROFILE)
+                .set(PROFILE.PROFILE_NAME, userDataDTO.getFullName())
+                .set(PROFILE.DESCRIPTION, userDataDTO.getDescription())
+                .set(PROFILE.PROFILE_IMAGE_URL, userDataDTO.getProfileImageUrl())
+                .set(PROFILE.NOTIFY_PREFERENCES, userDataDTO.getNotifyPreferences())
+                .where(PROFILE.PROFILE_ID.eq(userDataDTO.getProfileId()))
+                .execute();
+
+        UInteger userDataID = context.select(USER_DATA.USER_DATA_ID)
+                .from(USER_ACCOUNT.join(PROFILE).on(USER_ACCOUNT.DEFAULT_PROFILE_ID.eq(PROFILE.PROFILE_ID))
+                        .leftJoin(USER_DATA).on(PROFILE.USER_DATA_ID.eq(USER_DATA.USER_DATA_ID)))
+                .where(USER_ACCOUNT.ACCOUNT_ID.eq(userDataDTO.getAccountId()))
+                .fetchOneInto(UInteger.class);
+
+        context.update(USER_DATA)
+                .set(USER_DATA.FULL_NAME, userDataDTO.getFullName())
+                .set(USER_DATA.DATE_OF_BIRTH, LocalDate.parse(userDataDTO.getDateOfBirth()))
+                .set(USER_DATA.GENDER, userDataDTO.getGender())
+                .set(USER_DATA.PHONE_NUMBER, userDataDTO.getPhoneNumber())
+                .set(USER_DATA.NATIONALITY, userDataDTO.getNationality())
+                .where(USER_DATA.USER_DATA_ID.eq(userDataID))
+                .execute();
+
+        return new Response(HttpStatus.OK.name(), "OK", null);
     }
 
     public Map<String, Object> getOverviewMetrics() {
@@ -175,8 +223,8 @@ public class AdminService {
                         return data;
                     });
 
-                    sourceData.put("totalSessions", (int)sourceData.get("totalSessions") + sessions);
-                    sourceData.put("totalUsers", (int)sourceData.get("totalUsers") + users);
+                    sourceData.put("totalSessions", (int) sourceData.get("totalSessions") + sessions);
+                    sourceData.put("totalUsers", (int) sourceData.get("totalUsers") + users);
 
                     Map<String, Map<String, Integer>> dailyData = (Map<String, Map<String, Integer>>) sourceData.get("dailyData");
                     Map<String, Integer> dayMetrics = dailyData.computeIfAbsent(date, k -> new HashMap<>());
@@ -245,5 +293,27 @@ public class AdminService {
             return GoogleCredentials.getApplicationDefault()
                     .createScoped(Collections.singletonList("https://www.googleapis.com/auth/analytics.readonly"));
         }
+    }
+
+    public Response suspendUser(String profileID) {
+        UInteger accountID = context.select(PROFILE.ACCOUNT_ID)
+                .from(PROFILE)
+                .where(PROFILE.PROFILE_ID.eq(UInteger.valueOf(profileID)))
+                .fetchOneInto(UInteger.class);
+
+        if (accountID == null) {
+            return new Response(HttpStatus.NOT_FOUND.name(), "Profile not found", null);
+        }
+
+        var suspended = context.update(USER_ACCOUNT)
+                .set(USER_ACCOUNT.ACCOUNT_STATUS, UserAccountAccountStatus.DISABLED)
+                .where(USER_ACCOUNT.ACCOUNT_ID.eq(accountID))
+                .execute();
+
+        if (suspended == 0) {
+            return new Response(HttpStatus.NOT_FOUND.name(), "User account not found", null);
+        }
+
+        return new Response(HttpStatus.OK.name(), "User suspended successfully", null);
     }
 }

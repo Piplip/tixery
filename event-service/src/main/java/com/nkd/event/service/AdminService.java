@@ -1,6 +1,8 @@
 package com.nkd.event.service;
 
 import com.nkd.event.client.AccountClient;
+import com.nkd.event.dto.EventReportDTO;
+import com.nkd.event.dto.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
@@ -9,7 +11,10 @@ import org.jooq.Record2;
 import org.jooq.Record3;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -36,6 +41,8 @@ public class AdminService {
 
     private final DSLContext context;
     private final AccountClient accountClient;
+    private final EmailService emailService;
+    private final SpringTemplateEngine templateEngine;
 
     public Map<String, Object> getEventStats(String startDate, String endDate) {
         Map<String, Object> stats = new HashMap<>();
@@ -502,6 +509,7 @@ public class AdminService {
             var reports = context.select(
                             EVENTREPORTS.REPORT_ID,
                             EVENTREPORTS.EVENT_ID,
+                            EVENTS.ORGANIZER_ID,
                             EVENTS.NAME.as("event_name"),
                             EVENTREPORTS.REPORTER_PROFILE_ID,
                             EVENTREPORTS.REPORTER_EMAIL,
@@ -534,23 +542,37 @@ public class AdminService {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
 
-            Map<Integer, String> reporterNames = new HashMap<>();
-            if (!reporterIds.isEmpty()) {
-                String reporterIdsStr = reporterIds.stream()
+            Set<Integer> organizerIds = reports.stream()
+                    .map(r -> (Integer) r.get("organizer_id"))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Set<Integer> allProfileIds = new HashSet<>();
+            allProfileIds.addAll(reporterIds);
+            allProfileIds.addAll(organizerIds);
+
+            Map<Integer, String> profileNames = new HashMap<>();
+            if (!allProfileIds.isEmpty()) {
+                String profileIdsStr = allProfileIds.stream()
                         .map(String::valueOf)
                         .collect(Collectors.joining(","));
 
                 try {
-                    reporterNames = accountClient.getListProfileName(reporterIdsStr);
+                    profileNames = accountClient.getListProfileName(profileIdsStr);
                 } catch (Exception e) {
-                    log.warn("Failed to retrieve reporter names: {}", e.getMessage());
+                    log.warn("Failed to retrieve profile names: {}", e.getMessage());
                 }
             }
 
             for (Map<String, Object> report : reports) {
                 Integer reporterId = (Integer) report.get("reporter_profile_id");
                 if (reporterId != null) {
-                    report.put("reporter_name", reporterNames.getOrDefault(reporterId, "Unknown"));
+                    report.put("reporter_name", profileNames.getOrDefault(reporterId, "Unknown"));
+                }
+
+                Integer organizerId = (Integer) report.get("organizer_id");
+                if (organizerId != null) {
+                    report.put("organizer_name", profileNames.getOrDefault(organizerId, "Unknown"));
                 }
 
                 UUID eventId = (UUID) report.get("event_id");
@@ -594,6 +616,120 @@ public class AdminService {
             return String.format("%.1fk", number / 1000.0);
         } else {
             return String.valueOf(number);
+        }
+    }
+
+    public Response updateEventReport(EventReportDTO eventReportDTO) {
+        try {
+            context.update(EVENTREPORTS)
+                    .set(EVENTREPORTS.STATUS, eventReportDTO.getStatus())
+                    .where(EVENTREPORTS.REPORT_ID.eq(eventReportDTO.getReportID()))
+                    .execute();
+
+            if (!eventReportDTO.getStatus().equals("resolved") && !eventReportDTO.getStatus().equals("under_review")) {
+                UUID eventId = UUID.fromString(eventReportDTO.getEventID());
+
+                Map<String, Object> eventData = context.select(
+                                EVENTS.EVENT_ID,
+                                EVENTS.NAME.as("event_name"),
+                                EVENTS.ORGANIZER_ID,
+                                EVENTS.STATUS,
+                                EVENTS.START_TIME
+                        )
+                        .from(EVENTS)
+                        .where(EVENTS.EVENT_ID.eq(eventId))
+                        .fetchOneMap();
+
+                if (eventData == null) {
+                    return new Response(HttpStatus.NOT_FOUND.name(), "Event not found", null);
+                }
+
+                Integer organizerId = (Integer) eventData.get("organizer_id");
+                String organizerEmail = accountClient.getProfileEmail(organizerId);
+                Map<Integer, String> profileNames = accountClient.getListProfileName(organizerId.toString());
+                String organizerName = profileNames.getOrDefault(organizerId, "Event Organizer");
+
+                eventData.put("organizer_name", organizerName);
+
+                switch (eventReportDTO.getAction()) {
+                    case "warning": {
+                        sendWarningEmail(organizerEmail, eventData);
+                        break;
+                    }
+                    case "suspend_event": {
+                        context.update(EVENTS)
+                                .set(EVENTS.STATUS, "suspended")
+                                .where(EVENTS.EVENT_ID.eq(eventId))
+                                .execute();
+
+                        sendEventSuspensionEmail(organizerEmail, eventData);
+                        break;
+                    }
+                    case "suspend_organizer": {
+                        accountClient.suspendUser(eventReportDTO.getOrganizerID());
+                        sendOrganizerSuspensionEmail(organizerEmail, eventData);
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+            }
+
+            return new Response(HttpStatus.OK.name(), "Event report updated successfully", null);
+        } catch (Exception e) {
+            log.error("Error updating event report", e);
+            return new Response(HttpStatus.INTERNAL_SERVER_ERROR.name(), "Error updating event report: " + e.getMessage(), null);
+        }
+    }
+
+    private void sendWarningEmail(String organizerEmail, Map<String, Object> eventData) {
+        try {
+            Context context = new Context();
+            context.setVariable("organizerName", eventData.get("organizer_name"));
+            context.setVariable("eventName", eventData.get("event_name"));
+            context.setVariable("eventId", eventData.get("event_id"));
+
+            String content = templateEngine.process("event_warning", context);
+            String subject = "Warning: Reported Content in Your Event";
+
+            emailService.sendEmail(organizerEmail, content, subject);
+            log.info("Warning email sent to organizer: {}", organizerEmail);
+        } catch (Exception e) {
+            log.error("Failed to send warning email to organizer: {}", e.getMessage());
+        }
+    }
+
+    private void sendEventSuspensionEmail(String organizerEmail, Map<String, Object> eventData) {
+        try {
+            Context context = new Context();
+            context.setVariable("organizerName", eventData.get("organizer_name"));
+            context.setVariable("eventName", eventData.get("event_name"));
+            context.setVariable("eventId", eventData.get("event_id"));
+
+            String content = templateEngine.process("event_suspension", context);
+            String subject = "IMPORTANT: Your Event Has Been Suspended";
+
+            emailService.sendEmail(organizerEmail, content, subject);
+            log.info("Event suspension email sent to organizer: {}", organizerEmail);
+        } catch (Exception e) {
+            log.error("Failed to send event suspension email to organizer: {}", e.getMessage());
+        }
+    }
+
+    private void sendOrganizerSuspensionEmail(String organizerEmail, Map<String, Object> eventData) {
+        try {
+            Context context = new Context();
+            context.setVariable("organizerName", eventData.get("organizer_name"));
+            context.setVariable("eventName", eventData.get("event_name"));
+
+            String content = templateEngine.process("organizer_suspension", context);
+            String subject = "IMPORTANT: Your Organizer Account Has Been Suspended";
+
+            emailService.sendEmail(organizerEmail, content, subject);
+            log.info("Organizer suspension email sent to: {}", organizerEmail);
+        } catch (Exception e) {
+            log.error("Failed to send organizer suspension email: {}", e.getMessage());
         }
     }
 }

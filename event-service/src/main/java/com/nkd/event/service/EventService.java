@@ -482,7 +482,7 @@ public class EventService {
         }
         else {
             condition = condition.and(EVENTS.STATUS.eq("published"))
-                    .and(EVENTS.END_TIME.gt(OffsetDateTime.now()));
+                    .and(EVENTS.START_TIME.gt(OffsetDateTime.now()));
         }
 
         String userLocationPoint = "POINT(" + lon + " " + lat + ")";

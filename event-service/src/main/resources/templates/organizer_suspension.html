@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Organizer Account Has Been Suspended</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: #212529;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #777;
+            margin-top: 10px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #6C757D;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        .critical {
+            color: #DC3545;
+            font-weight: bold;
+        }
+        .alert {
+            background-color: #f8d7da;
+            border-left: 4px solid #721c24;
+            padding: 15px;
+            margin: 15px 0;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>Thông Báo Đình Chỉ Tài Khoản</h1>
+</div>
+<div class="content">
+    <p>Kính gửi <span th:text="${organizerName}">[Tên Nhà Tổ Chức]</span>,</p>
+
+    <div class="alert">
+        <p class="critical">Tài khoản nhà tổ chức của bạn đã bị đình chỉ do vi phạm nghiêm trọng hoặc lặp lại các chính sách nền tảng của chúng tôi.</p>
+    </div>
+
+    <p>Quyết định này được đưa ra sau nhiều báo cáo và quá trình xem xét kỹ lưỡng bởi đội ngũ quản trị của chúng tôi. Vi phạm gần đây nhất liên quan đến sự kiện "<span th:text="${eventName}">[Tên Sự Kiện]</span>" của bạn.</p>
+
+    <p>Trong thời gian đình chỉ này:</p>
+    <ul>
+        <li>Tất cả các sự kiện của bạn đã được chuyển sang trạng thái "đã đình chỉ"</li>
+        <li>Bạn không thể tạo sự kiện mới hoặc sửa đổi các sự kiện hiện có</li>
+        <li>Hồ sơ nhà tổ chức của bạn sẽ không còn hiển thị công khai</li>
+        <li>Các giao dịch tài chính liên quan đến sự kiện của bạn đang bị tạm dừng</li>
+    </ul>
+
+    <p>Việc đình chỉ này sẽ có hiệu lực cho đến khi quá trình xem xét toàn bộ hoạt động tài khoản của bạn hoàn tất. Nếu bạn tin rằng hành động này là do nhầm lẫn, bạn có thể gửi đơn kháng nghị bằng cách liên hệ với đội ngũ Tin cậy & An toàn của chúng tôi. Vui lòng cung cấp bất kỳ thông tin liên quan nào có thể giúp chúng tôi trong quá trình xem xét.</p>
+
+    <p>Chúng tôi xem xét nghiêm túc các nguyên tắc cộng đồng của mình để duy trì một nền tảng đáng tin cậy cho tất cả người dùng. Các hành vi vi phạm nghiêm trọng hoặc lặp lại có thể dẫn đến việc chấm dứt tài khoản vĩnh viễn.</p>
+
+    <a href="http://localhost:5173/support/appeal" class="button">Gửi Đơn Kháng Nghị</a>
+
+    <p>Trân trọng,<br>Tixery</p>
+</div>
+<div class="footer">
+    <img style="height: 30px" src="https://res.cloudinary.com/de25mkp9v/image/upload/v1743413016/logo_xdxerq.png" alt="Logo Tixery" class="logo">
+    <p>Đây là tin nhắn tự động từ Tixery. Vui lòng liên hệ trực tiếp bộ phận hỗ trợ nếu có bất kỳ câu hỏi nào.</p>
+</div>
+</body>
+</html>

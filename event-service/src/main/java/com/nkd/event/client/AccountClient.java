@@ -1,5 +1,6 @@
 package com.nkd.event.client;
 
+import com.nkd.event.dto.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,4 +27,10 @@ public interface AccountClient {
 
     @PostMapping("/event/attendee/info")
     List<Map<String, Object>> getEventAttendeeInfo(@RequestBody List<Integer> profileIDs);
+
+    @GetMapping("/profile/email")
+    String getProfileEmail(@RequestParam("pid") Integer profileID);
+
+    @GetMapping("/user/suspend")
+    Response suspendUser(@RequestParam("uid") String userID);
 }
